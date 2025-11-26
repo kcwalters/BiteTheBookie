@@ -1,0 +1,93 @@
+﻿@model IEnumerable<BiteTheBookie.Models.MLB.Game>
+
+<style>
+    .mlb-schedule {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: Arial,sans-serif;
+    }
+
+        .mlb-schedule thead {
+            background: #112d5e;
+            color: #fff;
+        }
+
+        .mlb-schedule th, .mlb-schedule td {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+        }
+
+        .mlb-schedule tbody tr:nth-child(odd) {
+            background: #f8f9fa;
+        }
+
+    .team-cell {
+        display: flex;
+        align-items: center;
+    }
+
+        .team-cell img {
+            width: 24px;
+            height: 24px;
+            margin-right: 0.5rem;
+        }
+
+    .status {
+        font-weight: bold;
+    }
+
+        .status.Final {
+            color: #28a745;
+        }
+
+        .status["Game Over"] {
+            color: #6c757d;
+        }
+
+        .status["In Progress"] {
+            color: #dc3545;
+        }
+
+        .status["Pre-Game"] {
+            color: #ffc107;
+        }
+</style>
+
+
+
+<h2>Today's MLB Games</h2>
+
+<table class="table table-striped table-bordered">
+    <thead class="thead-dark">
+        <tr>
+            <th>Time</th>
+            <th>Away</th>
+            <th></th>
+            <th>Home</th>
+            <th></th>
+            <th>Score</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var g in Model)
+        {
+            <tr>
+                <td>@g.GameTime.AddHours(-3).ToString("h:mm tt")</td>
+                <td>@g.AwayTeam</td>
+                <td>
+                    <img src="@g.AwayTeamLogoUrl" class="team-logo" alt="@g.AwayTeam" />
+                </td>
+                <td>@g.HomeTeam</td>
+                <td>
+                    <img src="@g.HomeTeamLogoUrl" class="team-logo" alt="@g.HomeTeam" />
+                </td>
+                <td>
+                    @(g.AwayScore.HasValue ? g.AwayScore : "-") -
+                    @(g.HomeScore.HasValue ? g.HomeScore : "-")
+                </td>
+                <td>@g.Status</td>
+            </tr>
+        }
+    </tbody>
+</table>

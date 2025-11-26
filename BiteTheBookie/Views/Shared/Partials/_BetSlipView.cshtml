@@ -1,0 +1,15 @@
+﻿@using BiteTheBookie.ViewModels;
+@model BetSlipViewModel
+<div id="betSlip" class="bg-white p-3 border">
+    @foreach (var b in Model.Bets)
+    {
+        <div class="d-flex justify-content-between mb-2">
+            <span>@b.Selection (@b.OddsDecimal)</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="removeBet(@b.GameId)">✕</button>
+        </div>
+    }
+    <hr />
+    <p>Total Stake: @Model.TotalStake:C</p>
+    <p>Potential Payout: @Model.PotentialPayout:C</p>
+    <button class="btn btn-primary w-100">Place Bets</button>
+</div>

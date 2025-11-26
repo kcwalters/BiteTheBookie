@@ -1,0 +1,36 @@
+﻿@using BiteTheBookie.ViewModels;
+@model LeagueOddsViewModel
+<ul class="nav nav-tabs">
+    @for (int i = 0; i < Model.Leagues.Count; i++)
+    {
+        var lg = Model.Leagues[i];
+        <li class="nav-item">
+            <a class="nav-link @(i==0?"active":"")" data-bs-toggle="tab" href="#tab@i">@lg.Name</a>
+        </li>
+    }
+</ul>
+<div class="tab-content mt-3">
+    @for (int i = 0; i < Model.Leagues.Count; i++)
+    {
+        var lg = Model.Leagues[i];
+        <div class="tab-pane fade @(i==0?"show active":"")" id="tab@i">
+            <table class="table table-hover">
+                <thead class="bg-light">
+                    <tr><th>Teams</th><th>Time</th><th>ML</th><th>SP</th><th>O/U</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var g in lg.Games)
+                    {
+                        <tr class="@(g.IsHighlighted?"table-warning":"")">
+                            <td>@g.Away vs @g.Home</td>
+                            <td>@g.StartTime:hh\\:mm</td>
+                            <td>@g.Moneyline</td>
+                            <td>@g.Spread</td>
+                            <td>@g.Total</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

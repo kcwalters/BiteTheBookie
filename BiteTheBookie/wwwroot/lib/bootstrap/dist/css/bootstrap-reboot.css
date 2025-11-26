@@ -1,0 +1,58 @@
+:root {
+    --bs-primary: #1E3A8A;
+    --bs-secondary: #F59E0B;
+    --bs-success: #10B981;
+    --bs-danger: #EF4444;
+    --bs-light: #F3F4F6;
+    --bs-dark: #111827;
+    --bs-font-sans-serif: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+body {
+    background-color: var(--bs-light);
+    color: var(--bs-dark);
+    font-family: var(--bs-font-sans-serif);
+}
+
+.navbar {
+    background-color: var(--bs-primary);
+}
+
+.navbar-brand, .nav-link {
+    color: white !important;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: var(--bs-secondary);
+    color: white;
+    font-weight: bold;
+}
+
+.odds-up {
+    color: var(--bs-success);
+    font-weight: bold;
+}
+
+.odds-down {
+    color: var(--bs-danger);
+    font-weight: bold;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #E5E7EB;
+}
+
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+    .btn-primary:hover {
+        background-color: #3749A0;
+        border-color: #3749A0;
+    }

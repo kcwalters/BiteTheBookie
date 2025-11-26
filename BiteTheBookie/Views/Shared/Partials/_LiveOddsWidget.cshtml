@@ -1,0 +1,14 @@
+﻿@using BiteTheBookie.ViewModels;
+@model IEnumerable<LiveOddsViewModel>
+<ul class="list-group">
+    @foreach (var live in Model)
+    {
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>@live.AwayAbbrev @live.AwayScore – @live.HomeScore @live.HomeAbbrev</span>
+            <span class="badge bg-primary">@live.Moneyline</span>
+        </li>
+    }
+</ul>
+
+<iframe title="Sports Odds Widget" style="width: 20rem; height: 25rem; border: 1px solid black;" src="https://widget.the-odds-api.com/v1/sports/americanfootball_nfl/events/?accessKey=wk_22829bbf42f6465025c2e7006642bfaa&bookmakerKeys=draftkings&oddsFormat=american&markets=h2h%2Cspreads%2Ctotals&marketNames=h2h%3AMoneyline%2Cspreads%3ASpreads%2Ctotals%3AOver%2FUnder"></iframe>
+
