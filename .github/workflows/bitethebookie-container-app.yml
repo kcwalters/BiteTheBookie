@@ -8,7 +8,7 @@ env:
   CONTAINER_APP_NAME: bitethebookie-container-app
   CONTAINER_APP_RESOURCE_GROUP_NAME: BiteTheBookie
   CONTAINER_REGISTRY_LOGIN_SERVER: bitethebookie.azurecr.io
-  DOCKER_FILE_PATH: /BiteTheBookie/BiteTheBookie/Dockerfile .
+  DOCKER_FILE_PATH: ./Dockerfile
   PROJECT_NAME_FOR_DOCKER: bitethebookie
 jobs:
   build:
