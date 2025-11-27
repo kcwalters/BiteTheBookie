@@ -43,7 +43,12 @@
                 <img src="img/LogoSmall.png" alt="">
             </a>
             <div class="user-panel">
-                <a href="#">Login</a>  /  <a href="#">Register</a>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
+                </li>
             </div>
             <!-- responsive -->
             <div class="nav-switch">
@@ -63,17 +68,25 @@
     </header>
     <!-- Header section end -->
     <!-- Hero section -->
-    <section class="hero-section">
+    <section class="hero-section" style="margin:50px;">
         <div class="hero-slider owl-carousel">
             <div class="hs-item set-bg" data-setbg="img/slider-1.jpg">
                 <div class="hs-text">
-                    <div class="container">
+                    <div class="container" style="display:flex; justify-content:flex-end; align-items:center; padding-right:0;">
+                        <div style="margin-right:0px;">
+                            <h2>Live Odds</h2>
+                            @await Html.PartialAsync("Partials/_LiveOddsWidget", Model.LiveOdds)
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="hs-item set-bg" data-setbg="img/slider-2.jpg">
                 <div class="hs-text">
-                    <div class="container">
+                    <div class="container" style="display:flex; justify-content:flex-end; align-items:center; padding-right:0;">
+                        <div style="margin-right:0px;">
+                            <h2>Live Odds</h2>
+                            @await Html.PartialAsync("Partials/_LiveOddsWidget", Model.LiveOdds)
+                        </div>
                     </div>
                 </div>
             </div>
@@ -82,7 +95,7 @@
 
     <!-- Hero section end -->
     <!-- Latest news section -->
-    <div class="latest-news-section">
+    <div class="latest-news-section" style="margin:50px;">
         <div class="news-ticker-contant" style="background-color:white;">
             <table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse; width:100%; text-align:left;">
                 <thead style="background-color:#f2f2f2;">
