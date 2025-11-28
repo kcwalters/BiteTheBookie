@@ -181,73 +181,8 @@
             </div>
         </div>
     </div>
-
-
     <!-- Hero section end -->
-    <!-- Feature section -->
-    <section class="feature-section spad">
-        <div class="container">
-            <div class="row">
-                <section>
-                    @await Html.PartialAsync("Partials/_HeroTicker", Model.HeroOdds)
-
-                    <div class="row mt-4">
-                        <div class="col-lg-6">
-                            <h2>Live Odds</h2>
-                            @await Html.PartialAsync("Partials/_LiveOddsWidget", Model.LiveOdds)
-
-                            <h2 class="mt-4">Your Bet Slip</h2>
-                            @await Html.PartialAsync("Partials/_BetSlipView", Model.BetSlip)
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <div class="row">
-                <div class="col-lg-3 col-md-6 p-0">
-                    <div class="feature-item set-bg" data-setbg="img/features/1.jpg">
-                        <span class="cata new">new</span>
-                        <div class="fi-content text-white">
-                            <h5><a href="#">Suspendisse ut justo tem por, rutrum</a></h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. </p>
-                            <a href="#" class="fi-comment">3 Comments</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 p-0">
-                    <div class="feature-item set-bg" data-setbg="img/features/2.jpg">
-                        <span class="cata strategy">strategy</span>
-                        <div class="fi-content text-white">
-                            <h5><a href="#">Justo tempor, rutrum erat id, molestie</a></h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. </p>
-                            <a href="#" class="fi-comment">3 Comments</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 p-0">
-                    <div class="feature-item set-bg" data-setbg="img/features/3.jpg">
-                        <span class="cata new">new</span>
-                        <div class="fi-content text-white">
-                            <h5><a href="#">Nullam lacinia ex eleifend orci porttitor</a></h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. </p>
-                            <a href="#" class="fi-comment">3 Comments</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 p-0">
-                    <div class="feature-item set-bg" data-setbg="img/features/4.jpg">
-                        <span class="cata racing">racing</span>
-                        <div class="fi-content text-white">
-                            <h5><a href="#">Lacinia ex eleifend orci suscipit</a></h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. </p>
-                            <a href="#" class="fi-comment">3 Comments</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- Feature section end -->
-    <!-- Recent game section  -->
+  <!-- Recent game section  -->
     <section class="recent-game-section spad set-bg" data-setbg="img/recent-game-bg.png">
         <div class="container">
             <div class="section-title">
