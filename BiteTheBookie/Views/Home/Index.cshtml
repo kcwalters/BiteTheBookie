@@ -70,27 +70,23 @@
     <!-- Hero section -->
     <section class="hero-section" style="margin:50px;">
         <div class="hero-slider owl-carousel">
-            <div class="hs-item set-bg" data-setbg="img/slider-1.jpg">
-                <div class="hs-text">
-                    <div class="container" style="display:flex; justify-content:flex-end; align-items:center; padding-right:0;">
-                        <div style="margin-right:0px;">
-                            <h2>Live Odds</h2>
-                            @await Html.PartialAsync("Partials/_LiveOddsWidget", Model.LiveOdds)
-                        </div>
+            <div class="hs-item set-bg" data-setbg="img/slider-1.jpg" style="width:400px; height:300px; border-radius:20px; overflow:hidden;">
+                <div class="hs-text" style="width:100%; height:100%;">
+                    <div class="container" style="display:flex; justify-content:flex-end; align-items:flex-end; width:100%; height:100%; padding-right:0;">
+                        
                     </div>
                 </div>
             </div>
-            <div class="hs-item set-bg" data-setbg="img/slider-2.jpg">
-                <div class="hs-text">
-                    <div class="container" style="display:flex; justify-content:flex-end; align-items:center; padding-right:0;">
-                        <div style="margin-right:0px;">                            
-                            @await Html.PartialAsync("Partials/_LiveOddsWidget", Model.LiveOdds)
-                        </div>
+            <div class="hs-item set-bg" data-setbg="img/slider-2.jpg" style="width:400px; height:300px; border-radius:20px; overflow:hidden;">
+                <div class="hs-text" style="width:100%; height:100%;">
+                    <div class="container" style="display:flex; justify-content:flex-end; align-items:flex-end; width:100%; height:100%; padding-right:0;">
+                        
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
 
     <!-- Hero section end -->
     <!-- Latest news section -->
