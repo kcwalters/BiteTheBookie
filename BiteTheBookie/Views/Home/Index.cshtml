@@ -21,13 +21,13 @@
     <link rel="stylesheet" href="css/owl.carousel.css" />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/animate.css" />
-
+    <link rel="stylesheet" href="css/home-styles.css" />
 
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
-
+   
 </head>
 <body>
     <!-- Page Preloder -->
@@ -167,61 +167,138 @@
     </div>
     <!-- Hero section end -->
   <!-- Recent game section  -->
-    <section class="recent-game-section spad set-bg" data-setbg="img/recent-game-bg.png">
+    <section class="recent-game-section spad set-bg" data-setbg="img/s.png">
         <div class="container">
             <div class="section-title">
                 <div class="cata new">new</div>
                 <h2>Recent Games</h2>
             </div>
             <div class="row">
-                <div class="col-lg-4 col-md-6">
+                <div class="col-lg-12 col-md-18">
                     <div class="recent-game-item">
                         <div class="rgi-thumb set-bg" data-setbg="img/recent-game/1.jpg">
                             <div class="cata new">new</div>
                         </div>
                         <div class="rgi-content">
-                            <h5>Suspendisse ut justo tem por, rutrum</h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum dolor sit amet, consectetur elit. </p>
-                            <a href="#" class="comment">3 Comments</a>
-                            <div class="rgi-extra">
-                                <div class="rgi-star"><img src="img/icons/star.png" alt=""></div>
-                                <div class="rgi-heart"><img src="img/icons/heart.png" alt=""></div>
+                            <div class="card" role="region" aria-label="NFL Week 13 Picks">
+                                <div class="card-header">
+                                    <div class="title">NFL Week 13 Picks & Predicted Scores</div>
+                                    <div class="subtitle">Professional slate overview • Lines shown as team and spread pick</div>
+                                </div>
+                                <table aria-label="Week 13 game picks">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 26%;">Matchup</th>
+                                            <th style="width: 18%;">Pick (spread)</th>
+                                            <th style="width: 20%;">Predicted score</th>
+                                            <th style="width: 36%;">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Thanksgiving Games -->
+                                        <tr>
+                                            <td>
+                                                <div class="section-label">Thanksgiving</div>
+                                                Green Bay Packers at Detroit Lions
+                                            </td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Lions (-2.5)</span></td>
+                                            <td><span class="score">DET 26 – GB 21</span></td>
+                                            <td>Detroit’s home scoring edge; GB WRs can create chunk plays.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Kansas City Chiefs at Dallas Cowboys</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Cowboys (-2.5)</span></td>
+                                            <td><span class="score">DAL 27 – KC 20</span></td>
+                                            <td>KC more methodical than explosive; Dallas defense strongest at home.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cincinnati Bengals at Baltimore Ravens</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Ravens (-3.5)</span></td>
+                                            <td><span class="score">BAL 28 – CIN 24</span></td>
+                                            <td>Ravens’ balanced offense; late surge edge at home.</td>
+                                        </tr>
+
+                                        <!-- Black Friday -->
+                                        <tr>
+                                            <td>
+                                                <div class="section-label">Black Friday</div>
+                                                Chicago Bears at Philadelphia Eagles
+                                            </td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Eagles (-6.5)</span></td>
+                                            <td><span class="score">PHI 30 – CHI 20</span></td>
+                                            <td>Eagles control line of scrimmage; Bears struggle to sustain drives.</td>
+                                        </tr>
+
+                                        <!-- Sunday Slate -->
+                                        <tr>
+                                            <td>
+                                                <div class="section-label">Sunday</div>
+                                                San Francisco 49ers at Cleveland Browns
+                                            </td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">49ers (-4.5)</span></td>
+                                            <td><span class="score">SF 27 – CLE 23</span></td>
+                                            <td>49ers’ scheme versatility vs. Browns’ physical defense.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Los Angeles Rams at Carolina Panthers</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Rams (-3.5)</span></td>
+                                            <td><span class="score">LAR 24 – CAR 17</span></td>
+                                            <td>Rams’ passing structure vs. Panthers’ rebuilding offense.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Houston Texans at Indianapolis Colts</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Texans (-2.5)</span></td>
+                                            <td><span class="score">HOU 28 – IND 21</span></td>
+                                            <td>Potential upset narrative flipped; Texans’ QB play edges out.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Miami Dolphins at New Orleans Saints</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Dolphins (-5.5)</span></td>
+                                            <td><span class="score">MIA 31 – NO 20</span></td>
+                                            <td>Explosive Dolphins offense vs. Saints’ red zone inconsistencies.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>New England Patriots at New York Giants (Monday Night)</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Patriots (-1.5)</span></td>
+                                            <td><span class="score">NE 23 – NYG 17</span></td>
+                                            <td>Lower-total profile; field position and special teams matter.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Minnesota Vikings at Seattle Seahawks</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Seahawks (-10.5)</span></td>
+                                            <td><span class="score">SEA 27 – MIN 14</span></td>
+                                            <td>Seattle’s defensive front sets the tone at home.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Denver Broncos at Las Vegas Raiders</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Broncos (-3.5)</span></td>
+                                            <td><span class="score">DEN 24 – LV 20</span></td>
+                                            <td>Divisional grind; Broncos’ late-game execution advantage.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Buffalo Bills at Pittsburgh Steelers</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Bills (-4.5)</span></td>
+                                            <td><span class="score">BUF 27 – PIT 21</span></td>
+                                            <td>Bills’ explosive plays vs. Steelers’ ball-control approach.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Tennessee Titans at Jacksonville Jaguars</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Jaguars (-6.5)</span></td>
+                                            <td><span class="score">JAX 28 – TEN 17</span></td>
+                                            <td>Jags’ passing attack vs. Titans’ inconsistent offense.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Arizona Cardinals at New York Jets</td>
+                                            <td><span class="chip fav">Favorite</span> <span class="spread">Jets (-2.5)</span></td>
+                                            <td><span class="score">NYJ 23 – ARI 20</span></td>
+                                            <td>Defense-led game; Jets squeeze enough offense at home.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="recent-game-item">
-                        <div class="rgi-thumb set-bg" data-setbg="img/recent-game/2.jpg">
-                            <div class="cata racing">racing</div>
-                        </div>
-                        <div class="rgi-content">
-                            <h5>Susce pulvinar metus nulla, vel  facilisis sem </h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum dolor sit amet, consectetur elit. </p>
-                            <a href="#" class="comment">3 Comments</a>
-                            <div class="rgi-extra">
-                                <div class="rgi-star"><img src="img/icons/star.png" alt=""></div>
-                                <div class="rgi-heart"><img src="img/icons/heart.png" alt=""></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="recent-game-item">
-                        <div class="rgi-thumb set-bg" data-setbg="img/recent-game/3.jpg">
-                            <div class="cata adventure">Adventure</div>
-                        </div>
-                        <div class="rgi-content">
-                            <h5>Suspendisse ut justo tem por, rutrum</h5>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum dolor sit amet, consectetur elit. </p>
-                            <a href="#" class="comment">3 Comments</a>
-                            <div class="rgi-extra">
-                                <div class="rgi-star"><img src="img/icons/star.png" alt=""></div>
-                                <div class="rgi-heart"><img src="img/icons/heart.png" alt=""></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </div>          
             </div>
         </div>
     </section>
