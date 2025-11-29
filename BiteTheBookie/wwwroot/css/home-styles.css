@@ -1,4 +1,4 @@
-<style >
+
 :root {
     --bg: #0f172a;
     --panel: #111827;
@@ -117,5 +117,3 @@ tbody tr:nth-child(even) {
     display: inline-block;
     margin-bottom: 0.35rem;
 }
-
-</style >

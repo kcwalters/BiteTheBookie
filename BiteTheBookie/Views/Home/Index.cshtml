@@ -26,7 +26,127 @@
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->   
+    <![endif]-->
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --accent: #38bdf8;
+            --accent-2: #34d399;
+            --border: #1f2937;
+            --row-alt: #0b1220;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .card {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+            overflow: hidden;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(90deg, rgba(56,189,248,0.08), rgba(52,211,153,0.08));
+        }
+
+        .title {
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead th {
+            text-align: left;
+            padding: 0.85rem 1rem;
+            background: #0d1b2a;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        tbody td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        tbody tr:nth-child(even) {
+            background: var(--row-alt);
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .fav {
+            background: rgba(56,189,248,0.15);
+            color: #7dd3fc;
+            border: 1px solid rgba(56,189,248,0.35);
+        }
+
+        .dog {
+            background: rgba(244,114,182,0.15);
+            color: #f9a8d4;
+            border: 1px solid rgba(244,114,182,0.35);
+        }
+
+        .spread {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .score {
+            color: var(--accent-2);
+            font-weight: 700;
+        }
+
+        .section-label {
+            font-weight: 700;
+            color: var(--muted);
+            font-size: 0.85rem;
+            padding: 0.35rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.03);
+            display: inline-block;
+            margin-bottom: 0.35rem;
+        }
+    </style>
 </head>
 <body>
     <!-- Page Preloder -->
@@ -35,7 +155,7 @@
     </div>
 
     <!-- Header section -->
-    <header class="header-section" >
+    <header class="header-section">
         <div class="container">
             <!-- logo -->
             <a class="site-logo" href="index.html" style="width:300px">
@@ -69,7 +189,7 @@
     <!-- Hero section -->
     <div class="container" style="margin-top:30px;">
         <div class="row">
-          <div class="col-12">
+            <div class="col-12">
                 <div class="latest-news-section"
                      style="border-radius:12px; overflow:hidden; background-color:white; padding:12px; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
 
@@ -165,7 +285,7 @@
         </div>
     </div>
     <!-- Hero section end -->
-  <!-- Recent game section  -->
+    <!-- Recent game section  -->
     <section class="recent-game-section spad set-bg" data-setbg="img/s.png">
         <div class="container">
             <div class="section-title">
@@ -297,7 +417,7 @@
                             </div>
                         </div>
                     </div>
-                </div>          
+                </div>
             </div>
         </div>
     </section>
