@@ -117,3 +117,6 @@ tbody tr:nth-child(even) {
     display: inline-block;
     margin-bottom: 0.35rem;
 }
+.site-logo img {
+    border-radius: 12px;
+}
