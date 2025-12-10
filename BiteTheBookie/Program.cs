@@ -1,7 +1,5 @@
-using System;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-using System.Threading.Tasks;
 
 class Program
 {

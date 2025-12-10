@@ -11,8 +11,8 @@
         public DateTime OffsetDateTime { get; set; }
         public TeamInfo Away { get; set; }
         public TeamInfo Home { get; set; }
-        public string Score { get; set; }
-        public string Status { get; set; }
+        public string Score { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
 
         // Helper for display
         public string DisplayTime => OffsetDateTime.ToLocalTime()

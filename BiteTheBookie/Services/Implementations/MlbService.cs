@@ -1,4 +1,7 @@
-﻿using BiteTheBookie.Models.MLB;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using BiteTheBookie.Models.MLB;
 using BiteTheBookie.Services.Interfaces;
 
 namespace BiteTheBookie.Services
@@ -17,26 +20,52 @@ namespace BiteTheBookie.Services
             var schedule = await _http.GetFromJsonAsync<ScheduleResponse>(url);
             var teamUrl = "https://statsapi.mlb.com/api/v1/teams?sportIds=1";
             var teams = await _http.GetFromJsonAsync<TeamsResponse>(teamUrl);
-            var games = schedule?.Dates
-                .SelectMany(d => d.Games)
-                .Select(g => new Game
+
+            if (schedule?.Dates == null) return new List<Game>();
+
+            var games = schedule.Dates
+                .SelectMany(d => d.Games ?? Enumerable.Empty<GameDto>())
+                .Select(g =>
                 {
-                    AwayTeam = g.Teams.Away.Team.Name,
-                    AwayTeamId = g.Teams.Away.Team.Id,
-                    HomeTeam = g.Teams.Home.Team.Name,
-                    HomeTeamId = g.Teams.Home.Team.Id,
-                    AwayScore = g.Teams.Away.Score,
-                    HomeScore = g.Teams.Home.Score,
-                    GameTime = g.GameDate.ToLocalTime(),
-                    Status = g.Status.DetailedState,
-                    HomeTeamLogoUrl =  teams.Teams.Where(s=>s.Name == g.Teams.Home.Team.Name).Select(s => s.TeamCode).FirstOrDefault() != null ?
-                                  $"https://www.mlbstatic.com/team-logos/{teams.Teams.Where(s => s.Id == g.Teams.Home.Team.Id).Select(s => s.Id).FirstOrDefault()}.svg" : null,
-                    AwayTeamLogoUrl = teams.Teams.Where(s => s.Name == g.Teams.Away.Team.Name).Select(s => s.TeamCode).FirstOrDefault() != null ?
-                                  $"https://www.mlbstatic.com/team-logos/{teams.Teams.Where(s => s.Id == g.Teams.Away.Team.Id).Select(s => s.Id).FirstOrDefault()}.svg" : null
+                    var homeTeam = g?.Teams?.Home?.Team;
+                    var awayTeam = g?.Teams?.Away?.Team;
+                    var homeScore = g?.Teams?.Home?.Score;
+                    var awayScore = g?.Teams?.Away?.Score;
+                    var status = g?.Status?.DetailedState;
 
+                    var homeTeamInfo = teams?.Teams?.FirstOrDefault(s => s.Id == homeTeam?.Id);
+                    var awayTeamInfo = teams?.Teams?.FirstOrDefault(s => s.Id == awayTeam?.Id);
 
+                    string? homeLogo = null;
+                    string? awayLogo = null;
+
+                    if (homeTeamInfo is not null)
+                    {
+                        homeLogo = $"https://www.mlbstatic.com/team-logos/{homeTeamInfo.Id}.svg";
+                    }
+
+                    if (awayTeamInfo is not null)
+                    {
+                        awayLogo = $"https://www.mlbstatic.com/team-logos/{awayTeamInfo.Id}.svg";
+                    }
+
+                    var gameTime = g is not null ? g.GameDate.ToLocalTime() : DateTime.MinValue;
+
+                    return new Game
+                    {
+                        AwayTeam = awayTeam?.Name,
+                        AwayTeamId = awayTeam?.Id ?? 0,
+                        HomeTeam = homeTeam?.Name,
+                        HomeTeamId = homeTeam?.Id ?? 0,
+                        AwayScore = awayScore ?? 0,
+                        HomeScore = homeScore ?? 0,
+                        GameTime = gameTime,
+                        Status = status ?? string.Empty,
+                        HomeTeamLogoUrl = homeLogo,
+                        AwayTeamLogoUrl = awayLogo
+                    };
                 })
-                .ToList() ?? new List<Game>();
+                .ToList();
 
             return games;
         }
