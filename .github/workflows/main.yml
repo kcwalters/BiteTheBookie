@@ -1,4 +1,4 @@
-name: Deploy BiteBookieV3
+name: Deploy BiteTheBookie
 
 on:
   push:
