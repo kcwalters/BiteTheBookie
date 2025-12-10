@@ -12,7 +12,7 @@ class Program
             throw new InvalidOperationException("KEY_VAULT_URI is not set");
         }
 
-        var secretName = "SqlPassword"; // Name of the secret in Key Vault
+        var secretName = "bitebookie-server"; // Name of the secret in Key Vault
 
         var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
         KeyVaultSecret secret = await client.GetSecretAsync(secretName);
