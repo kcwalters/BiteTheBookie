@@ -40,9 +40,7 @@ jobs:
     - name: Azure Login
       uses: azure/login@v2
       with:
-        client-id: ${{ vars.bitethebookie_appv2_CLIENT_ID_80CE }}
-        tenant-id: ${{ vars.bitethebookie_appv2_TENANT_ID_80CE }}
-        subscription-id: ${{ vars.bitethebookie_appv2_SUBSCRIPTION_ID_80CE }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
     - name: Deploy to containerapp
       uses: azure/CLI@v2
       with:
