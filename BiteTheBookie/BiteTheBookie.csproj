@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-BiteBookie_v4-66e1b907-f70d-40f1-934c-487c590dd0c4</UserSecretsId>
+    <UserSecretsId>a158338e-7ee8-4c6d-9d7d-e0fd4c1892fd</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
