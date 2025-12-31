@@ -23,7 +23,10 @@ namespace BiteTheBookie.Services.Implementations
             => Task.FromResult(Enumerable.Empty<NewsItemViewModel>());
 
         public Task<NewsItemViewModel> GetNewsByIdAsync(int id)
-            => Task.FromResult<NewsItemViewModel?>(null);
+        {
+            // Return a default NewsItemViewModel instance instead of null to match the non-nullable return type
+            return Task.FromResult(new NewsItemViewModel());
+        }
     }
 
     public class BetSlipService : IBetSlipService

@@ -11,7 +11,7 @@ namespace BiteTheBookie.Controllers
             public BetSlipController(IBetSlipService service) => _service = service;
 
             public async Task<IActionResult> ViewSlip()
-                => PartialView("_BetSlipView", await _service.GetBetSlipAsync());
+                => PartialView("./partials/_BetSlipView", await _service.GetBetSlipAsync());
 
             [HttpPost]
             public async Task<IActionResult> Add(AddBetRequest req)
