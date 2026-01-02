@@ -1,5 +1,4 @@
 using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using BiteTheBookie.Data;
 using BiteTheBookie.Services;
 using BiteTheBookie.Services.Implementations;
