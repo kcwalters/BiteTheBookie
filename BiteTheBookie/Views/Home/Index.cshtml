@@ -31,6 +31,23 @@
         .image-modal__img { max-width:100%; max-height:95vh; border-radius:6px; box-shadow:0 8px 30px rgba(0,0,0,.5); background:#fff; }
         .image-modal__close { position:absolute; top:-12px; right:-12px; width:38px; height:38px; border-radius:50%; border:0; background:#222; color:#fff; cursor:pointer; }
         .clickable-image { cursor:zoom-in; }
+
+        /* Ensure header items share a single row */
+        .header-section .container { display: flex; align-items: center; gap: 24px; }
+        .header-section .site-logo { flex: 0 0 auto; }
+        .header-section .main-menu { margin-right: 0; flex: 1 1 auto; }
+        .header-section .main-menu ul { display: flex; justify-content: center; align-items: center; gap: 35px; }
+        .header-section .user-panel { flex: 0 0 auto; }
+
+        /* Remove floats that may break row alignment */
+        .header-section .site-logo,
+        .header-section .main-menu,
+        .header-section .header-btn { float: none; }
+
+        /* Mobile keeps existing behavior */
+        @@media only screen and (max-width: 767px) {
+            .header-section .container { display: block; }
+        }
     </style>
 
     <!--[if lt IE 9]>
@@ -51,14 +68,6 @@
             <a class="site-logo" href="#" style="width:300px" aria-label="Open site logo image">
                 <img id="siteLogo" class="clickable-image" src="img/slider-1.png" alt="">
             </a>
-            <div class="user-panel">
-                <partial name="_LoginPartial" />
-            </div>
-            <!-- responsive -->
-            <div class="nav-switch">
-                <i class="fa fa-bars"></i>
-            </div>
-            <!-- site menu -->
             <nav class="main-menu">
                 <ul>
                     <li><a href="index.html">Home</a></li>
@@ -68,6 +77,13 @@
                     <li><a href="contact.html">Contact</a></li>
                 </ul>
             </nav>
+            <div class="user-panel">
+                <partial name="_LoginPartial" />
+            </div>
+            <!-- responsive -->
+            <div class="nav-switch">
+                <i class="fa fa-bars"></i>
+            </div>
         </div>
     </header>
     <!-- Header section end -->
@@ -316,6 +332,12 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 
