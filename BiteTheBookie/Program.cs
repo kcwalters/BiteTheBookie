@@ -1,4 +1,5 @@
 using Azure.Identity;
+using BiteTheBookie;
 using BiteTheBookie.Data;
 using BiteTheBookie.Services;
 using BiteTheBookie.Services.Implementations;
@@ -52,6 +53,23 @@ builder.Services.AddHttpClient<IMlbService, MlbService>(c =>
 {
     c.BaseAddress = new Uri("https://statsapi.mlb.com/api/v1/");
 });
+
+// Bind options from configuration
+builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection("SportsTicker"));
+
+// Razor Pages
+builder.Services.AddRazorPages();
+
+// MVC controllers (needed for ScoresController)
+builder.Services.AddControllersWithViews();
+
+// Caching
+builder.Services.AddMemoryCache();
+
+// Register tickers services and typed HttpClients with resilience policies
+builder.Services.AddSportsTickers(builder.Configuration);
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

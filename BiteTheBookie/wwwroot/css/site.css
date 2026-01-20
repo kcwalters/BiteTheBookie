@@ -8,13 +8,23 @@
     --border-light: #E1E1E1;
     --font-base: 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
-
 body {
     margin: 0;
-    font-family: var(--font-base);
-    background-color: var(--neutral-grey);
-    color: var(--text-primary);
-    line-height: 1.6;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background-color: #0b1120;
+    color: #e5e7eb;
+}
+
+.site-header {
+    padding: 0.75rem 1rem;
+    background-color: #020617;
+    border-bottom: 1px solid #1f2937;
+}
+
+.site-title {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #f9fafb;
 }
 
 a {
@@ -124,4 +134,338 @@ footer {
     font-size: 0.875rem;
     color: var(--text-secondary);
     border-top: 1px solid var(--border-light);
+}
+/* Ticker shell */
+.nfl-ticker {
+    width: 100%;
+    overflow: hidden;
+    background-color: #111827;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #1f2933;
+    white-space: nowrap;
+}
+
+/* Container (non-scrolling) */
+.nfl-ticker-inner {
+    display: block; /* ensure inner wrapper does not scroll */
+}
+
+/* Horizontal scrolling container */
+.nfl-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem; /* spacing between box scores */
+    animation: ticker-scroll 40s linear infinite;
+}
+
+/* Box score item */
+.nfl-ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #1f2937; /* outline */
+    border-radius: 6px; /* rounded corners */
+    background-color: #0f172a; /* subtle panel bg */
+}
+
+    .nfl-ticker-item.live {
+        color: #f97316;
+    }
+
+    .nfl-ticker-item.final {
+        opacity: 0.85;
+    }
+
+/* Text bits */
+.ticker-status {
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.ticker-team {
+    font-weight: 500;
+    margin: 0 0.1rem;
+}
+
+.ticker-score {
+    font-weight: 700;
+    margin: 0 0.1rem;
+}
+
+.ticker-separator {
+    margin: 0 0.25rem;
+    opacity: 0.7;
+}
+
+/* Scroll animation keyframes */
+@keyframes ticker-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* Pause marquee on hover */
+.nfl-ticker:hover .nfl-ticker-track {
+    animation-play-state: paused;
+}
+
+
+/* Flags */
+.poss-arrow {
+    color: #fbbf24; /* gold */
+    font-weight: bold;
+    margin-right: 4px;
+}
+
+.redzone {
+    background-color: #dc2626;
+    color: white;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    margin-right: 4px;
+}
+
+/* Team logo sizing: enforce 40x40 square while keeping content visible */
+.nfl-ticker-item img.team-logo {
+    display: inline-block;
+    height: 40px !important;
+    width: 40px !important;
+    max-height: 40px !important;
+    max-width: 40px !important;
+    vertical-align: middle;
+    object-fit: contain; /* fit within the square */
+    border-radius: 4px; /* optional subtle rounding */
+}
+
+/* Optional: smaller logos on narrow screens */
+@media (max-width: 480px) {
+    .nfl-ticker-item img.team-logo {
+        height: 24px !important;
+        width: 24px !important;
+        max-height: 24px !important;
+        max-width: 24px !important;
+    }
+}
+
+/* Ticker logos: compact size, always wins */
+.nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo {
+    height: 18px !important; /* adjust to 16–20px as desired */
+    width: auto !important; /* keep aspect ratio */
+    max-height: 18px !important;
+    max-width: none !important;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+/* NBA ticker shell */
+.nba-ticker {
+    width: 100%;
+    overflow: hidden;
+    background-color: #111827;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #1f2933;
+    white-space: nowrap;
+}
+
+/* Container (non-scrolling) */
+.nba-ticker-inner {
+    display: block; /* ensure inner wrapper does not scroll */
+}
+
+/* Horizontal scrolling container */
+.nba-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem; /* spacing between box scores */
+    animation: ticker-scroll 40s linear infinite;
+}
+
+/* Box score item */
+.nba-ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #1f2937; /* outline */
+    border-radius: 6px; /* rounded corners */
+    background-color: #0f172a; /* subtle panel bg */
+}
+
+    .nba-ticker-item.live {
+        color: #f97316;
+    }
+
+    .nba-ticker-item.final {
+        opacity: 0.85;
+    }
+
+/* Text bits */
+.nba-ticker .ticker-status {
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.nba-ticker .team-name,
+.nba-ticker .ticker-team {
+    font-weight: 500;
+    margin: 0 0.1rem;
+}
+
+.nba-ticker .team-score,
+.nba-ticker .ticker-score {
+    font-weight: 700;
+    margin: 0 0.1rem;
+}
+
+.nba-ticker .vs,
+.nba-ticker .ticker-separator {
+    margin: 0 0.25rem;
+    opacity: 0.7;
+}
+
+/* Pause marquee on hover */
+.nba-ticker:hover .nba-ticker-track {
+    animation-play-state: paused;
+}
+
+/* Team logo sizing (match NFL compact override) */
+.nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo {
+    height: 18px !important;
+    width: auto !important;
+    max-height: 18px !important;
+    max-width: none !important;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+/* NHL ticker shell */
+.nhl-ticker {
+    width: 100%;
+    overflow: hidden;
+    background-color: #111827;
+    color: #f9fafb;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #1f2933;
+    white-space: nowrap;
+}
+
+/* Horizontal scrolling container */
+.nhl-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    will-change: transform;
+    animation: ticker-scroll 40s linear infinite;
+}
+
+/* Box score item */
+.nhl-ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #1f2937;
+    border-radius: 6px;
+    background-color: #0f172a;
+    color: #f9fafb;
+}
+
+    .nhl-ticker-item.live .game-status {
+        color: #f97316;
+    }
+
+    .nhl-ticker-item.final {
+        opacity: 0.85;
+    }
+
+.nhl-ticker .team-name {
+    font-weight: 600;
+}
+
+.nhl-ticker .team-score {
+    font-weight: 700;
+}
+
+.nhl-ticker .vs {
+    opacity: 0.7;
+    margin: 0 0.2rem;
+}
+
+.nhl-ticker .game-status {
+    margin-left: 0.35rem;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+/* Logos: compact size override */
+.nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
+    height: 18px !important;
+    width: auto !important;
+    max-height: 18px !important;
+    max-width: none !important;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+/* Pause on hover */
+.nhl-ticker:hover .nhl-ticker-track {
+    animation-play-state: paused;
+}
+
+/* Controls: league selector */
+#ticker-controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-right: 1rem;
+}
+
+    #ticker-controls label img.league-logo {
+        height: 20px;
+        width: auto;
+        object-fit: contain;
+        display: inline-block;
+    }
+
+/* Controls container inline layout */
+#ticker-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+    #ticker-controls img[id^="logo-"] {
+        height: 24px;
+        width: auto;
+        object-fit: contain;
+    }
+
+/* Layout: tickers row */
+.tickers-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+    .tickers-row > div {
+        flex: 0 0 auto;
+    }
+
+/* League logo sizing (fixed inline next to ticker) */
+.league-logo {
+    height: 75px;
+    width: auto;
+    object-fit: contain;
+}
+.main-content {
+    padding: 1.5rem;
 }
