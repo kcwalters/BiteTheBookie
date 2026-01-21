@@ -16,4 +16,4 @@ namespace BiteTheBookie.ViewComponents
             return View(games);
         }
     }
-}
+} 
