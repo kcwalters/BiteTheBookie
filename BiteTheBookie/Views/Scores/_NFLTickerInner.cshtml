@@ -1,0 +1,31 @@
+﻿@using BiteTheBookie.Models
+@model IReadOnlyList<NFLTickerView>
+<div class="nfl-header-row" style="display:flex; align-items:center; gap:0.75rem;">
+    <img src="~/img/nfl_ticker_logo.jpg" alt="NFL" class="league-logo" />
+    <div class="nfl-ticker" style="flex:1 1 auto;">
+        <div class="nfl-ticker-track">
+            @foreach (var g in Model)
+            {
+                <div class="nfl-ticker-item">
+                    @if (!string.IsNullOrWhiteSpace(g.AwayLogo))
+                    {
+                        <img class="team-logo" src="@g.AwayLogo" alt="@g.AwayTeam" decoding="async" />
+                    }
+                    <span class="team-name">@g.AwayTeam</span>
+                    <span class="team-score">@((g.AwayScore?.ToString()) ?? "-")</span>
+
+                    <span class="vs">vs</span>
+
+                    @if (!string.IsNullOrWhiteSpace(g.HomeLogo))
+                    {
+                        <img class="team-logo" src="@g.HomeLogo" alt="@g.HomeTeam" decoding="async" />
+                    }
+                    <span class="team-name">@g.HomeTeam</span>
+                    <span class="team-score">@((g.HomeScore?.ToString()) ?? "-")</span>
+
+                    <span class="game-date">@g.StatusText</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
