@@ -1,0 +1,34 @@
+@model FeaturedPickViewModel
+
+<div class="featured-pick card mb-5 p-4 shadow-lg">
+
+    <div class="row g-4">
+
+        <!-- IMAGE -->
+        <div class="col-md-7">
+            <img src="@Model.ImageUrl"
+                 alt="@Model.Title"
+                 class="img-fluid rounded featured-pick-image" />
+        </div>
+
+        <!-- TEXT CONTENT -->
+        <div class="col-md-5 d-flex flex-column justify-content-center">
+
+            <h2 class="featured-pick-title">@Model.Title</h2>
+
+            <p class="featured-pick-subtitle">@Model.Subtitle</p>
+
+            <p class="featured-pick-summary text-light">
+                @Model.PickSummary
+            </p>
+
+            <a href="@Model.ActionUrl"
+               class="btn btn-primary btn-lg mt-3">
+                View Expert Pick
+            </a>
+
+        </div>
+
+    </div>
+
+</div>

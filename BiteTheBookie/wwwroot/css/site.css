@@ -436,8 +436,7 @@ footer {
     }
 
 /* Controls container inline layout */
-#ticker-controls {
-    display: flex;
+#ticker-controls {  
     align-items: center;
     gap: 0.5rem;
 }
@@ -449,8 +448,7 @@ footer {
     }
 
 /* Layout: tickers row */
-.tickers-row {
-    display: flex;
+.tickers-row {  
     flex-wrap: nowrap;
     align-items: flex-start;
     gap: 1rem;
