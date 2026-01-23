@@ -124,7 +124,7 @@
             <a href="#">MLB</a>
             <a href="#" data-league="nhl">NHL</a>
             <a href="#">NCAAF</a>
-            <a href="#">NCAAB</a>
+            <a href="#" data-league="ncaa">NCAAB</a>
             <a href="#">Soccer</a>
             <a href="#">Golf</a>
             <a href="#">MMA</a>
@@ -143,7 +143,7 @@
         (function () {
             const container = document.querySelector('.league-menu .container');
             if (!container) return;
-            const leagues = ['nfl', 'nba', 'nhl'];
+            const leagues = ['nfl', 'nba', 'nhl', 'ncaa'];
             function showTicker(league) {
                 leagues.forEach(l => {
                     const el = document.getElementById(l + '-ticker');

@@ -81,6 +81,9 @@
             <div id="nhl-ticker">
                 @await Component.InvokeAsync("NHLTicker")
             </div>
+            <div id="ncaa-ticker">
+                @await Component.InvokeAsync("NCAATicker")
+            </div>
         </div>
     </div>
     <!-- Image modal (lightbox) -->
@@ -333,18 +336,20 @@
 
             function normalize(v) {
                 v = (v || '').toString().toLowerCase();
-                return (v === 'nfl' || v === 'nba' || v === 'nhl') ? v : DEFAULT;
+                return (v === 'nfl' || v === 'nba' || v === 'nhl' || v === 'ncaa') ? v : DEFAULT;
             }
 
             function showTicker(league) {
                 const nfl = document.getElementById('nfl-ticker');
                 const nba = document.getElementById('nba-ticker');
                 const nhl = document.getElementById('nhl-ticker');
-                if (!nfl || !nba || !nhl) return;
+                const ncaa = document.getElementById('ncaa-ticker');
+                if (!nfl || !nba || !nhl || !ncaa) return;
 
                 nfl.style.display = league === 'nfl' ? '' : 'none';
                 nba.style.display = league === 'nba' ? '' : 'none';
                 nhl.style.display = league === 'nhl' ? '' : 'none';
+                ncaa.style.display = league === 'ncaa' ? '' : 'none';
             }
 
             function applySelection(league) {
