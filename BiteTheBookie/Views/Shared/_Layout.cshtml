@@ -1,28 +1,169 @@
-﻿<!DOCTYPE html>
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BiteBookie</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - BiteTheBookie</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        /* --- GLOBAL --- */
+        body {
+            background-color: #f5f6f7;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* --- TOP HEADER BAR --- */
+        .top-header {
+            background: #0b0c0d;
+            color: #fff;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+
+            .top-header a {
+                color: #fff;
+                text-decoration: none;
+                margin-right: 20px;
+                opacity: 0.85;
+            }
+
+                .top-header a:hover {
+                    opacity: 1;
+                }
+
+        /* --- MAIN NAV --- */
+        .main-nav {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+            .main-nav .navbar-brand {
+                font-weight: 700;
+                font-size: 26px;
+                color: #0b0c0d !important;
+            }
+
+            .main-nav .nav-link {
+                color: #0b0c0d !important;
+                font-weight: 600;
+                padding: 14px 18px !important;
+            }
+
+                .main-nav .nav-link:hover {
+                    color: #007bff !important;
+                }
+
+        /* --- LEAGUE MENU --- */
+        .league-menu {
+            background: #0b0c0d;
+            padding: 6px 0;
+        }
+
+            .league-menu a {
+                color: #fff;
+                text-decoration: none;
+                margin-right: 22px;
+                font-size: 15px;
+                font-weight: 600;
+                opacity: 0.85;
+            }
+
+                .league-menu a:hover {
+                    opacity: 1;
+                }
+
+        /* --- CONTENT --- */
+        .content-wrapper {
+            padding: 25px 0;
+        }
+    </style>
 </head>
+
 <body>
-    <div>
 
-        @RenderBody()
-
+    <!-- TOP HEADER (Login, Subscribe, etc.) -->
+    <div class="top-header">
+        <div class="container d-flex justify-content-end">
+            <a href="#">Subscribe</a>
+            <a href="#">Login</a>
+        </div>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <!-- MAIN NAV -->
+    <nav class="navbar navbar-expand-lg main-nav sticky-top">
         <div class="container">
-            &copy; 2025 - BiteBookie - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <a class="navbar-brand" href="/">BiteTheBookie</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#">Picks</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Odds</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Projections</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Tools</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">More</a></li>
+                </ul>
+            </div>
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </nav>
+
+    <!-- LEAGUE MENU (NFL, NBA, MLB, etc.) -->
+    <div class="league-menu">
+        <div class="container d-flex">
+            <a href="#" data-league="nfl">NFL</a>
+            <a href="#" data-league="nba">NBA</a>
+            <a href="#">MLB</a>
+            <a href="#" data-league="nhl">NHL</a>
+            <a href="#">NCAAF</a>
+            <a href="#">NCAAB</a>
+            <a href="#">Soccer</a>
+            <a href="#">Golf</a>
+            <a href="#">MMA</a>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="container content-wrapper">
+        @RenderBody()
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // League menu → show corresponding ticker on pages that have tickers
+        (function () {
+            const container = document.querySelector('.league-menu .container');
+            if (!container) return;
+            const leagues = ['nfl', 'nba', 'nhl'];
+            function showTicker(league) {
+                leagues.forEach(l => {
+                    const el = document.getElementById(l + '-ticker');
+                    if (el) el.style.display = (l === league) ? '' : 'none';
+                    const cb = document.getElementById('cb-' + l);
+                    if (cb) cb.checked = (l === league);
+                });
+                const details = document.getElementById('ticker-controls-details');
+                if (details) details.open = true;
+            }
+            container.addEventListener('click', function (e) {
+                const link = e.target.closest('a[data-league]');
+                if (!link) return;
+                e.preventDefault();
+                const league = link.getAttribute('data-league');
+                if (league) showTicker(league);
+            });
+        })();
+    </script>
+
+    @RenderSection("Scripts", required: false)
 </body>
 </html>

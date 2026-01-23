@@ -498,7 +498,6 @@ ol {
 
 
 
-
 /*----------------------
   Recent Game Section
 ------------------------*/
@@ -1043,15 +1042,6 @@ ol {
   }
 }
 
-
-
-
-
-
-
-
-
-
 /*-----------------
   Review page
 --------------------*/
@@ -1072,10 +1062,6 @@ ol {
 .review-section.review-dark {
   background-position: center top;
 } 
-
-
-
-
 
 /*-----------------
   Community page
@@ -1155,9 +1141,6 @@ ol {
     font-weight: 500;
   }
 }
-
-
-
 
 /*-----------------
   Contact page
@@ -1451,4 +1434,53 @@ ol {
   .page-info-section .pi-content h2 {
     font-size: 40px;
   }
+}
+
+/* Ticker controls placement */
+#ticker-controls {
+  /* Keep it flush left and above ticker logo/row */
+  display: block;
+  max-width: 100%;
+  margin: 8px 0 12px 0; /* space above/below */
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #d6dee7;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+
+  /* ensure it aligns left regardless of surrounding flex */
+  float: left;
+  clear: both;
+}
+
+/* Keep tickers row from pulling it to the side */
+.tickers-row {
+  clear: both;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 15px;
+  padding-right: 15px;
+
+  /* Never exceed the theme container width */
+  max-width: 1176px;
+}
+
+/* Match Bootstrap container widths */
+@media (min-width: 576px) {
+  .tickers-row { max-width: 540px; }
+}
+@media (min-width: 768px) {
+  .tickers-row { max-width: 720px; }
+}
+@media (min-width: 992px) {
+  .tickers-row { max-width: 960px; }
+}
+@media (min-width: 1200px) {
+  .tickers-row { max-width: 1176px; }
+}
+
+/* If the project uses Bootstrap 5 xxl containers, keep it clamped */
+@media (min-width: 1400px) {
+  .tickers-row { max-width: 1176px; }
 }
