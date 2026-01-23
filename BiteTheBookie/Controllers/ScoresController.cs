@@ -8,12 +8,18 @@ namespace BiteTheBookie.Controllers
         private readonly INFLScoresService _nFlScoresService;
         private readonly INBAScoresService _nBAScoresService;
         private readonly INHLScoresService _nHLScoresService;
+        private readonly INCAAScoresService _nCAAScoresService;
 
-        public ScoresController(INFLScoresService nFLScoresService, INBAScoresService nBAScoresService, INHLScoresService nHLSScoresService)
+        public ScoresController(
+            INFLScoresService nFLScoresService,
+            INBAScoresService nBAScoresService,
+            INHLScoresService nHLSScoresService,
+            INCAAScoresService nCAAScoresService)
         {
             _nFlScoresService = nFLScoresService;
             _nBAScoresService = nBAScoresService;
             _nHLScoresService = nHLSScoresService;
+            _nCAAScoresService = nCAAScoresService;
         }
 
         [HttpGet]
@@ -35,6 +41,13 @@ namespace BiteTheBookie.Controllers
         {
             var games = await _nHLScoresService.GetGamesAsync();
             return PartialView("_NHLTickerInner", games);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> NCAATickerInner()
+        {
+            var games = await _nCAAScoresService.GetGamesAsync();
+            return PartialView("_NCAATickerInner", games);
         }
     }
 }

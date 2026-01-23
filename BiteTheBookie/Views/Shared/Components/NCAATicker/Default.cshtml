@@ -1,0 +1,7 @@
+@model IReadOnlyList<BiteTheBookie.Models.NCAATickerView>
+<div id="ncaa-ticker" class="nba-ticker">
+    <div class="nba-ticker-inner">
+        @await Html.PartialAsync("~/Views/Scores/_NCAATickerInner.cshtml", Model)
+    </div>
+</div>
+<link href="~/css/site.css" rel="stylesheet" />
