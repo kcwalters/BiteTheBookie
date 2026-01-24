@@ -5,7 +5,7 @@ namespace BiteTheBookie.Services.Implementations
     public class NewsService : INewsService
     {
         public Task<IEnumerable<NewsItemViewModel>> GetLatestNewsAsync(int count = 5)
-            => Task.FromResult(Enumerable.Empty<NewsItemViewModel>());
+            =>  Task.FromResult(Enumerable.Empty<NewsItemViewModel>());
 
         public Task<NewsItemViewModel> GetNewsByIdAsync(int id)
         {
