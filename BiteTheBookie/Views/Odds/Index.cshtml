@@ -1,0 +1,27 @@
+@using BiteTheBookie.ViewModels
+@model HomePageViewModel
+
+@{
+    ViewData["Title"] = "Odds";
+}
+
+<div class="container py-3">
+    <h1 class="mb-3">Sports Odds</h1>
+
+    <div class="row g-3">
+        <div class="col-12">
+            <h2 class="h5">Hero Odds</h2>
+            @await Html.PartialAsync("~/Views/Shared/Partials/_HeroTicker.cshtml", Model.HeroOdds)
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <h2 class="h5">Live Odds</h2>
+            @await Html.PartialAsync("~/Views/Shared/Partials/_LiveOddsWidget.cshtml", Model.LiveOdds)
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <h2 class="h5">League Odds</h2>
+            @await Html.PartialAsync("~/Views/Shared/Partials/_LeagueOddsTabs.cshtml", Model.LeagueOdds)
+        </div>
+    </div>
+</div>

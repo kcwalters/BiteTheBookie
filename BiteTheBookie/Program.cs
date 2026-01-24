@@ -39,15 +39,13 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 
 builder.Services.AddControllersWithViews();
 
+// Odds API options + client
+builder.Services.Configure<OddsApiOptions>(builder.Configuration.GetSection("OddsApi"));
+builder.Services.AddHttpClient<TheOddsApiClient>();
+
 builder.Services.AddScoped<IOddsService, OddsService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IBetSlipService, BetSlipService>();
-
-// Typed HTTP client for Odds API
-builder.Services.AddHttpClient<IOddsService, OddsService>(c =>
-{
-    c.BaseAddress = new Uri("https://api.your-odds-provider.com/");
-});
 
 builder.Services.AddHttpClient<IMlbService, MlbService>(c =>
 {
