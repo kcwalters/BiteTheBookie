@@ -37,17 +37,16 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+// MVC
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddScoped<IOddsService, OddsService>();
-builder.Services.AddScoped<INewsService, NewsService>();
-builder.Services.AddScoped<IBetSlipService, BetSlipService>();
+// ESPN news (RSS)
+builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
+builder.Services.AddHttpClient<EspnRssNewsService>();
 
-// Typed HTTP client for Odds API
-builder.Services.AddHttpClient<IOddsService, OddsService>(c =>
-{
-    c.BaseAddress = new Uri("https://api.your-odds-provider.com/");
-});
+builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
+builder.Services.AddScoped<IOddsService, OddsService>();
+builder.Services.AddScoped<IBetSlipService, BetSlipService>();
 
 builder.Services.AddHttpClient<IMlbService, MlbService>(c =>
 {
@@ -59,9 +58,6 @@ builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection
 
 // Razor Pages
 builder.Services.AddRazorPages();
-
-// MVC controllers (needed for ScoresController)
-builder.Services.AddControllersWithViews();
 
 // Caching
 builder.Services.AddMemoryCache();
