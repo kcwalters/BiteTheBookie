@@ -1,0 +1,10 @@
+﻿@using BiteTheBookie.ViewModels
+@model IEnumerable<NewsItemViewModel>
+@{
+    ViewData["Title"] = "News";
+}
+
+<div class="container py-3">
+    <h1 class="mb-3">News</h1>
+    @await Html.PartialAsync("~/Views/Shared/Partials/_NewsFeed.cshtml", Model)
+</div>

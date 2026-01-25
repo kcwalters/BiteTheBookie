@@ -40,6 +40,14 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
 // MVC
 builder.Services.AddControllersWithViews();
 
+// Odds API options + client
+builder.Services.Configure<OddsApiOptions>(builder.Configuration.GetSection("OddsApi"));
+builder.Services.AddHttpClient<TheOddsApiClient>();
+
+builder.Services.AddScoped<IOddsService, OddsService>();
+builder.Services.AddScoped<INewsService, NewsService>();
+builder.Services.AddScoped<IBetSlipService, BetSlipService>();
+
 // ESPN news (RSS)
 builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
 builder.Services.AddHttpClient<EspnRssNewsService>();

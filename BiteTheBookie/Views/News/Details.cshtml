@@ -1,1 +1,28 @@
+﻿@using BiteTheBookie.ViewModels
+@model NewsItemViewModel
+@{
+    ViewData["Title"] = Model?.Title ?? "News";
+}
+
+<div class="container py-3">
+    <a class="btn btn-link px-0" asp-controller="News" asp-action="Index">Back to News</a>
+
+    <div class="card">
+        @if (!string.IsNullOrWhiteSpace(Model?.ImageUrl))
+        {
+            <img class="card-img-top" src="@Model.ImageUrl" alt="@Model.Title" />
+        }
+        <div class="card-body">
+            <h1 class="h4 card-title">@Model.Title</h1>
+            @if (!string.IsNullOrWhiteSpace(Model?.Excerpt))
+            {
+                <p class="card-text text-secondary">@Model.Excerpt</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model?.ArticleUrl))
+            {
+                <a class="btn btn-primary" href="@Model.ArticleUrl" target="_blank" rel="noopener noreferrer">Read full article</a>
+            }
+        </div>
+    </div>
+</div>
 @await Component.InvokeAsync("EspnNewsFeed", new { count = 10 })

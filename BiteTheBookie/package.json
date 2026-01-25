@@ -1,0 +1,11 @@
+{
+  "name": "bitethebookie-assets",
+  "private": true,
+  "devDependencies": {
+    "sass": "^1.70.0"
+  },
+  "scripts": {
+    "sass:build": "sass wwwroot/sass/styles.scss:wwwroot/css/styles.css",
+    "sass:watch": "sass --watch wwwroot/sass/styles.scss:wwwroot/css/styles.css"
+  }
+}
