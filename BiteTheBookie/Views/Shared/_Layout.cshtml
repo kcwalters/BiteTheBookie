@@ -14,7 +14,7 @@
     <style>
         /* --- GLOBAL --- */
         body {
-            background-color: #f5f6f7;
+            background-color: #fff;
             font-family: 'Segoe UI', sans-serif;
         }
 
@@ -22,8 +22,9 @@
         .top-header {
             background: #0b0c0d;
             color: #fff;
-            padding: 6px 0;
-            font-size: 14px;
+            padding: 2px 0;
+            font-size: 12px;
+            line-height: 1.2;
         }
 
             .top-header a {
@@ -41,6 +42,8 @@
         .main-nav {
             background: #ffffff;
             border-bottom: 1px solid #e5e5e5;
+            padding-top: 4px;
+            padding-bottom: 4px;
         }
 
             .main-nav .navbar-brand {
@@ -82,6 +85,14 @@
         .content-wrapper {
             padding: 25px 0;
         }
+
+        .brand-logo {
+            border-radius: 12px;
+            overflow: hidden;
+            height: 150px;
+            width: auto;
+            display: block;
+        }
     </style>
 </head>
 
@@ -98,8 +109,7 @@
     <!-- MAIN NAV -->
     <nav class="navbar navbar-expand-lg main-nav sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="/">BiteTheBookie</a>
-
+            <img src="~/img/slider-1.png" class="brand-logo" alt="BiteTheBookie" />
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                 <span class="navbar-toggler-icon"></span>
             </button>

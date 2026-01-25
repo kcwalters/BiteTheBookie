@@ -11,13 +11,13 @@
 body {
     margin: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background-color: #0b1120;
+    background-color: #fff;
     color: #e5e7eb;
 }
 
 .site-header {
     padding: 0.75rem 1rem;
-    background-color: #020617;
+    background-color: red;
     border-bottom: 1px solid #1f2937;
 }
 
