@@ -45,7 +45,11 @@ builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("Es
 builder.Services.AddHttpClient<EspnRssNewsService>();
 
 builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
-builder.Services.AddScoped<IOddsService, OddsService>();
+
+// Odds
+builder.Services.AddHttpClient<OddsService>();
+builder.Services.AddScoped<IOddsService>(sp => sp.GetRequiredService<OddsService>());
+
 builder.Services.AddScoped<IBetSlipService, BetSlipService>();
 
 builder.Services.AddHttpClient<IMlbService, MlbService>(c =>

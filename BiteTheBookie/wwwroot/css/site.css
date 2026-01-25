@@ -141,7 +141,7 @@ footer {
     overflow: hidden;
     background-color: #111827;
     color: #f9fafb;
-    font-size: 0.875rem;
+    font-size: 1.05rem;
     border-bottom: 1px solid #1f2933;
     white-space: nowrap;
 }
@@ -244,24 +244,22 @@ footer {
     border-radius: 4px; /* optional subtle rounding */
 }
 
-/* Optional: smaller logos on narrow screens */
-@media (max-width: 480px) {
-    .nfl-ticker-item img.team-logo {
-        height: 24px !important;
-        width: 24px !important;
-        max-height: 24px !important;
-        max-width: 24px !important;
-    }
-}
-
-/* Ticker logos: compact size, always wins */
+/* Ticker logos: larger size, always wins */
 .nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo {
-    height: 18px !important; /* adjust to 16–20px as desired */
-    width: auto !important; /* keep aspect ratio */
-    max-height: 18px !important;
+    height: 28px !important;
+    width: auto !important;
+    max-height: 28px !important;
     max-width: none !important;
     object-fit: contain;
     vertical-align: middle;
+}
+
+/* Optional: smaller logos on narrow screens */
+@media (max-width: 480px) {
+    .nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo {
+        height: 22px !important;
+        max-height: 22px !important;
+    }
 }
 
 /* NBA ticker shell */
@@ -270,7 +268,7 @@ footer {
     overflow: hidden;
     background-color: #111827;
     color: #f9fafb;
-    font-size: 0.875rem;
+    font-size: 1.05rem;
     border-bottom: 1px solid #1f2933;
     white-space: nowrap;
 }
@@ -338,12 +336,20 @@ footer {
 
 /* Team logo sizing (match NFL compact override) */
 .nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo {
-    height: 18px !important;
+    height: 28px !important;
     width: auto !important;
-    max-height: 18px !important;
+    max-height: 28px !important;
     max-width: none !important;
     object-fit: contain;
     vertical-align: middle;
+}
+
+/* Optional: smaller logos on narrow screens */
+@media (max-width: 480px) {
+    .nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo {
+        height: 22px !important;
+        max-height: 22px !important;
+    }
 }
 
 /* NHL ticker shell */
@@ -352,7 +358,7 @@ footer {
     overflow: hidden;
     background-color: #111827;
     color: #f9fafb;
-    font-size: 0.875rem;
+    font-size: 1.05rem;
     border-bottom: 1px solid #1f2933;
     white-space: nowrap;
 }
@@ -405,19 +411,22 @@ footer {
     opacity: 0.85;
 }
 
-/* Logos: compact size override */
+/* Logos: larger size override */
 .nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
-    height: 18px !important;
+    height: 28px !important;
     width: auto !important;
-    max-height: 18px !important;
+    max-height: 28px !important;
     max-width: none !important;
     object-fit: contain;
     vertical-align: middle;
 }
 
-/* Pause on hover */
-.nhl-ticker:hover .nhl-ticker-track {
-    animation-play-state: paused;
+/* Optional: smaller logos on narrow screens */
+@media (max-width: 480px) {
+    .nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
+        height: 22px !important;
+        max-height: 22px !important;
+    }
 }
 
 /* Controls: league selector */
@@ -460,10 +469,38 @@ footer {
 
 /* League logo sizing (fixed inline next to ticker) */
 .league-logo {
-    height: 75px;
+    height: 120px;
     width: auto;
     object-fit: contain;
 }
 .main-content {
     padding: 1.5rem;
+}
+
+/* --- TICKER SIZE OVERRIDES (LARGER) --- */
+.nfl-ticker,
+.nba-ticker,
+.nhl-ticker {
+  font-size: 1.2rem;
+}
+
+.nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo,
+.nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo,
+.nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
+  height: 36px !important;
+  width: auto !important;
+  max-height: 36px !important;
+}
+
+@media (max-width: 480px) {
+  .nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo,
+  .nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo,
+  .nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
+    height: 28px !important;
+    max-height: 28px !important;
+  }
+}
+
+.league-logo {
+  height: 120px;
 }
