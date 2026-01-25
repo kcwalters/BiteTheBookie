@@ -74,6 +74,10 @@
 
                     <!-- Header -->
                     @await Component.InvokeAsync("EspnNewsFeed", new { count = 100 })
+
+                    <div class="mt-3">
+                        @await Html.PartialAsync("~/Views/Shared/Partials/_LiveOddsWidget.cshtml", Model.LiveOdds)
+                    </div>
                     <!-- Table -->
 
 

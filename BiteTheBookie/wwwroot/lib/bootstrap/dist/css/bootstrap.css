@@ -4996,6 +4996,8 @@ textarea.form-control-lg {
   padding-left: 0;
   margin-bottom: 0;
   border-radius: 0.25rem;
+  color:#000;
+  font-weight:bolder;
 }
 
 .list-group-numbered {
