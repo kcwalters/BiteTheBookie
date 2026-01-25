@@ -1,8 +1,8 @@
 ﻿@using BiteTheBookie.Models
 @model IReadOnlyList<NFLTickerView>
-<div class="nfl-header-row" style="display:flex; align-items:center; gap:0.75rem;">
+<div class="nfl-header-row">
     <img src="img/NFL_Ticker_Logo.jpg" alt="NFL" class="league-logo" />
-    <div class="nfl-ticker" style="flex:1 1 auto;">
+    <div class="nfl-ticker">
         <div class="nfl-ticker-track">
             @foreach (var g in Model)
             {
