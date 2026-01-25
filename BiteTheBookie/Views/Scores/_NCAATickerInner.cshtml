@@ -1,8 +1,8 @@
 @using BiteTheBookie.Models
 @model IReadOnlyList<NCAATickerView>
-<div class="nba-header-row" style="display:flex; align-items:center; gap:0.75rem;">
+<div class="nba-header-row">
     <img src="img/NCAAMens_med.png" alt="NCAAB" class="league-logo" />
-    <div class="nba-ticker" style="flex:1 1 auto;"> 
+    <div class="nba-ticker">
         <div class="nba-ticker-track">
             @foreach (var g in Model)
             {

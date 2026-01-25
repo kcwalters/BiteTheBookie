@@ -755,648 +755,197 @@ ol {
   color: #aeaeae;
 }
 
-/*------------------
-  Other Pages
---------------------
-====================*/
-.page-info-section {
-  height: 499px;
-  position: relative;
-}
-.page-info-section .pi-content {
-  position: absolute;
-  width: 100%;
-  bottom: 65px;
-  left: 0;
-  z-index: 2;
-}
-.page-info-section .pi-content h2 {
-  font-size: 60px;
-  margin-bottom: 25px;
-  font-weight: 400;
+/* ---------------------------------
+   Inline CSS migrations
+----------------------------------*/
+/* Ticker header rows (was inline flex styles) */
+.nfl-header-row,
+.nba-header-row,
+.nhl-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.site-pagination {
-  padding-top: 50px;
+/* The ticker container in the header rows (was inline flex:1 1 auto) */
+.nfl-header-row .nfl-ticker,
+.nba-header-row .nba-ticker,
+.nhl-header-row .nhl-ticker {
+  flex: 1 1 auto;
 }
-.site-pagination a, .site-pagination span {
-  width: 33px;
-  height: 33px;
-  font-size: 14px;
-  font-weight: 500;
-  padding-top: 7px;
-  text-align: center;
-  display: inline-block;
+
+/* Home page: ticker + news spacing */
+.home-hero-container {
+  margin-top: 30px;
+}
+
+/* Home page: news container panel (was inline style on .latest-news-section wrapper) */
+.news-panel {
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #fff;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Lightbox / image modal (was inline <style> block) */
+.image-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.image-modal.open {
+  display: flex;
+}
+
+.image-modal__content {
+  position: relative;
+  max-width: 1100px;
+  width: 100%;
+  max-height: 95vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-modal__img {
+  max-width: 100%;
+  max-height: 95vh;
+  border-radius: 6px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  background: #fff;
+}
+
+.image-modal__close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  color: #131313;
-  margin-right: 10px;
-}
-.site-pagination .active {
-  background: #fff;
-}
-.site-pagination.sp-style-2 a, .site-pagination.sp-style-2 span {
-  background: #e5e5e5;
-}
-.site-pagination.sp-style-2 .active {
-  background: #fff;
-}
-
-.widget-item {
-  margin-bottom: 73px;
-}
-.widget-item:last-child {
-  margin-bottom: 0;
-}
-.widget-item .widget-title {
-  margin-bottom: 40px;
-}
-.widget-item .latest-blog .lb-item .lb-content p,
-.widget-item .top-comment .tc-item .tc-content p {
-  color: #131313;
-}
-.widget-item .latest-blog .lb-item .lb-content .lb-author {
-  color: #737373;
-}
-.widget-item .top-comment .tc-item .tc-content {
-  padding-right: 20px;
-}
-.widget-item .review-item {
-  background: #eff2f5;
-}
-.widget-item .review-item .review-text {
-  padding: 0 35px 20px;
-}
-
-.search-widget {
-  position: relative;
-}
-.search-widget input {
-  width: 100%;
-  height: 41px;
-  border: 1px solid #d6dee7;
-  padding-left: 22px;
-  padding-right: 45px;
-  font-size: 12px;
-}
-.search-widget button {
-  position: absolute;
-  right: 0;
-  top: 0;
-  height: 100%;
-  background: none;
-  border: none;
-  padding-right: 15px;
-  color: #878787;
+  border: 0;
+  background: #222;
+  color: #fff;
   cursor: pointer;
 }
 
-/*-----------------
-  Categories page
---------------------*/
-.recent-game-page .recent-game-item {
-  margin-bottom: 42px;
+.clickable-image {
+  cursor: zoom-in;
 }
 
-/*-----------------
-  Single blog page
---------------------*/
-.single-blog-page .blog-thumb {
-  height: 424px;
-  padding-top: 24px;
-  padding-left: 29px;
-  margin-bottom: 40px;
-  position: relative;
+/* Header row alignment helper rules from Index.cshtml */
+.header-section .container {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
 }
-.single-blog-page .blog-thumb .rgi-extra {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 70px;
+.header-section .site-logo {
+  flex: 0 0 auto;
+  float: none;
 }
-.single-blog-page .blog-thumb .rgi-extra .rgi-star, .single-blog-page .blog-thumb .rgi-extra .rgi-heart {
-  height: 35px;
-  width: 35px;
-  float: left;
-  display: block;
-  padding: 6px 8px 0;
+.header-section .main-menu {
+  margin-right: 0;
+  flex: 1 1 auto;
+  float: none;
 }
-.single-blog-page .blog-thumb .rgi-extra .rgi-star {
-  background: #fff;
+.header-section .main-menu ul {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 35px;
 }
-.single-blog-page .blog-thumb .rgi-extra .rgi-heart {
-  background: #ff205f;
+.header-section .user-panel {
+  flex: 0 0 auto;
 }
-.single-blog-page .blog-content h3 {
-  margin-bottom: 10px;
+.header-section .header-btn {
+  float: none;
 }
-.single-blog-page .blog-content .meta-comment {
-  display: block;
-  font-size: 12px;
-  color: #737373;
-  margin-bottom: 25px;
-}
-.single-blog-page .blog-content p {
-  margin-bottom: 25px;
+.header-section #ticker-controls {
+  flex: 1 0 100%;
+  order: 10;
 }
 
-.comment-warp {
-  padding-top: 50px;
-}
-
-.comment-title {
-  margin-bottom: 45px;
-}
-
-.comment-list {
-  list-style: none;
-}
-.comment-list li {
-  margin-bottom: 40px;
-  overflow: hidden;
-}
-.comment-list .comment .comment-avator {
-  width: 63px;
-  height: 63px;
-  border-radius: 50%;
-  float: left;
-}
-.comment-list .comment .comment-content {
-  padding-left: 100px;
-}
-.comment-list .comment .comment-content h5 {
-  font-size: 12px;
-  color: #131313;
-  font-weight: 400;
-  margin-bottom: 10px;
-}
-.comment-list .comment .comment-content h5 span {
-  color: #fff;
-  padding-left: 18px;
-}
-.comment-list .comment .comment-content p {
-  font-size: 12px;
-  margin-bottom: 5px;
-}
-.comment-list .comment .comment-content .reply {
-  font-size: 12px;
-  color: #ff1d55;
-}
-
-.comment-form-warp {
-  padding-top: 30px;
-}
-
-.comment-form input[type=text],
-.comment-form input[type=email],
-.comment-form textarea {
-  width: 100%;
-  height: 41px;
-  border: 1px solid #d6dee7;
-  padding-left: 22px;
-  padding-right: 45px;
-  font-size: 12px;
-  margin-bottom: 24px;
-}
-.comment-form textarea {
-  height: 243px;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  margin-bottom: 38px;
-}
-
-/*-----------------
-  Review page
---------------------*/
-.review-page .review-item {
-  margin-bottom: 63px;
-}
-.review-page .review-item .review-text h4 {
-  margin-bottom: 10px;
-}
-
-.review-dark .review-item .review-text p {
-  color: #b5b5b5;
-}
-
-.review-section.review-dark {
-  background-position: center top;
-}
-
-/*-----------------
-  Community page
---------------------*/
-.community-page .site-pagination {
-  padding-top: 62px;
-}
-
-.community-warp {
-  max-width: 1367px;
-  margin: 0 auto;
-  background: rgba(0, 0, 0, 0.28);
-}
-
-.community-post-list {
-  list-style: none;
-}
-.community-post-list li {
-  padding: 33px 55px 65px;
-  margin-bottom: 21px;
-  overflow: hidden;
-  border: 1px solid #878787;
-  background: #1f2225;
-}
-.community-post-list .community-post .author-avator {
-  width: 63px;
-  height: 63px;
-  border-radius: 50%;
-  float: left;
-}
-.community-post-list .community-post .post-content {
-  padding-left: 100px;
-}
-.community-post-list .community-post .post-content h5 {
-  font-size: 16px;
-  color: #ff205f;
-  font-weight: 400;
-  margin-bottom: 10px;
-}
-.community-post-list .community-post .post-content h5 span {
-  color: #7a7a7a;
-  padding-left: 18px;
-}
-.community-post-list .community-post .post-content p {
-  color: #fff;
-  margin-bottom: 5px;
-}
-.community-post-list .community-post .post-content .post-date {
-  font-size: 12px;
-  color: #fff;
-  margin-bottom: 18px;
-}
-.community-post-list .attachment-file {
-  padding-top: 60px;
-  max-width: 435px;
-}
-
-.community-top-title {
-  margin-bottom: 50px;
-}
-
-.community-filter {
-  margin-bottom: 80px;
-}
-.community-filter label {
-  font-size: 18px;
-  color: #1f2225;
-  font-weight: 500;
-  padding-right: 10px;
-}
-.community-filter select {
-  width: 201px;
-  height: 42px;
-  font-size: 14px;
-  padding: 0 18px;
-  color: #1f2225;
-  font-weight: 500;
-}
-
-/*-----------------
-  Contact page
---------------------*/
-.map {
-  height: 515px;
-  background: #ddd;
-  margin-bottom: 90px;
-}
-
-.contact-info-list {
-  padding-top: 55px;
-  padding-bottom: 20px;
-  list-style: none;
-}
-.contact-info-list li {
-  margin-bottom: 30px;
-}
-.contact-info-list .cf-left {
-  width: 95px;
-  float: left;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-}
-.contact-info-list .cf-right {
-  color: #878787;
-  font-size: 15px;
-  padding-left: 100px;
-}
-
-.social-links a {
-  color: #474747;
-  font-size: 16px;
-  margin-left: 10px;
-  margin-right: 20px;
-}
-
-/*------------------
-  Responsive
----------------------*/
-@media (min-width: 1200px) {
-  .container {
-    max-width: 1176px;
-  }
-}
-/* Medium screen : 992px. */
-@media only screen and (min-width: 992px) and (max-width: 1199px) {
-  .main-menu {
-    margin-right: 90px;
-  }
-  .hero-slider .owl-dots {
-    max-width: 930px;
-  }
-  .review-section {
-    background-position: right 10% top;
-  }
-  .review-item .review-cover {
-    height: 280px;
-  }
-  .latest-blog .lb-item .lb-thumb {
-    width: 55px;
-    height: 55px;
-  }
-  .latest-blog .lb-item .lb-content {
-    padding-left: 67px;
-  }
-  .top-comment .tc-item .tc-content {
-    padding-left: 95px;
-  }
-  .footer-top-bg {
-    max-width: 370px;
-  }
-  .page-info-section .pi-content h2 {
-    font-size: 50px;
-  }
-}
-/* Tablet :768px. */
-@media only screen and (min-width: 768px) and (max-width: 991px) {
-  .site-logo {
-    max-width: 130px;
-  }
-  .main-menu {
-    margin-right: 25px;
-  }
-  .main-menu ul li a {
-    margin-left: 15px;
-  }
-  .user-panel {
-    padding: 8px 15px;
-  }
-  .hero-slider .hs-text h2 {
-    font-size: 50px;
-  }
-  .hero-slider .owl-dots {
-    max-width: 690px;
-  }
-  .recent-game-item {
-    margin-bottom: 42px;
-  }
-  .tournament-item .ti-thumb {
-    width: 100%;
-    height: 230px;
-    float: none;
-  }
-  .tournament-item .ti-text {
-    padding-left: 0;
-    padding-top: 20px;
-  }
-  .review-section {
-    background-position: left top;
-  }
-  .review-item {
-    margin-bottom: 63px;
-  }
-  .footer-logo {
-    margin-bottom: 50px;
-  }
-  .latest-blog .lb-item .lb-thumb {
-    width: 80px;
-    height: 80px;
-  }
-  .latest-blog .lb-item .lb-content {
-    padding-left: 95px;
-  }
-  .footer-top-bg {
-    display: none;
-  }
-}
-/* Large Mobile :480px. */
 @media only screen and (max-width: 767px) {
-  .header-section {
-    overflow: visible;
-    padding: 23px 0;
-  }
   .header-section .container {
-    position: relative;
-  }
-  .site-logo {
-    float: none;
-    padding-top: 0;
-  }
-  .main-menu {
-    display: none;
-    position: absolute;
-    top: calc(100% + 24px);
-    left: 0;
-    width: 100%;
-    background: #ffffff;
-    z-index: 999;
-  }
-  .main-menu ul li {
     display: block;
-    border-bottom: 1px solid #ececec;
-  }
-  .main-menu ul li a {
-    margin-left: 0;
-    color: #131313;
-    padding: 13px 26px;
-  }
-  .nav-switch {
-    color: #fff;
-    display: block;
-    float: right;
-    cursor: pointer;
-    font-size: 25px;
-  }
-  .user-panel {
-    display: none;
-  }
-  .hero-slider .hs-item {
-    height: 700px;
-  }
-  .hero-slider .hs-text h2 {
-    font-size: 36px;
-  }
-  .hero-slider .owl-dots {
-    max-width: 510px;
-  }
-  .ln-title {
-    padding-right: 30px;
-  }
-  .feature-item {
-    margin-bottom: 30px;
-  }
-  .recent-game-item {
-    margin-bottom: 42px;
-  }
-  .review-section {
-    background-position: left top;
-  }
-  .review-item {
-    margin-bottom: 63px;
-  }
-  .footer-logo {
-    margin-bottom: 50px;
-  }
-  .footer-top-bg {
-    display: none;
-  }
-  .footer-section {
-    padding: 30px 0 20px;
-    text-align: center;
-  }
-  .footer-menu li:first-child a {
-    margin-left: 0;
-  }
-  .footer-menu, .copyright {
-    float: none;
-  }
-  .copyright {
-    padding-top: 15px;
-  }
-  .community-post-list li {
-    padding: 30px 25px 30px;
-  }
-  .page-info-section .pi-content h2 {
-    font-size: 50px;
   }
 }
-/* Medium Mobile :480px. */
-@media only screen and (max-width: 576px) {
-  .hero-slider .owl-dots {
-    padding: 0 15px;
-  }
-  .feature-section {
-    padding-left: 15px;
-    padding-right: 15px;
-  }
-  .community-post-list .community-post .author-avator {
-    float: none;
-  }
-  .community-post-list .community-post .post-content {
-    padding-left: 0;
-    padding-top: 30px;
-  }
+/* ---------------------------------
+   Layout styles (moved from Views/Shared/_Layout.cshtml)
+----------------------------------*/
+body {
+  background-color: #fff;
+  font-family: "Segoe UI", sans-serif;
 }
-/* Small Mobile :320px. */
-@media only screen and (max-width: 479px) {
-  .hero-slider .hs-item {
-    height: auto;
-    padding: 150px 0;
-  }
-  .ln-title {
-    display: none;
-  }
-  .news-ticker {
-    width: 100%;
-  }
-  .tournament-item .ti-thumb {
-    width: 100%;
-    height: 230px;
-    float: none;
-  }
-  .tournament-item .ti-text {
-    padding-left: 0;
-    padding-top: 20px;
-  }
-  .latest-blog .lb-item .lb-thumb {
-    width: 55px;
-    height: 55px;
-  }
-  .latest-blog .lb-item .lb-content {
-    padding-left: 67px;
-  }
-  .top-comment .tc-item .tc-content {
-    padding-left: 85px;
-  }
-  .site-btn {
-    padding: 11px 30px;
-    min-width: 145px;
-  }
-  .comment-list .comment .comment-avator {
-    float: none;
-  }
-  .comment-list .comment .comment-content {
-    padding-left: 0;
-    padding-top: 20px;
-  }
-  .footer-widget {
-    padding: 40px 15px 7px;
-  }
-  .page-info-section .pi-content h2 {
-    font-size: 40px;
-  }
+
+.top-header {
+  background: #0b0c0d;
+  color: #fff;
+  padding: 2px 0;
+  font-size: 12px;
+  line-height: 1.2;
 }
-/* Ticker controls placement */
-#ticker-controls {
-  /* Keep it flush left and above ticker logo/row */
-  display: block;
-  max-width: 100%;
-  margin: 8px 0 12px 0; /* space above/below */
-  padding: 8px 12px;
+.top-header a {
+  color: #fff;
+  text-decoration: none;
+  margin-right: 20px;
+  opacity: 0.85;
+}
+.top-header a:hover {
+  opacity: 1;
+}
+
+.main-nav {
   background: #ffffff;
-  border: 1px solid #d6dee7;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  /* ensure it aligns left regardless of surrounding flex */
-  float: left;
-  clear: both;
+  border-bottom: 1px solid #e5e5e5;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.main-nav .navbar-brand {
+  font-weight: 700;
+  font-size: 26px;
+  color: #0b0c0d !important;
+}
+.main-nav .nav-link {
+  color: #0b0c0d !important;
+  font-weight: 600;
+  padding: 14px 18px !important;
+}
+.main-nav .nav-link:hover {
+  color: #007bff !important;
 }
 
-/* Keep tickers row from pulling it to the side */
-.tickers-row {
-  clear: both;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 15px;
-  padding-right: 15px;
-  /* Never exceed the theme container width */
-  max-width: 1176px;
+.league-menu {
+  background: #0b0c0d;
+  padding: 6px 0;
+}
+.league-menu a {
+  color: #fff;
+  text-decoration: none;
+  margin-right: 22px;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.league-menu a:hover {
+  opacity: 1;
 }
 
-/* Match Bootstrap container widths */
-@media (min-width: 576px) {
-  .tickers-row {
-    max-width: 540px;
-  }
+.content-wrapper {
+  padding: 25px 0;
 }
-@media (min-width: 768px) {
-  .tickers-row {
-    max-width: 720px;
-  }
-}
-@media (min-width: 992px) {
-  .tickers-row {
-    max-width: 960px;
-  }
-}
-@media (min-width: 1200px) {
-  .tickers-row {
-    max-width: 1176px;
-  }
-}
-/* If the project uses Bootstrap 5 xxl containers, keep it clamped */
-@media (min-width: 1400px) {
-  .tickers-row {
-    max-width: 1176px;
-  }
+
+.brand-logo {
+  border-radius: 12px;
+  overflow: hidden;
+  height: 150px;
+  width: auto;
+  display: block;
 }

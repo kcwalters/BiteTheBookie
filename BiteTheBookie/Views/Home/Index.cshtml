@@ -24,34 +24,6 @@
     <link rel="stylesheet" href="css/home-styles.css" />
 
     <!-- Simple lightbox styles for logo popup -->
-    <style>
-        .image-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:2000; align-items:center; justify-content:center; padding:20px; }
-        .image-modal.open { display:flex; }
-        .image-modal__content { position:relative; max-width:1100px; width:100%; max-height:95vh; display:flex; align-items:center; justify-content:center; }
-        .image-modal__img { max-width:100%; max-height:95vh; border-radius:6px; box-shadow:0 8px 30px rgba(0,0,0,.5); background:#fff; }
-        .image-modal__close { position:absolute; top:-12px; right:-12px; width:38px; height:38px; border-radius:50%; border:0; background:#222; color:#fff; cursor:pointer; }
-        .clickable-image { cursor:zoom-in; }
-
-        /* Ensure header items share a single row */
-        .header-section .container { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-        .header-section .site-logo { flex: 0 0 auto; }
-        .header-section .main-menu { margin-right: 0; flex: 1 1 auto; }
-        .header-section .main-menu ul { display: flex; justify-content: center; align-items: center; gap: 35px; }
-        .header-section .user-panel { flex: 0 0 auto; }
-
-        /* Ticker controls occupy full width at the bottom of header */
-        .header-section #ticker-controls { flex: 1 0 100%; order: 10; }
-
-        /* Remove floats that may break row alignment */
-        .header-section .site-logo,
-        .header-section .main-menu,
-        .header-section .header-btn { float: none; }
-
-        /* Mobile keeps existing behavior */
-        @@media only screen and (max-width: 767px) {
-            .header-section .container { display: block; }
-        }
-    </style>
 
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -95,19 +67,15 @@
     </div>
 
     <!-- Hero section -->
-    <div class="container" style="margin-top:30px;">
+    <div class="container home-hero-container">
         <div class="row">
             <div class="col-12">
-                <div class="latest-news-section"
-                     style="border-radius:12px; overflow:hidden; background-color:white; padding:12px; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+                <div class="latest-news-section news-panel">
 
                     <!-- Header -->
-                    <div style="text-align:center; font-size:11pt; color:#fff; background-color:#333; padding:6px; border-radius:8px 8px 0 0;">
-                        BiteTheBookie Insider
-                    </div>
-
+                    @await Component.InvokeAsync("EspnNewsFeed", new { count = 100 })
                     <!-- Table -->
-                  
+
 
                 </div>
             </div>
@@ -115,24 +83,7 @@
     </div>
     <!-- Hero section end -->
     <!-- Recent game section  -->
-    <section class="feat">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 col-md-18">
-                    <div class="recent-game-item">
-                        <div class="container">
-                            <div class="card" role="region" aria-label="NFL Week 13 Picks">
-                                <div class="card-header">
-                                    <div class="title">NFL Week 13 Picks & Predicted Scores</div>
-                                    <div class="subtitle">Professional slate overview • Lines shown as team and spread pick</div>
-                                </div>           
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
     <!-- Recent game section end -->
     <section class="review-section spad set-bg">
         <div class="container">
@@ -393,13 +344,3 @@
 
 
 <script src="~/js/tickers.js"></script>
-
-
-
-
-
-
-
-
-
-

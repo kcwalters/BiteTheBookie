@@ -10,79 +10,7 @@
     <title>@ViewData["Title"] - BiteTheBookie</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-    <style>
-        /* --- GLOBAL --- */
-        body {
-            background-color: #f5f6f7;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        /* --- TOP HEADER BAR --- */
-        .top-header {
-            background: #0b0c0d;
-            color: #fff;
-            padding: 6px 0;
-            font-size: 14px;
-        }
-
-            .top-header a {
-                color: #fff;
-                text-decoration: none;
-                margin-right: 20px;
-                opacity: 0.85;
-            }
-
-                .top-header a:hover {
-                    opacity: 1;
-                }
-
-        /* --- MAIN NAV --- */
-        .main-nav {
-            background: #ffffff;
-            border-bottom: 1px solid #e5e5e5;
-        }
-
-            .main-nav .navbar-brand {
-                font-weight: 700;
-                font-size: 26px;
-                color: #0b0c0d !important;
-            }
-
-            .main-nav .nav-link {
-                color: #0b0c0d !important;
-                font-weight: 600;
-                padding: 14px 18px !important;
-            }
-
-                .main-nav .nav-link:hover {
-                    color: #007bff !important;
-                }
-
-        /* --- LEAGUE MENU --- */
-        .league-menu {
-            background: #0b0c0d;
-            padding: 6px 0;
-        }
-
-            .league-menu a {
-                color: #fff;
-                text-decoration: none;
-                margin-right: 22px;
-                font-size: 15px;
-                font-weight: 600;
-                opacity: 0.85;
-            }
-
-                .league-menu a:hover {
-                    opacity: 1;
-                }
-
-        /* --- CONTENT --- */
-        .content-wrapper {
-            padding: 25px 0;
-        }
-    </style>
+    <link href="~/css/style.css" rel="stylesheet" asp-append-version="true" />
 </head>
 
 <body>
@@ -98,8 +26,7 @@
     <!-- MAIN NAV -->
     <nav class="navbar navbar-expand-lg main-nav sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="/">BiteTheBookie</a>
-
+            <img src="~/img/slider-1.png" class="brand-logo" alt="BiteTheBookie" />
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
