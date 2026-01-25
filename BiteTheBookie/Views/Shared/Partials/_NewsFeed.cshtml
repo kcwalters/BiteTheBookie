@@ -1,14 +1,22 @@
 ﻿@using BiteTheBookie.ViewModels;
 @model IEnumerable<NewsItemViewModel>
 <div class="list-group">
+    @{ var i = 0; }
     @foreach (var item in Model)
     {
-        <a class="list-group-item list-group-item-action mb-2" href="@item.ArticleUrl">
+        i++;
+        <a class="list-group-item list-group-item-action mb-2" target="_blank" href="@item.ArticleUrl" style="padding:14px 16px;">
             <div class="d-flex">
-                <img src="@item.ImageUrl" class="me-3" style="width:80px;height:60px;" />
+                <div class="me-3" style="min-width:28px; text-align:right; color:#111; font-weight:800; font-size:12pt; line-height:1; padding-top:2px;">
+                    @i.
+                </div>
+                @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                {
+                    <img src="@item.ImageUrl" class="me-3" style="width:96px;height:72px;object-fit:cover;border-radius:6px;" />
+                }
                 <div>
-                    <h5>@item.Title</h5>
-                    <p class="mb-0 text-secondary">@item.Excerpt</p>
+                    <h5 style="color:#111; font-size:13pt; font-weight:700;">@item.Title</h5>
+                    <p class="mb-0" style="color:#222; font-size:11pt; line-height:1.4;">@item.Excerpt</p>
                 </div>
             </div>
         </a>

@@ -101,11 +101,8 @@
                 <div class="latest-news-section"
                      style="border-radius:12px; overflow:hidden; background-color:white; padding:12px; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
 
-                    <!-- Header -->
-                    <div style="text-align:center; font-size:11pt; color:#fff; background-color:#333; padding:6px; border-radius:8px 8px 0 0;">
-                        BiteTheBookie Insider
-                    </div>
-
+                    <!-- Header -->                  
+                    @await Component.InvokeAsync("EspnNewsFeed", new { count = 100 })
                     <!-- Table -->
                   
 
@@ -115,24 +112,7 @@
     </div>
     <!-- Hero section end -->
     <!-- Recent game section  -->
-    <section class="feat">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 col-md-18">
-                    <div class="recent-game-item">
-                        <div class="container">
-                            <div class="card" role="region" aria-label="NFL Week 13 Picks">
-                                <div class="card-header">
-                                    <div class="title">NFL Week 13 Picks & Predicted Scores</div>
-                                    <div class="subtitle">Professional slate overview • Lines shown as team and spread pick</div>
-                                </div>           
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
     <!-- Recent game section end -->
     <section class="review-section spad set-bg">
         <div class="container">
