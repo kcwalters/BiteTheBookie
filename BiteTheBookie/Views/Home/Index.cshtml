@@ -1,350 +1,55 @@
 ﻿@model BiteTheBookie.ViewModels.HomePageViewModel
 
+@{
+    ViewData["Title"] = "Home";
+}
 
-<!DOCTYPE html>
-<html lang="zxx">
-<head>
-    <title>Game Warrior Template</title>
-    <meta charset="UTF-8">
-    <meta name="description" content="Game Warrior Template">
-    <meta name="keywords" content="warrior, game, creative, html">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Favicon -->
-    <link href="img/favicon.ico" rel="shortcut icon" />
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,400i,500,500i,700,700i" rel="stylesheet">
-
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/font-awesome.min.css" />
-    <link rel="stylesheet" href="css/owl.carousel.css" />
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/animate.css" />
-    <link rel="stylesheet" href="css/home-styles.css" />
-
-    <!-- Simple lightbox styles for logo popup -->
-
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-</head>
-<body>
-    <!-- Page Preloder -->
-    <div id="preloder">
-        <div class="loader"></div>
-    </div>
-
-    <!-- Header section -->
-    <header class="header-section">
-        <div class="container">
-         </div>
-    </header>
-    <!-- Header section end -->
-    <div class="container">
-        <div class="tickers-row">
-            <div id="nfl-ticker">
-                @await Component.InvokeAsync("NFLTicker")
-            </div>
-            <div id="nba-ticker">
-                @await Component.InvokeAsync("NBATicker")
-            </div>
-            <div id="nhl-ticker">
-                @await Component.InvokeAsync("NHLTicker")
-            </div>
-            <div id="ncaa-ticker">
-                @await Component.InvokeAsync("NCAATicker")
-            </div>
+<div class="container">
+    <div class="tickers-row">
+        <div id="nfl-ticker">
+            @await Component.InvokeAsync("NFLTicker")
+        </div>
+        <div id="nba-ticker">
+            @await Component.InvokeAsync("NBATicker")
+        </div>
+        <div id="nhl-ticker">
+            @await Component.InvokeAsync("NHLTicker")
+        </div>
+        <div id="ncaa-ticker">
+            @await Component.InvokeAsync("NCAATicker")
         </div>
     </div>
-    <!-- Image modal (lightbox) -->
-    <div id="imageModal" class="image-modal" role="dialog" aria-modal="true" tabindex="-1">
-        <div class="image-modal__content">
-            <button type="button" class="image-modal__close" id="imageModalClose" aria-label="Close image">&times;</button>
-            <img id="imageModalImg" class="image-modal__img" src="" alt="">
+</div>
+
+<div class="container py-3">
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+            <div class="content-card">
+                <div class="ratio ratio-16x9 rounded overflow-hidden">
+                    <iframe
+                        src="https://www.youtube.com/embed/zsZPOtv9nvk"
+                        title="YouTube video player"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="content-card">
+                <div class="section-header">More Stories &amp; Analysis</div>
+                @await Component.InvokeAsync("EspnNewsFeed", new { count = 20 })
+            </div>
+        </div>
+
+        <div class="col-12">
+           
         </div>
     </div>
+</div>
 
-    <!-- Hero section -->
-    <div class="container home-hero-container">
-        <div class="row">
-            <div class="col-12">
-                <div class="latest-news-section news-panel">
-
-                    <!-- Header -->
-                    @await Component.InvokeAsync("EspnNewsFeed", new { count = 100 })
-
-                    <div class="mt-3">
-                        @await Html.PartialAsync("~/Views/Shared/Partials/_LiveOddsWidget.cshtml", Model.LiveOdds)
-                    </div>
-                    <!-- Table -->
-
-
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Hero section end -->
-    <!-- Recent game section  -->
-
-    <!-- Recent game section end -->
-    <section class="review-section spad set-bg">
-        <div class="container">
-            <div class="section-title">
-                <h2>Recent Reviews</h2>
-            </div>
-            <div class="row">
-                <div class="col-lg-3 col-md-6">
-                    <div class="review-item">
-                        <div class="review-cover set-bg" data-setbg="img/genericNFLPlayer.png">
-                            <div class="score yellow">9.3</div>
-                        </div>
-                        <div class="review-text">
-                            <h5>NFL Game Recap</h5>
-                            <p>Key plays and takeaways from this weekend's top matchups.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="review-item">
-                        <div class="review-cover set-bg" data-setbg="img/NBAPlayer-image.png">
-                            <div class="score purple">9.5</div>
-                        </div>
-                        <div class="review-text">
-                            <h5>Pro Basketball Spotlight</h5>
-                            <p>Standout performances and advanced stats from the league.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="review-item">
-                        <div class="review-cover set-bg" data-setbg="img/MLBPlayer-imageW.png">
-                            <div class="score green">9.1</div>
-                        </div>
-                        <div class="review-text">
-                            <h5>Baseball Highlights</h5>
-                            <p>Top innings, pitching duels, and clutch hitting moments.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <div class="review-item">
-                        <div class="review-cover set-bg" data-setbg="img/USASoccerPlayer-image.png">
-                            <div class="score pink">9.7</div>
-                        </div>
-                        <div class="review-text">
-                            <h5>Soccer Weekend Wrap</h5>
-                            <p>Goals, tactics, and storylines from major domestic and international matches.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- Tournaments section -->
-    <section class="tournaments-section spad">
-        
-    </section>
-    <!-- Tournaments section bg -->
-    <!-- Review section -->
-  
-    <!-- Review section end -->
-    <!-- Footer top section -->
-    <section class="footer-top-section">
-        <div class="container">
-            <div class="footer-top-bg">
-                <img src="img/footer-top-bg.png" alt="">
-            </div>
-            <div class="row">
-                <div class="col-lg-4">
-                    <div class="footer-logo text-white">
-                        <img src="img/footer-logo.png" alt="">
-                        <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum dolor sit ame.</p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="footer-widget mb-5 mb-md-0">
-                        <h4 class="fw-title">Latest Posts</h4>
-                        <div class="latest-blog">
-                            <div class="lb-item">
-                                <div class="lb-thumb set-bg" data-setbg="img/latest-blog/1.jpg"></div>
-                                <div class="lb-content">
-                                    <div class="lb-date">June 21, 2018</div>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum </p>
-                                    <a href="#" class="lb-author">By Admin</a>
-                                </div>
-                            </div>
-                            <div class="lb-item">
-                                <div class="lb-thumb set-bg" data-setbg="img/latest-blog/2.jpg"></div>
-                                <div class="lb-content">
-                                    <div class="lb-date">June 21, 2018</div>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum </p>
-                                    <a href="#" class="lb-author">By Admin</a>
-                                </div>
-                            </div>
-                            <div class="lb-item">
-                                <div class="lb-thumb set-bg" data-setbg="img/latest-blog/3.jpg"></div>
-                                <div class="lb-content">
-                                    <div class="lb-date">June 21, 2018</div>
-                                    <p>Lorem ipsum dolor sit amet, consectetur adipisc ing ipsum </p>
-                                    <a href="#" class="lb-author">By Admin</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="footer-widget">
-                        <h4 class="fw-title">Top Comments</h4>
-                        <div class="top-comment">
-                            <div class="tc-item">
-                                <div class="tc-thumb set-bg" data-setbg="img/authors/1.jpg"></div>
-                                <div class="tc-content">
-                                    <p><a href="#">James Smith</a> <span>on</span>  Lorem ipsum dolor sit amet, co</p>
-                                    <div class="tc-date">June 21, 2018</div>
-                                </div>
-                            </div>
-                            <div class="tc-item">
-                                <div class="tc-thumb set-bg" data-setbg="img/authors/2.jpg"></div>
-                                <div class="tc-content">
-                                    <p><a href="#">James Smith</a> <span>on</span>  Lorem ipsum dolor sit amet, co</p>
-                                    <div class="tc-date">June 21, 2018</div>
-                                </div>
-                            </div>
-                            <div class="tc-item">
-                                <div class="tc-thumb set-bg" data-setbg="img/authors/3.jpg"></div>
-                                <div class="tc-content">
-                                    <p><a href="#">James Smith</a> <span>on</span>  Lorem ipsum dolor sit amet, co</p>
-                                    <div class="tc-date">June 21, 2018</div>
-                                </div>
-                            </div>
-                            <div class="tc-item">
-                                <div class="tc-thumb set-bg" data-setbg="img/authors/4.jpg"></div>
-                                <div class="tc-content">
-                                    <p><a href="#">James Smith</a> <span>on</span>  Lorem ipsum dolor sit amet, co</p>
-                                    <div class="tc-date">June 21, 2018</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- Footer top section end -->
-    <!-- Footer section -->
-    <footer class="footer-section">
-        <div class="container">
-            <ul class="footer-menu">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="review.html">Games</a></li>
-                <li><a href="categories.html">Blog</a></li>
-                <li><a href="community.html">Forums</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-            <p class="copyright">
-                <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-                Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="fa fa-heart-o" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
-                <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-            </p>
-        </div>
-    </footer>
-    <!-- Footer section end -->
-    <!--====== Javascripts & Jquery ======-->
-    <script src="js/jquery-3.2.1.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/owl.carousel.min.js"></script>
-    <script src="js/jquery.marquee.min.js"></script>
-
-    <!-- Lightbox logic for logo -->
-    <script>
-        (function () {
-            const trigger = document.getElementById('siteLogo');
-            const modal = document.getElementById('imageModal');
-            const modalImg = document.getElementById('imageModalImg');
-            const closeBtn = document.getElementById('imageModalClose');
-            if (!trigger || !modal || !modalImg || !closeBtn) return;
-            function openModal(src, alt) {
-                modalImg.src = src; modalImg.alt = alt || '';
-                modal.classList.add('open');
-            }
-            function closeModal() {
-                modal.classList.remove('open'); modalImg.src='';
-            }
-            trigger.addEventListener('click', function (e) {
-                e.preventDefault();
-                openModal(trigger.getAttribute('src') || 'img/slider-1.png', trigger.getAttribute('alt') || '');
-            });
-            closeBtn.addEventListener('click', function(){ closeModal(); });
-            modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
-            document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
-        })();
-    </script>
-
-    <script src="js/main.js"></script>
-
-    <script>
-        (function () {
-            const STORAGE_KEY = 'selectedSportsTicker';
-            const DEFAULT = 'nba';
-
-            function normalize(v) {
-                v = (v || '').toString().toLowerCase();
-                return (v === 'nfl' || v === 'nba' || v === 'nhl' || v === 'ncaa') ? v : DEFAULT;
-            }
-
-            function showTicker(league) {
-                const nfl = document.getElementById('nfl-ticker');
-                const nba = document.getElementById('nba-ticker');
-                const nhl = document.getElementById('nhl-ticker');
-                const ncaa = document.getElementById('ncaa-ticker');
-                if (!nfl || !nba || !nhl || !ncaa) return;
-
-                nfl.style.display = league === 'nfl' ? '' : 'none';
-                nba.style.display = league === 'nba' ? '' : 'none';
-                nhl.style.display = league === 'nhl' ? '' : 'none';
-                ncaa.style.display = league === 'ncaa' ? '' : 'none';
-            }
-
-            function applySelection(league) {
-                const normalized = normalize(league);
-                showTicker(normalized);
-                try { localStorage.setItem(STORAGE_KEY, normalized); } catch { }
-            }
-
-            document.addEventListener('DOMContentLoaded', function () {
-                let saved = DEFAULT;
-                try { saved = normalize(localStorage.getItem(STORAGE_KEY)); } catch { saved = DEFAULT; }
-                showTicker(saved);
-
-                // Persist selection when ticker UI triggers fire.
-                // `tickers.js` commonly dispatches a CustomEvent when a sport is selected.
-                // If your implementation uses different events, add them here.
-                document.addEventListener('sportsTickerSelected', function (e) {
-                    applySelection(e?.detail?.league);
-                });
-
-                document.addEventListener('ticker:select', function (e) {
-                    applySelection(e?.detail?.league);
-                });
-
-                document.addEventListener('tickerSelected', function (e) {
-                    applySelection(e?.detail?.league);
-                });
-
-                // Fallback: if there are clickable controls with data-league="nba|nfl|nhl"
-                document.querySelectorAll('[data-league]')
-                    .forEach(function (el) {
-                        el.addEventListener('click', function () {
-                            applySelection(el.getAttribute('data-league'));
-                        });
-                    });
-            });
-        })();
-    </script>
-</body>
-</html>
-
-
-<script src="~/js/tickers.js"></script>
+@section Scripts {
+    <script src="~/js/home-page.js" asp-append-version="true"></script>
+}

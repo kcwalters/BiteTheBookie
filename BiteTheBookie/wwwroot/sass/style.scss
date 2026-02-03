@@ -952,45 +952,45 @@ body {
 }
 
 .top-header {
-  background: #0b0c0d;
-  color: #fff;
-  padding: 2px 0;
-  font-size: 12px;
-  line-height: 1.2;
-
-  a {
+    background: var(--primary-blue);
     color: #fff;
-    text-decoration: none;
-    margin-right: 20px;
-    opacity: 0.85;
+    padding: 2px 0;
+    font-size: 12px;
+    line-height: 1.2;
 
-    &:hover {
-      opacity: 1;
+    a {
+        color: #fff;
+        text-decoration: none;
+        margin-right: 20px;
+        opacity: 0.85;
+
+        &:hover {
+            opacity: 1;
+        }
     }
-  }
 }
 
 .main-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e5e5;
-  padding-top: 4px;
-  padding-bottom: 4px;
+    background: var(--primary-blue);
+    border-bottom: 1px solid #e5e5e5;
+    padding-top: 4px;
+    padding-bottom: 4px;
 
-  .navbar-brand {
-    font-weight: 700;
-    font-size: 26px;
-    color: #0b0c0d !important;
-  }
-
-  .nav-link {
-    color: #0b0c0d !important;
-    font-weight: 600;
-    padding: 14px 18px !important;
-
-    &:hover {
-      color: #007bff !important;
+    .navbar-brand {
+        font-weight: 700;
+        font-size: 26px;
+        color: #0b0c0d !important;
     }
-  }
+
+    .nav-link {
+        color: #fff !important;
+        font-weight: 600;
+        padding: 14px 18px !important;
+
+        &:hover {
+            color: #007bff !important;
+        }
+    }
 }
 
 .league-menu {
@@ -1021,4 +1021,17 @@ body {
   height: 150px;
   width: auto;
   display: block;
+}
+
+/* Menu links */
+.league-menu {
+  a {
+    color: #fff;
+    font-weight: 700;
+    opacity: 1;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }

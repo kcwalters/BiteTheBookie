@@ -1,17 +1,47 @@
-@using BiteTheBookie.ViewModels
-@model HomePageViewModel
+@model BiteTheBookie.ViewModels.HomePageViewModel
 
 @{
-    ViewData["Title"] = "Odds";
+    ViewData["Title"] = "Home";
 }
 
+<div class="container">
+    <div class="tickers-row">
+        <div id="nfl-ticker">
+            @await Component.InvokeAsync("NFLTicker")
+        </div>
+        <div id="nba-ticker">
+            @await Component.InvokeAsync("NBATicker")
+        </div>
+        <div id="nhl-ticker">
+            @await Component.InvokeAsync("NHLTicker")
+        </div>
+        <div id="ncaa-ticker">
+            @await Component.InvokeAsync("NCAATicker")
+        </div>
+    </div>
+</div>
+
 <div class="container py-3">
-    <h1 class="mb-3">DraftKings Odds</h1>
-        <div class="col-12 col-lg-6">           
-            @await Html.PartialAsync("~/Views/Shared/Partials/_LiveOddsWidget.cshtml", Model.LiveOdds)
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+            <div class="content-card">                
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            
         </div>
 
-        <div class="col-12 col-lg-6">
-           
-        </div>  
+        <div class="col-12">
+            <div class="content-card">
+                <div class="section-header">Live Odds</div>
+                <div class="ratio ratio-16x9 rounded overflow-hidden">
+                    @await Html.PartialAsync("~/Views/Shared/Partials/_LiveOddsWidget.cshtml", Model.LiveOdds)
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/home-page.js" asp-append-version="true"></script>
+}
