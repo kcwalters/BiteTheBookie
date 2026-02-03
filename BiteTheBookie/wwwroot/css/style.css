@@ -91,6 +91,11 @@ ol {
   font-size: 36px;
 }
 
+.section-header {
+  background-color: var(--primary-blue);
+  padding: 10px;
+}
+
 .set-bg {
   background-repeat: no-repeat;
   background-size: cover;
@@ -948,4 +953,64 @@ body {
   height: 150px;
   width: auto;
   display: block;
+}
+
+/* Menu links */
+.league-menu a {
+  color: #fff;
+  font-weight: 700;
+  opacity: 1;
+}
+.league-menu a:hover {
+  opacity: 1;
+}
+
+/* ---------------------------------
+   ESPN News Feed component (migrated from inline styles)
+----------------------------------*/
+.espn-news-feed {
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #fff;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.1px;
+}
+
+.espn-news-feed__title {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #fff;
+  background-color: var(--primary-blue);
+  padding: 10px 12px;
+  border-radius: 8px 8px 0 0;
+  letter-spacing: 0.6px;
+}
+
+.espn-news-feed__content {
+  color: #111;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+.espn-news-feed__content a {
+  color: #0b5ed7;
+  text-decoration: none;
+}
+.espn-news-feed__content a:hover {
+  text-decoration: underline;
+}
+.espn-news-feed__content .news-item-title,
+.espn-news-feed__content h4,
+.espn-news-feed__content h5 {
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #111;
 }
