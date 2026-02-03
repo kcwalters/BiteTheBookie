@@ -1,12 +1,12 @@
 @using BiteTheBookie.Models
 @model IReadOnlyList<NBATickerView>
-<div class="nba-header-row">
-    <img src="img/NBALogoSmall.png" alt="NBA" class="league-logo" />
-    <div class="nba-ticker">
-        <div class="nba-ticker-track">
+<div class="nfl-header-row">
+    <img src="img/NBALogoSmall.png" alt="nfl" class="league-logo" />
+    <div class="nfl-ticker">
+        <div class="nfl-ticker-track">
             @foreach (var g in Model)
             {
-                <div class="nba-ticker-item">
+                <div class="nfl-ticker-item">
                     @if (!string.IsNullOrWhiteSpace(g.AwayLogo))
                     {
                         <img class="team-logo" src="@g.AwayLogo" alt="@g.AwayTeam" decoding="async" />

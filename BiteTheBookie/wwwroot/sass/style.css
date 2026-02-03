@@ -886,7 +886,7 @@ body {
 }
 
 .top-header {
-  background: #0b0c0d;
+  background: var(--primary-blue);
   color: #fff;
   padding: 2px 0;
   font-size: 12px;
@@ -903,7 +903,7 @@ body {
 }
 
 .main-nav {
-  background: #ffffff;
+  background: var(--primary-blue);
   border-bottom: 1px solid #e5e5e5;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -914,7 +914,7 @@ body {
   color: #0b0c0d !important;
 }
 .main-nav .nav-link {
-  color: #0b0c0d !important;
+  color: #fff !important;
   font-weight: 600;
   padding: 14px 18px !important;
 }
@@ -948,4 +948,14 @@ body {
   height: 150px;
   width: auto;
   display: block;
+}
+
+/* Menu links */
+.league-menu a {
+  color: #fff;
+  font-weight: 700;
+  opacity: 1;
+}
+.league-menu a:hover {
+  opacity: 1;
 }
