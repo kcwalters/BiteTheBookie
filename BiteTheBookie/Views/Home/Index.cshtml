@@ -26,15 +26,11 @@
         <div class="col-12 col-lg-8">
             <div class="content-card">
                 <div class="ratio ratio-16x9 rounded overflow-hidden">
-                    <iframe width="1840" 
-                        height="1035" 
-                        src="https://www.youtube.com/embed/nx6hRaJsxQI" 
-                        title="Patriots vs Seahawks Super Bowl LX PREVIEW: Who has the EDGE? | Position group breakdown ✅ 🏆" 
-                        frameborder="0" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        allowfullscreen>
-                    </iframe>
+                    @if (!Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")!.Equals("Development", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <iframe width="939" height="528" src="https://www.youtube.com/embed/7dRmcudjTKo" title="The NBA Turned Into A WARZONE Last Night..." frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    }
+                   
                 </div>
             </div>
         </div>
