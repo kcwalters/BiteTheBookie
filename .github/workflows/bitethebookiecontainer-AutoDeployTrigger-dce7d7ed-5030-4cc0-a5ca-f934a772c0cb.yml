@@ -43,6 +43,7 @@ jobs:
           containerAppName: bitethebookiecontainer
           resourceGroup: BiteTheBookie
           imageToBuild: bitethebookie.azurecr.io/bitethebookiecontainer:${{ github.sha }}
+          builderStack: mcr.microsoft.com/oryx/builder:debian-bookworm-20250115.1
           _buildArgumentsKey_: |
             _buildArgumentsValues_
 
