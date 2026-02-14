@@ -1,41 +1,52 @@
+name: Deploy to Azure Container Apps
+
 on:
   push:
     branches:
-    - master
+      - master
+
 permissions:
   id-token: write
   contents: read
+
 env:
-  DOTNET_CORE_VERSION: 7.0.x
+  DOTNET_CORE_VERSION: 8.0.x
   CONTAINER_APP_NAME: bitethebookie-container-app
   CONTAINER_APP_ENVIRONMENT_NAME: managedEnv20260214124018
   RESOURCE_GROUP: BiteTheBookie
   CONTAINER_REGISTRY_NAME: registry20260214124314
   CONTAINER_REGISTRY_LOGIN_SERVER: registry20260214124314.azurecr.io
+
 jobs:
   BuildAndDeployContainerApp:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout source code
-      uses: actions/checkout@v4
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Azure login
-      uses: azure/login@v2
-      with:
-        client-id: ${{ vars.managedEnv20260214124018_CLIENT_ID_979C }}
-        tenant-id: ${{ vars.managedEnv20260214124018_TENANT_ID_979C }}
-        subscription-id: ${{ vars.managedEnv20260214124018_SUBSCRIPTION_ID_979C }}
-    - name: Container App deploy
-      uses: azure/container-apps-deploy-action@v1
-      with:
-        appSourcePath: ${{ github.workspace }}
-        acrName: ${{ env.CONTAINER_REGISTRY_NAME }}
-        acrUsername: ${{ secrets.registry20260214124314_USERNAME_979C }}
-        acrPassword: ${{ secrets.registry20260214124314_PASSWORD_979C }}
-        imageToBuild: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
-        containerAppName: ${{ env.CONTAINER_APP_NAME }}
-        containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT_NAME }}
-        resourceGroup: ${{ env.RESOURCE_GROUP }}
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.managedEnv20260214124018_CLIENT_ID_979C }}
+          tenant-id: ${{ vars.managedEnv20260214124018_TENANT_ID_979C }}
+          subscription-id: ${{ vars.managedEnv20260214124018_SUBSCRIPTION_ID_979C }}
+
+      - name: Show Azure Account Info
+        run: az account show
+
+      - name: Container App deploy
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: ${{ github.workspace }}
+          acrName: ${{ env.CONTAINER_REGISTRY_NAME }}
+          acrUsername: ${{ secrets.registry20260214124314_USERNAME_979C }}
+          acrPassword: ${{ secrets.registry20260214124314_PASSWORD_979C }}
+          imageToBuild: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT_NAME }}
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
