@@ -28,6 +28,22 @@ jobs:
         client-id: ${{ vars.managedEnv20260215153426_CLIENT_ID_E4B3 }}
         tenant-id: ${{ vars.managedEnv20260215153426_TENANT_ID_E4B3 }}
         subscription-id: ${{ vars.managedEnv20260215153426_SUBSCRIPTION_ID_E4B3 }}
+
+    - name: Verify Azure context and ACR
+      uses: azure/cli@v2
+      with:
+        inlineScript: |
+          set -euo pipefail
+          echo "== Azure account =="
+          az account show --output table
+          echo "== Expected ACR =="
+          echo "ACR name: ${{ env.CONTAINER_REGISTRY_NAME }}"
+          echo "ACR login server: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}"
+          echo "== ACR reachable? =="
+          az acr show -n "${{ env.CONTAINER_REGISTRY_NAME }}" --query "{name:name, loginServer:loginServer, resourceGroup:resourceGroup}" --output table
+          echo "== ACR repositories (may be empty on first run) =="
+          az acr repository list -n "${{ env.CONTAINER_REGISTRY_NAME }}" --output table || true
+
     - name: Container App deploy
       uses: azure/container-apps-deploy-action@v1
       with:
