@@ -13,7 +13,7 @@ Steps:
 
 Checkout source code: Pulls the repository into the workflow runner.
 
-Setup .NET SDK: Installs .NET Core SDK version 7.0.x.
+Setup .NET SDK: Installs .NET Core SDK version 8.0.x.
 
 Azure login: Authenticates to Azure using a service principal stored in GitHub secrets.
 
