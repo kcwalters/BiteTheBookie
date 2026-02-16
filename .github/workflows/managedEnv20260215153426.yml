@@ -25,9 +25,9 @@ jobs:
     - name: Azure login
       uses: azure/login@v2
       with:
-        client-id: ${{ vars.managedEnv20260215153426_CLIENT_ID_EE17 }}
-        tenant-id: ${{ vars.managedEnv20260215153426_TENANT_ID_EE17 }}
-        subscription-id: ${{ vars.managedEnv20260215153426_SUBSCRIPTION_ID_EE17 }}
+        client-id: ${{ secrets.BITETHEBOOKIEV3_REGISTRY_CLIENT_ID_EE17 }}
+        tenant-id: ${{ secrets.BITETHEBOOKIEV3_REGISTRY_TENANT_ID_EE17 }}
+        subscription-id: ${{ secrets.BITETHEBOOKIEV3_REGISTRY_SUBSCRIPTION_ID_EE17 }}
 
     - name: Verify Azure context and ACR
       uses: azure/cli@v2
@@ -49,8 +49,8 @@ jobs:
       with:
         appSourcePath: ${{ github.workspace }}
         acrName: ${{ env.CONTAINER_REGISTRY_NAME }}
-        acrUsername: ${{ secrets.registry20260215153736_USERNAME_EE17 }}
-        acrPassword: ${{ secrets.registry20260215153736_PASSWORD_EE17 }}
+        acrUsername: ${{ secrets.BITETHEBOOKIEV3_REGISTRY_USERNAME_EE17 }}
+        acrPassword: ${{ secrets.BITETHEBOOKIEV3_REGISTRY_PASSWORD_EE17 }}
         imageToBuild: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
         containerAppName: ${{ env.CONTAINER_APP_NAME }}
         containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT_NAME }}
