@@ -6,7 +6,7 @@ permissions:
   id-token: write
   contents: read
 env:
-  DOTNET_CORE_VERSION: 7.0.x
+  DOTNET_CORE_VERSION: 8.0.x
   CONTAINER_APP_NAME: bitethebookie-container-app
   CONTAINER_APP_ENVIRONMENT_NAME: managedEnv20260215153426
   RESOURCE_GROUP: bitethebookiev2
