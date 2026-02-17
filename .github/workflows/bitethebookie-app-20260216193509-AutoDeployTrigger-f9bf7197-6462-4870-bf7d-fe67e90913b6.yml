@@ -4,19 +4,19 @@ name: Trigger auto deployment for bitethebookie-app-20260216193509
 on:
   # Automatically trigger it when detected changes in repo
   push:
-    branches: 
+    branches:
       [ master ]
     paths:
     - '**'
     - '.github/workflows/bitethebookie-app-20260216193509-AutoDeployTrigger-f9bf7197-6462-4870-bf7d-fe67e90913b6.yml'
 
-  # Allow manual trigger 
-  workflow_dispatch:      
+  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    permissions: 
+    permissions:
       id-token: write #This is required for requesting the OIDC JWT Token
       contents: read #Required when GH token is used to authenticate with private repo
 
@@ -24,9 +24,17 @@ jobs:
       - name: Checkout to the branch
         uses: actions/checkout@v2
 
+      - name: Validate Azure login secrets
+        shell: bash
+        run: |
+          : "${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_CLIENT_ID }}"
+          : "${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_TENANT_ID }}"
+          : "${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_SUBSCRIPTION_ID }}"
+
       - name: Azure Login
         uses: azure/login@v2
         with:
+          auth-type: OIDC
           client-id: ${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_SUBSCRIPTION_ID }}
