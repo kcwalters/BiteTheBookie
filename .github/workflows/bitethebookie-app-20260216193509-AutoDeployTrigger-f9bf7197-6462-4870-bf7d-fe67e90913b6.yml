@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout to the branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Validate Azure login secrets
         shell: bash
@@ -39,19 +39,24 @@ jobs:
           tenant-id: ${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.BITETHEBOOKIEAPP20260216193509_AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push container image to registry
+      - name: Docker login to ACR
+        uses: azure/docker-login@v2
+        with:
+          login-server: bitethebookie20260216193956.azurecr.io
+          username: ${{ secrets.BITETHEBOOKIEAPP20260216193509_REGISTRY_USERNAME }}
+          password: ${{ secrets.BITETHEBOOKIEAPP20260216193509_REGISTRY_PASSWORD }}
+
+      - name: Build and push image
+        shell: bash
+        run: |
+          docker build -f BiteTheBookie/Dockerfile -t bitethebookie20260216193956.azurecr.io/bitethebookie-app-20260216193509:${{ github.sha }} .
+          docker push bitethebookie20260216193956.azurecr.io/bitethebookie-app-20260216193509:${{ github.sha }}
+
+      - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
-          registryUrl: bitethebookie20260216193956.azurecr.io
-          registryUsername: ${{ secrets.BITETHEBOOKIEAPP20260216193509_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.BITETHEBOOKIEAPP20260216193509_REGISTRY_PASSWORD }}
           containerAppName: bitethebookie-app-20260216193509
           resourceGroup: BiteTheBookie
-          imageToBuild: bitethebookie20260216193956.azurecr.io/bitethebookie-app-20260216193509:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
+          imageToDeploy: bitethebookie20260216193956.azurecr.io/bitethebookie-app-20260216193509:${{ github.sha }}
 
 
