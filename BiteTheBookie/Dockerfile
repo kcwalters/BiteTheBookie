@@ -7,6 +7,8 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Ensure ASP.NET Core listens on the port Azure Container Apps expects (defaults to 8080)
+ENV ASPNETCORE_URLS=http://+:8080
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -27,4 +29,4 @@ RUN dotnet publish "./BiteTheBookie.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BiteTheBookie.dll"] 
+ENTRYPOINT ["dotnet", "BiteTheBookie.dll"]
