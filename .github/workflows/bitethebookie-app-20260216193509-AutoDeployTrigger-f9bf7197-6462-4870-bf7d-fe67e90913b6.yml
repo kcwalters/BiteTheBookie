@@ -55,4 +55,4 @@ jobs:
           registryUrl: bitethebookie20260216193956.azurecr.io
           registryUsername: ${{ secrets.BITETHEBOOKIEAPP20260216193644_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.BITETHEBOOKIEAPP20260216193644_REGISTRY_PASSWORD }}
-          imageToDeploy: bitethebookie20260216193956.azurecr.io/bitethebookie-app-20260216193644:${{ github.sha }}
+          imageToDeploy: bitethebookie20260216193956.azurecr.io/bitethebookie-app-20260216193644:${{ github.sha }} 
