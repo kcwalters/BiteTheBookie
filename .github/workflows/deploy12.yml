@@ -9,6 +9,10 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: containerapp-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: bitethebookie20260216193956.azurecr.io
   IMAGE_NAME: bitethebookie
@@ -39,10 +43,13 @@ jobs:
 
       - name: Build and push image
         shell: bash
+        env:
+          DOCKER_BUILDKIT: "1"
         run: |
-          IMAGE_TAG=${GITHUB_SHA}
-          docker build -f BiteTheBookie/Dockerfile -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-          docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+          set -euo pipefail
+          IMAGE_TAG=${{ github.sha }}
+          docker build -f BiteTheBookie/Dockerfile -t "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG" .
+          docker push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
 
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v2
