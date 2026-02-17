@@ -1,0 +1,41 @@
+on:
+  push:
+    branches:
+    - master
+permissions:
+  id-token: write
+  contents: read
+env:
+  DOTNET_CORE_VERSION: 7.0.x
+  CONTAINER_APP_NAME: bitethebookie-container-app
+  CONTAINER_APP_ENVIRONMENT_NAME: managedEnv20260217151149
+  RESOURCE_GROUP: BiteTheBookie
+  CONTAINER_REGISTRY_NAME: bitethebookie20260216193956
+  CONTAINER_REGISTRY_LOGIN_SERVER: bitethebookie20260216193956.azurecr.io
+jobs:
+  BuildAndDeployContainerApp:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Azure login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ vars.managedEnv20260217151149_CLIENT_ID_DFCE }}
+        tenant-id: ${{ vars.managedEnv20260217151149_TENANT_ID_DFCE }}
+        subscription-id: ${{ vars.managedEnv20260217151149_SUBSCRIPTION_ID_DFCE }}
+    - name: Container App deploy
+      uses: azure/container-apps-deploy-action@v1
+      with:
+        appSourcePath: ${{ github.workspace }}
+        acrName: ${{ env.CONTAINER_REGISTRY_NAME }}
+        acrUsername: ${{ secrets.BiteTheBookie20260216193956_USERNAME_DFCE }}
+        acrPassword: ${{ secrets.BiteTheBookie20260216193956_PASSWORD_DFCE }}
+        imageToBuild: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.CONTAINER_APP_NAME }}:${{ github.sha }}
+        containerAppName: ${{ env.CONTAINER_APP_NAME }}
+        containerAppEnvironment: ${{ env.CONTAINER_APP_ENVIRONMENT_NAME }}
+        resourceGroup: ${{ env.RESOURCE_GROUP }}
