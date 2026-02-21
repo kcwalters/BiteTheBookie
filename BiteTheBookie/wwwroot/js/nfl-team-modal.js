@@ -62,7 +62,7 @@
             if (!t) return '';
             return `
               <a class="nfl-team-modal__team" href="https://localhost:32771/img/cin.png" data-team="${abbr}">
-                <img class="nfl-team-modal__logo" src="img/NFL-ATL.png" alt="${t.name}" loading="lazy" />
+                <img class="nfl-team-modal__logo" src="img/NFL/cin.png" alt="${t.name}" loading="lazy" />
                 <span class="nfl-team-modal__name">${t.name}</span>
               </a>`;
           })
@@ -111,12 +111,39 @@
     function show() {
       clearHideTimer();
       modal.show();
+      
+      // Trigger ticker visibility for NFL (on both hover and click)
+      const nflTicker = document.getElementById('nfl-ticker');
+      if (nflTicker) {
+        // Show NFL ticker, hide others
+        const tickers = ['nfl', 'nba', 'nhl', 'ncaa'];
+        tickers.forEach(league => {
+          const ticker = document.getElementById(league + '-ticker');
+          if (ticker) {
+            ticker.style.display = (league === 'nfl') ? '' : 'none';
+          }
+        });
+        
+        // Save preference
+        try {
+          localStorage.setItem('selectedSportsTicker', 'nfl');
+        } catch {}
+        
+        // Dispatch event for other listeners
+        document.dispatchEvent(new CustomEvent('sportsTickerSelected', { detail: { league: 'nfl' } }));
+      }
     }
 
     // Hover behaviors
     nflLink.addEventListener('mouseenter', show);
     nflLink.addEventListener('focus', show);
     nflLink.addEventListener('mouseleave', scheduleHide);
+
+    // Click on NFL link: show modal AND show NFL ticker
+    nflLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      show();
+    });
 
     modalEl.addEventListener('mouseenter', clearHideTimer);
     modalEl.addEventListener('mouseleave', scheduleHide);
