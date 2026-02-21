@@ -1014,3 +1014,80 @@ body {
   line-height: 1.25;
   color: #111;
 }
+
+.nfl-team-modal .modal-content {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+}
+.nfl-team-modal .modal-body {
+  padding: 18px 18px 10px;
+}
+
+.nfl-team-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 991px) {
+  .nfl-team-modal__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 575px) {
+  .nfl-team-modal__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nfl-team-modal__col {
+  background: #fff;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+  padding-left: 14px;
+}
+.nfl-team-modal__col:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.nfl-team-modal__col-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+
+.nfl-team-modal__teams {
+  display: grid;
+  gap: 8px;
+}
+
+.nfl-team-modal__team {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: #111;
+  text-decoration: none;
+}
+.nfl-team-modal__team:hover {
+  background: rgba(0, 0, 0, 0.04);
+  text-decoration: none;
+}
+
+.nfl-team-modal__logo {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+
+.nfl-team-modal__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
