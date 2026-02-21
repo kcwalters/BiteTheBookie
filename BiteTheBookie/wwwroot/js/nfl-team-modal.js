@@ -1,5 +1,5 @@
 (function () {
-  const teams = [
+  const nflTeams = [
     { abbr: 'ARI', name: 'Arizona Cardinals' },
     { abbr: 'ATL', name: 'Atlanta Falcons' },
     { abbr: 'BAL', name: 'Baltimore Ravens' },
@@ -34,26 +34,51 @@
     { abbr: 'WAS', name: 'Washington Commanders' }
   ];
 
+  const nbaTeams = [
+    { abbr: 'ATL', name: 'Atlanta Hawks' },
+    { abbr: 'BOS', name: 'Boston Celtics' },
+    { abbr: 'BKN', name: 'Brooklyn Nets' },
+    { abbr: 'CHA', name: 'Charlotte Hornets' },
+    { abbr: 'CHI', name: 'Chicago Bulls' },
+    { abbr: 'CLE', name: 'Cleveland Cavaliers' },
+    { abbr: 'DAL', name: 'Dallas Mavericks' },
+    { abbr: 'DEN', name: 'Denver Nuggets' },
+    { abbr: 'DET', name: 'Detroit Pistons' },
+    { abbr: 'GSW', name: 'Golden State Warriors' },
+    { abbr: 'HOU', name: 'Houston Rockets' },
+    { abbr: 'IND', name: 'Indiana Pacers' },
+    { abbr: 'LAC', name: 'LA Clippers' },
+    { abbr: 'LAL', name: 'Los Angeles Lakers' },
+    { abbr: 'MEM', name: 'Memphis Grizzlies' },
+    { abbr: 'MIA', name: 'Miami Heat' },
+    { abbr: 'MIL', name: 'Milwaukee Bucks' },
+    { abbr: 'MIN', name: 'Minnesota Timberwolves' },
+    { abbr: 'NOP', name: 'New Orleans Pelicans' },
+    { abbr: 'NYK', name: 'New York Knicks' },
+    { abbr: 'OKC', name: 'Oklahoma City Thunder' },
+    { abbr: 'ORL', name: 'Orlando Magic' },
+    { abbr: 'PHI', name: 'Philadelphia 76ers' },
+    { abbr: 'PHX', name: 'Phoenix Suns' },
+    { abbr: 'POR', name: 'Portland Trail Blazers' },
+    { abbr: 'SAC', name: 'Sacramento Kings' },
+    { abbr: 'SAS', name: 'San Antonio Spurs' },
+    { abbr: 'TOR', name: 'Toronto Raptors' },
+    { abbr: 'UTA', name: 'Utah Jazz' },
+    { abbr: 'WAS', name: 'Washington Wizards' }
+  ];
+
   // Public, stable CDN for team logos (no copyrighted ESPN assets in repo)
   // Source: https://github.com/StevenDaily/nfl-football-logos (raw GitHub CDN)
-  function logoUrl(abbr) {
+  function nflLogoUrl(abbr) {
     return `https://raw.githubusercontent.com/StevenDaily/nfl-football-logos/master/svg/${abbr}.svg`;
   }
 
-  function buildModalBodyHtml() {
-    const columns = [
-      { title: 'AFC East', teams: ['BUF', 'MIA', 'NE', 'NYJ'] },
-      { title: 'AFC North', teams: ['BAL', 'CIN', 'CLE', 'PIT'] },
-      { title: 'AFC South', teams: ['HOU', 'IND', 'JAX', 'TEN'] },
-      { title: 'AFC West', teams: ['DEN', 'KC', 'LAC', 'LV'] },
-      { title: 'NFC East', teams: ['DAL', 'NYG', 'PHI', 'WAS'] },
-      { title: 'NFC North', teams: ['CHI', 'DET', 'GB', 'MIN'] },
-      { title: 'NFC South', teams: ['ATL', 'CAR', 'NO', 'TB'] },
-      { title: 'NFC West', teams: ['ARI', 'LAR', 'SEA', 'SF'] }
-    ];
+  function nbaLogoUrl(abbr) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" rx="6" fill="#1f2937"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="700">${abbr}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
 
-    const teamMap = new Map(teams.map(t => [t.abbr, t]));
-
+  function buildModalBodyHtml(columns, teamMap, logoUrl) {
     return columns
       .map(col => {
         const items = col.teams
@@ -61,8 +86,8 @@
             const t = teamMap.get(abbr);
             if (!t) return '';
             return `
-              <a class="nfl-team-modal__team" href="https://localhost:32771/img/cin.png" data-team="${abbr}">
-                <img class="nfl-team-modal__logo" src="img/NFL/cin.png" alt="${t.name}" loading="lazy" />
+              <a class="nfl-team-modal__team" href="#" data-team="${abbr}">
+                <img class="nfl-team-modal__logo" src="${logoUrl(abbr)}" alt="${t.name}" loading="lazy" />
                 <span class="nfl-team-modal__name">${t.name}</span>
               </a>`;
           })
@@ -79,14 +104,51 @@
       .join('');
   }
 
-  function initNflTeamModal() {
-    const nflLink = document.querySelector('.league-menu a[data-league="nfl"]');
-    const modalEl = document.getElementById('nflTeamModal');
+  const nflColumns = [
+    { title: 'AFC East', teams: ['BUF', 'MIA', 'NE', 'NYJ'] },
+    { title: 'AFC North', teams: ['BAL', 'CIN', 'CLE', 'PIT'] },
+    { title: 'AFC South', teams: ['HOU', 'IND', 'JAX', 'TEN'] },
+    { title: 'AFC West', teams: ['DEN', 'KC', 'LAC', 'LV'] },
+    { title: 'NFC East', teams: ['DAL', 'NYG', 'PHI', 'WAS'] },
+    { title: 'NFC North', teams: ['CHI', 'DET', 'GB', 'MIN'] },
+    { title: 'NFC South', teams: ['ATL', 'CAR', 'NO', 'TB'] },
+    { title: 'NFC West', teams: ['ARI', 'LAR', 'SEA', 'SF'] }
+  ];
+
+  const nbaColumns = [
+    { title: 'Atlantic', teams: ['BOS', 'BKN', 'NYK', 'PHI', 'TOR'] },
+    { title: 'Central', teams: ['CHI', 'CLE', 'DET', 'IND', 'MIL'] },
+    { title: 'Southeast', teams: ['ATL', 'CHA', 'MIA', 'ORL', 'WAS'] },
+    { title: 'Northwest', teams: ['DEN', 'MIN', 'OKC', 'POR', 'UTA'] },
+    { title: 'Pacific', teams: ['GSW', 'LAC', 'LAL', 'PHX', 'SAC'] },
+    { title: 'Southwest', teams: ['DAL', 'HOU', 'MEM', 'NOP', 'SAS'] }
+  ];
+
+  function showTicker(league) {
+    const tickers = ['nfl', 'nba', 'nhl', 'ncaa'];
+    tickers.forEach(item => {
+      const ticker = document.getElementById(item + '-ticker');
+      if (ticker) {
+        ticker.style.display = (item === league) ? '' : 'none';
+      }
+    });
+
+    try {
+      localStorage.setItem('selectedSportsTicker', league);
+    } catch {}
+
+    document.dispatchEvent(new CustomEvent('sportsTickerSelected', { detail: { league } }));
+  }
+
+  function initLeagueTeamModal(options) {
+    const link = document.querySelector(`.league-menu a[data-league="${options.league}"]`);
+    const modalEl = document.getElementById(options.modalId);
     const modalBody = modalEl?.querySelector('.modal-body');
 
-    if (!nflLink || !modalEl || !modalBody || !window.bootstrap?.Modal) return;
+    if (!link || !modalEl || !modalBody || !window.bootstrap?.Modal) return;
 
-    modalBody.innerHTML = `<div class="nfl-team-modal__grid">${buildModalBodyHtml()}</div>`;
+    const teamMap = new Map(options.teams.map(t => [t.abbr, t]));
+    modalBody.innerHTML = `<div class="nfl-team-modal__grid">${buildModalBodyHtml(options.columns, teamMap, options.logoUrl)}</div>`;
 
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
       backdrop: true,
@@ -111,36 +173,14 @@
     function show() {
       clearHideTimer();
       modal.show();
-      
-      // Trigger ticker visibility for NFL (on both hover and click)
-      const nflTicker = document.getElementById('nfl-ticker');
-      if (nflTicker) {
-        // Show NFL ticker, hide others
-        const tickers = ['nfl', 'nba', 'nhl', 'ncaa'];
-        tickers.forEach(league => {
-          const ticker = document.getElementById(league + '-ticker');
-          if (ticker) {
-            ticker.style.display = (league === 'nfl') ? '' : 'none';
-          }
-        });
-        
-        // Save preference
-        try {
-          localStorage.setItem('selectedSportsTicker', 'nfl');
-        } catch {}
-        
-        // Dispatch event for other listeners
-        document.dispatchEvent(new CustomEvent('sportsTickerSelected', { detail: { league: 'nfl' } }));
-      }
+      showTicker(options.league);
     }
 
-    // Hover behaviors
-    nflLink.addEventListener('mouseenter', show);
-    nflLink.addEventListener('focus', show);
-    nflLink.addEventListener('mouseleave', scheduleHide);
+    link.addEventListener('mouseenter', show);
+    link.addEventListener('focus', show);
+    link.addEventListener('mouseleave', scheduleHide);
 
-    // Click on NFL link: show modal AND show NFL ticker
-    nflLink.addEventListener('click', (e) => {
+    link.addEventListener('click', (e) => {
       e.preventDefault();
       show();
     });
@@ -148,20 +188,33 @@
     modalEl.addEventListener('mouseenter', clearHideTimer);
     modalEl.addEventListener('mouseleave', scheduleHide);
 
-    // Click team: placeholder hook
     modalEl.addEventListener('click', (e) => {
       const team = e.target.closest('.nfl-team-modal__team');
       if (!team) return;
       e.preventDefault();
-      // Future: navigate to team page
       modal.hide();
     });
 
-    // Ensure timer cleared on hide
     modalEl.addEventListener('hidden.bs.modal', clearHideTimer);
   }
 
-  document.addEventListener('DOMContentLoaded', initNflTeamModal);
+  document.addEventListener('DOMContentLoaded', function () {
+    initLeagueTeamModal({
+      league: 'nfl',
+      modalId: 'nflTeamModal',
+      teams: nflTeams,
+      columns: nflColumns,
+      logoUrl: nflLogoUrl
+    });
+
+    initLeagueTeamModal({
+      league: 'nba',
+      modalId: 'nbaTeamModal',
+      teams: nbaTeams,
+      columns: nbaColumns,
+      logoUrl: nbaLogoUrl
+    });
+  });
 
   navigator.permissions.query({ name: "geolocation" })
   // or, if storing:
