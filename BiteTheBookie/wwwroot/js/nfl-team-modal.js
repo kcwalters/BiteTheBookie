@@ -221,3 +221,4 @@
   const query = navigator.permissions.query.bind(navigator.permissions);
   query({ name: "geolocation" });
 })();
+ 
