@@ -1016,10 +1016,16 @@ body {
 }
 
 .nfl-team-modal .modal-content {
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  position: relative;
 }
+
+.nfl-team-modal .btn-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+}
+
 .nfl-team-modal .modal-body {
   padding: 18px 18px 10px;
 }

@@ -167,7 +167,7 @@
       clearHideTimer();
       hideTimer = setTimeout(() => {
         modal.hide();
-      }, 150);
+      }, 0);
     }
 
     function show() {
@@ -185,8 +185,9 @@
       show();
     });
 
-    modalEl.addEventListener('mouseenter', clearHideTimer);
-    modalEl.addEventListener('mouseleave', scheduleHide);
+    modalEl.addEventListener('mouseleave', () => {
+      modal.hide();
+    });
 
     modalEl.addEventListener('click', (e) => {
       const team = e.target.closest('.nfl-team-modal__team');
@@ -222,3 +223,6 @@
   query({ name: "geolocation" });
 })();
  
+
+
+
