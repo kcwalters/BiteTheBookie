@@ -215,7 +215,8 @@
       modalId: 'nbaTeamModal',
       teams: nbaTeams,
       columns: nbaColumns,
-      logoUrl: nbaLogoUrl
+      logoUrl: nbaLogoUrl,
+      oddsLink: { url: '/Odds/NBA', label: 'View NBA Odds' }
     });
   });
 
@@ -225,6 +226,7 @@
   query({ name: "geolocation" });
 })();
  
+
 
 
 

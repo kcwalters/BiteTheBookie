@@ -32,13 +32,17 @@ namespace BiteTheBookie.Services.Implementations
                 throw new InvalidOperationException("Odds API key is not configured. Set OddsApi:ApiKey.");
             }
 
+            // Add API key to the query string
+            var separator = pathAndQuery.Contains('?') ? "&" : "?";
+            var fullPath = $"{pathAndQuery}{separator}apiKey={_options.ApiKey}";
+
             var cacheKey = "oddsapi:" + pathAndQuery;
             if (_cache.TryGetValue(cacheKey, out JsonElement cached))
             {
                 return cached;
             }
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, pathAndQuery);
+            using var request = new HttpRequestMessage(HttpMethod.Get, fullPath);
             request.Headers.TryAddWithoutValidation("Accept", "application/json");
 
             using var response = await _http.SendAsync(request, cancellationToken);
