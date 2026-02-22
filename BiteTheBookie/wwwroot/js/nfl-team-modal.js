@@ -148,7 +148,8 @@
     if (!link || !modalEl || !modalBody || !window.bootstrap?.Modal) return;
 
     const teamMap = new Map(options.teams.map(t => [t.abbr, t]));
-    modalBody.innerHTML = `<div class="nfl-team-modal__grid">${buildModalBodyHtml(options.columns, teamMap, options.logoUrl)}</div>`;
+    const oddsLinkHtml = options.oddsLink ? '<div class="nfl-team-modal__actions"><a class="nfl-team-modal__odds-link btn btn-primary btn-sm mb-3" href="' + options.oddsLink.url + '">' + options.oddsLink.label + '</a></div>' : '';
+    modalBody.innerHTML = oddsLinkHtml + '<div class="nfl-team-modal__grid">' + buildModalBodyHtml(options.columns, teamMap, options.logoUrl) + '</div>';;
 
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
       backdrop: true,
@@ -205,7 +206,8 @@
       modalId: 'nflTeamModal',
       teams: nflTeams,
       columns: nflColumns,
-      logoUrl: nflLogoUrl
+      logoUrl: nflLogoUrl,
+      oddsLink: { url: '/Odds/NFL', label: 'View NFL Odds' }
     });
 
     initLeagueTeamModal({
@@ -223,6 +225,8 @@
   query({ name: "geolocation" });
 })();
  
+
+
 
 
 

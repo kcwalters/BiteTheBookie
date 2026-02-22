@@ -1,15 +1,18 @@
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
+using System.Text.Json;
 
 namespace BiteTheBookie.Services.Implementations;
 
 public class OddsService : IOddsService
 {
     private readonly HttpClient _http;
+    private readonly TheOddsApiClient? _oddsApiClient;
 
-    public OddsService(HttpClient http)
+    public OddsService(HttpClient http, TheOddsApiClient? oddsApiClient = null)
     {
         _http = http;
+        _oddsApiClient = oddsApiClient;
     }
 
     public Task<IEnumerable<HeroOddViewModel>> GetHeroOddsAsync()
@@ -20,4 +23,160 @@ public class OddsService : IOddsService
 
     public Task<LeagueOddsViewModel> GetLeagueOddsAsync()
         => Task.FromResult(new LeagueOddsViewModel());
+
+    public async Task<IEnumerable<NFLOddsViewModel>> GetNFLOddsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_oddsApiClient == null)
+        {
+            return Enumerable.Empty<NFLOddsViewModel>();
+        }
+
+        try
+        {
+            var response = await _oddsApiClient.GetAsync(
+                "sports/americanfootball_nfl/odds/?regions=us&markets=h2h,spreads,totals&oddsFormat=american",
+                cancellationToken);
+
+            var odds = new List<NFLOddsViewModel>();
+
+            if (response.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var game in response.EnumerateArray())
+                {
+                    var gameOdds = ParseNFLGame(game);
+                    if (gameOdds != null)
+                    {
+                        odds.Add(gameOdds);
+                    }
+                }
+            }
+
+            return odds;
+        }
+        catch
+        {
+            return Enumerable.Empty<NFLOddsViewModel>();
+        }
+    }
+
+    private NFLOddsViewModel? ParseNFLGame(JsonElement game)
+    {
+        try
+        {
+            var gameId = game.GetProperty("id").GetString() ?? "";
+            var awayTeam = game.GetProperty("away_team").GetString() ?? "";
+            var homeTeam = game.GetProperty("home_team").GetString() ?? "";
+            var commenceTime = game.GetProperty("commence_time").GetDateTime();
+
+            var oddsViewModel = new NFLOddsViewModel
+            {
+                GameId = gameId,
+                AwayTeam = awayTeam,
+                HomeTeam = homeTeam,
+                CommenceTime = commenceTime
+            };
+
+            if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
+            {
+                var draftkings = bookmakers.EnumerateArray()
+                    .FirstOrDefault(b => b.GetProperty("key").GetString() == "draftkings");
+
+                if (draftkings.ValueKind != JsonValueKind.Undefined)
+                {
+                    if (draftkings.TryGetProperty("markets", out var markets))
+                    {
+                        foreach (var market in markets.EnumerateArray())
+                        {
+                            var marketKey = market.GetProperty("key").GetString();
+                            var outcomes = market.GetProperty("outcomes");
+
+                            if (marketKey == "h2h")
+                            {
+                                ParseMoneyline(outcomes, awayTeam, homeTeam, oddsViewModel);
+                            }
+                            else if (marketKey == "spreads")
+                            {
+                                ParseSpreads(outcomes, awayTeam, homeTeam, oddsViewModel);
+                            }
+                            else if (marketKey == "totals")
+                            {
+                                ParseTotals(outcomes, oddsViewModel);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return oddsViewModel;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void ParseMoneyline(JsonElement outcomes, string awayTeam, string homeTeam, NFLOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var team = outcome.GetProperty("name").GetString();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            if (team == awayTeam)
+            {
+                model.AwayMoneyline = price > 0 ? $"+{price}" : price.ToString();
+            }
+            else if (team == homeTeam)
+            {
+                model.HomeMoneyline = price > 0 ? $"+{price}" : price.ToString();
+            }
+        }
+    }
+
+    private void ParseSpreads(JsonElement outcomes, string awayTeam, string homeTeam, NFLOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var team = outcome.GetProperty("name").GetString();
+            var point = outcome.GetProperty("point").GetDouble();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            var priceStr = price > 0 ? $"+{price}" : price.ToString();
+            var pointStr = point > 0 ? $"+{point:0.0}" : point.ToString("0.0");
+
+            if (team == awayTeam)
+            {
+                model.AwaySpread = pointStr;
+                model.AwaySpreadPrice = priceStr;
+            }
+            else if (team == homeTeam)
+            {
+                model.HomeSpread = pointStr;
+                model.HomeSpreadPrice = priceStr;
+            }
+        }
+    }
+
+    private void ParseTotals(JsonElement outcomes, NFLOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var name = outcome.GetProperty("name").GetString();
+            var point = outcome.GetProperty("point").GetDouble();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            var priceStr = price > 0 ? $"+{price}" : price.ToString();
+
+            if (name == "Over")
+            {
+                model.OverPoint = point.ToString("0.0");
+                model.OverPrice = priceStr;
+            }
+            else if (name == "Under")
+            {
+                model.UnderPoint = point.ToString("0.0");
+                model.UnderPrice = priceStr;
+            }
+        }
+    }
 }
