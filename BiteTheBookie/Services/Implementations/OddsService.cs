@@ -209,8 +209,10 @@ public class OddsService : IOddsService
 
             return odds;
         }
-        catch
+        catch (Exception ex)
         {
+            // Log the exception to help debug
+            Console.WriteLine($"NBA Odds Error: {ex.Message}");
             return Enumerable.Empty<NBAOddsViewModel>();
         }
     }
