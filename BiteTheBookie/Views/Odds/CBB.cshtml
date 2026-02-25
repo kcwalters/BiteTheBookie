@@ -1,7 +1,7 @@
-@model IEnumerable<BiteTheBookie.ViewModels.NBAOddsViewModel>
+@model IEnumerable<BiteTheBookie.ViewModels.CBBOddsViewModel>
 
 @{
-    ViewData["Title"] = "NBA Odds";
+    ViewData["Title"] = "College Basketball Odds";
 }
 
 <div class="container">
@@ -66,12 +66,12 @@
 </style>
 
 <div class="container py-4">
-    <h2 class="mb-4">NBA Odds</h2>
+    <h2 class="mb-4">College Basketball Odds</h2>
 
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            <p class="mb-0">No NBA odds available at this time. Please check back later or ensure your Odds API key is configured.</p>
+            <p class="mb-0">No College Basketball odds available at this time. Please check back later or ensure your Odds API key is configured.</p>
         </div>
     }
     else

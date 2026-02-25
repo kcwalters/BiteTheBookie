@@ -8,6 +8,7 @@ namespace BiteTheBookie.Services.Interfaces
         Task<LeagueOddsViewModel> GetLeagueOddsAsync();
         Task<IEnumerable<NFLOddsViewModel>> GetNFLOddsAsync(CancellationToken cancellationToken = default);
         Task<IEnumerable<NBAOddsViewModel>> GetNBAOddsAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<CBBOddsViewModel>> GetCBBOddsAsync(CancellationToken cancellationToken = default);
     }
 
     public interface INewsService
