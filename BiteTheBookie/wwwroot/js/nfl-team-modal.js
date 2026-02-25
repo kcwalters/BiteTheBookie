@@ -78,6 +78,94 @@
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 
+  const cbbTeams = [
+    // ACC
+    { abbr: 'CLEM', name: 'Clemson' },
+    { abbr: 'DUKE', name: 'Duke' },
+    { abbr: 'UNC', name: 'North Carolina' },
+    { abbr: 'NCSU', name: 'NC State' },
+    { abbr: 'UVA', name: 'Virginia' },
+    { abbr: 'VT', name: 'Virginia Tech' },
+    { abbr: 'WAKE', name: 'Wake Forest' },
+    { abbr: 'MIA', name: 'Miami' },
+    { abbr: 'FSU', name: 'Florida State' },
+    { abbr: 'LOU', name: 'Louisville' },
+    { abbr: 'PITT', name: 'Pittsburgh' },
+    { abbr: 'SYR', name: 'Syracuse' },
+    { abbr: 'BC', name: 'Boston College' },
+    { abbr: 'GT', name: 'Georgia Tech' },
+    { abbr: 'ND', name: 'Notre Dame' },
+    // Big Ten
+    { abbr: 'ILL', name: 'Illinois' },
+    { abbr: 'IND', name: 'Indiana' },
+    { abbr: 'IOWA', name: 'Iowa' },
+    { abbr: 'MD', name: 'Maryland' },
+    { abbr: 'MICH', name: 'Michigan' },
+    { abbr: 'MSU', name: 'Michigan State' },
+    { abbr: 'MINN', name: 'Minnesota' },
+    { abbr: 'NEB', name: 'Nebraska' },
+    { abbr: 'NW', name: 'Northwestern' },
+    { abbr: 'OSU', name: 'Ohio State' },
+    { abbr: 'PSU', name: 'Penn State' },
+    { abbr: 'PUR', name: 'Purdue' },
+    { abbr: 'RUT', name: 'Rutgers' },
+    { abbr: 'WIS', name: 'Wisconsin' },
+    // Big 12
+    { abbr: 'BAY', name: 'Baylor' },
+    { abbr: 'ISU', name: 'Iowa State' },
+    { abbr: 'KU', name: 'Kansas' },
+    { abbr: 'KSU', name: 'Kansas State' },
+    { abbr: 'OU', name: 'Oklahoma' },
+    { abbr: 'OST', name: 'Oklahoma State' },
+    { abbr: 'TCU', name: 'TCU' },
+    { abbr: 'TEX', name: 'Texas' },
+    { abbr: 'TTU', name: 'Texas Tech' },
+    { abbr: 'WVU', name: 'West Virginia' },
+    // SEC
+    { abbr: 'ALA', name: 'Alabama' },
+    { abbr: 'ARK', name: 'Arkansas' },
+    { abbr: 'AUB', name: 'Auburn' },
+    { abbr: 'FLA', name: 'Florida' },
+    { abbr: 'UGA', name: 'Georgia' },
+    { abbr: 'UK', name: 'Kentucky' },
+    { abbr: 'LSU', name: 'LSU' },
+    { abbr: 'MISS', name: 'Ole Miss' },
+    { abbr: 'MST', name: 'Mississippi State' },
+    { abbr: 'USC', name: 'South Carolina' },
+    { abbr: 'TENN', name: 'Tennessee' },
+    { abbr: 'TAMU', name: 'Texas A&M' },
+    { abbr: 'VAN', name: 'Vanderbilt' },
+    // Pac-12
+    { abbr: 'ARIZ', name: 'Arizona' },
+    { abbr: 'ASU', name: 'Arizona State' },
+    { abbr: 'CAL', name: 'California' },
+    { abbr: 'COLO', name: 'Colorado' },
+    { abbr: 'ORE', name: 'Oregon' },
+    { abbr: 'ORST', name: 'Oregon State' },
+    { abbr: 'STAN', name: 'Stanford' },
+    { abbr: 'UCLA', name: 'UCLA' },
+    { abbr: 'WASH', name: 'Washington' },
+    { abbr: 'WSU', name: 'Washington State' },
+    // Big East
+    { abbr: 'BUT', name: 'Butler' },
+    { abbr: 'CRE', name: 'Creighton' },
+    { abbr: 'DPU', name: 'DePaul' },
+    { abbr: 'G'TWN', name: 'Georgetown' },
+    { abbr: 'MARQ', name: 'Marquette' },
+    { abbr: 'PROV', name: 'Providence' },
+    { abbr: 'SHU', name: 'Seton Hall' },
+    { abbr: 'SJU', name: 'St. John\'s' },
+    { abbr: 'VILL', name: 'Villanova' },
+    { abbr: 'XAV', name: 'Xavier' }
+  ];
+
+  function cbbLogoUrl(abbr) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" rx="6" fill="#003366"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="700">${abbr}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
+
+
   function buildModalBodyHtml(columns, teamMap, logoUrl) {
     return columns
       .map(col => {
@@ -122,6 +210,15 @@
     { title: 'Northwest', teams: ['DEN', 'MIN', 'OKC', 'POR', 'UTA'] },
     { title: 'Pacific', teams: ['GSW', 'LAC', 'LAL', 'PHX', 'SAC'] },
     { title: 'Southwest', teams: ['DAL', 'HOU', 'MEM', 'NOP', 'SAS'] }
+  ];
+
+  const cbbColumns = [
+    { title: 'ACC', teams: ['DUKE', 'UNC', 'UVA', 'CLEM', 'NCSU', 'WAKE', 'VT', 'MIA', 'FSU', 'LOU', 'PITT', 'SYR', 'BC', 'GT', 'ND'] },
+    { title: 'Big Ten', teams: ['ILL', 'IND', 'IOWA', 'MD', 'MICH', 'MSU', 'MINN', 'NEB', 'NW', 'OSU', 'PSU', 'PUR', 'RUT', 'WIS'] },
+    { title: 'Big 12', teams: ['BAY', 'ISU', 'KU', 'KSU', 'OU', 'OST', 'TCU', 'TEX', 'TTU', 'WVU'] },
+    { title: 'SEC', teams: ['ALA', 'ARK', 'AUB', 'FLA', 'UGA', 'UK', 'LSU', 'MISS', 'MST', 'USC', 'TENN', 'TAMU', 'VAN'] },
+    { title: 'Pac-12', teams: ['ARIZ', 'ASU', 'CAL', 'COLO', 'ORE', 'ORST', 'STAN', 'UCLA', 'WASH', 'WSU'] },
+    { title: 'Big East', teams: ['BUT', 'CRE', 'DPU', 'G\'TWN', 'MARQ', 'PROV', 'SHU', 'SJU', 'VILL', 'XAV'] }
   ];
 
   function showTicker(league) {
@@ -217,6 +314,15 @@
       columns: nbaColumns,
       logoUrl: nbaLogoUrl,
       oddsLink: { url: '/Odds/NBA', label: 'View NBA Odds' }
+    });
+
+    initLeagueTeamModal({
+      league: 'ncaa',
+      modalId: 'cbbTeamModal',
+      teams: cbbTeams,
+      columns: cbbColumns,
+      logoUrl: cbbLogoUrl,
+      oddsLink: { url: '/Odds/CBB', label: 'View CBB Odds' }
     });
   });
 
