@@ -164,6 +164,34 @@
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 
+  // ESPN team ID mappings for major college basketball teams
+  const espnTeamIds = {
+    'DUKE': '150', 'UNC': '153', 'UVA': '258', 'CLEM': '228', 'NCSU': '152',
+    'WAKE': '154', 'VT': '259', 'MIA': '2390', 'FSU': '52', 'LOU': '97',
+    'PITT': '221', 'SYR': '183', 'BC': '103', 'GT': '59', 'ND': '87',
+    'ILL': '356', 'IND': '84', 'IOWA': '2294', 'MD': '120', 'MICH': '130',
+    'MSU': '127', 'MINN': '135', 'NEB': '158', 'NW': '77', 'OSU': '194',
+    'PSU': '213', 'PUR': '2509', 'RUT': '164', 'WIS': '275',
+    'BAY': '239', 'ISU': '66', 'KU': '2305', 'KSU': '2306', 'OU': '201',
+    'OST': '197', 'TCU': '2628', 'TEX': '251', 'TTU': '2641', 'WVU': '277',
+    'ALA': '333', 'ARK': '8', 'AUB': '2', 'FLA': '57', 'UGA': '61',
+    'UK': '96', 'LSU': '99', 'MISS': '145', 'MST': '344', 'USC': '2579',
+    'TENN': '2633', 'TAMU': '245', 'VAN': '238',
+    'ARIZ': '12', 'ASU': '9', 'CAL': '25', 'COLO': '38', 'ORE': '2483',
+    'ORST': '204', 'STAN': '24', 'UCLA': '26', 'WASH': '264', 'WSU': '265',
+    'BUT': '2086', 'CRE': '156', 'DPU': '305', 'GTWN': '46', 'MARQ': '269',
+    'PROV': '2507', 'SHU': '2550', 'SJU': '2599', 'VILL': '222', 'XAV': '2752'
+  };
+
+  function getEspnTeamUrl(abbr, teamName) {
+    const teamId = espnTeamIds[abbr];
+    if (teamId) {
+      const urlName = teamName.toLowerCase().replace(/['\s]/g, '-').replace(/&/g, '');
+      return `https://www.espn.com/mens-college-basketball/team/_/id/${teamId}/${urlName}`;
+    }
+    return 'https://www.espn.com/mens-college-basketball/teams';
+  }
+
   function buildModalBodyHtml(columns, teamMap, logoUrl) {
     return columns
       .map(col => {
@@ -173,6 +201,33 @@
             if (!t) return '';
             return `
               <a class="nfl-team-modal__team" href="#" data-team="${abbr}">
+                <img class="nfl-team-modal__logo" src="${logoUrl(abbr)}" alt="${t.name}" loading="lazy" />
+                <span class="nfl-team-modal__name">${t.name}</span>
+              </a>`;
+          })
+          .join('');
+
+        return `
+          <div class="nfl-team-modal__col">
+            <div class="nfl-team-modal__col-title">${col.title}</div>
+            <div class="nfl-team-modal__teams">
+              ${items}
+            </div>
+          </div>`;
+      })
+      .join('');
+  }
+
+  function buildCBBModalBodyHtml(columns, teamMap, logoUrl) {
+    return columns
+      .map(col => {
+        const items = col.teams
+          .map(abbr => {
+            const t = teamMap.get(abbr);
+            if (!t) return '';
+            const espnUrl = getEspnTeamUrl(abbr, t.name);
+            return `
+              <a class="nfl-team-modal__team" href="${espnUrl}" target="_blank" data-team="${abbr}">
                 <img class="nfl-team-modal__logo" src="${logoUrl(abbr)}" alt="${t.name}" loading="lazy" />
                 <span class="nfl-team-modal__name">${t.name}</span>
               </a>`;
@@ -243,8 +298,9 @@
     if (!link || !modalEl || !modalBody || !window.bootstrap?.Modal) return;
 
     const teamMap = new Map(options.teams.map(t => [t.abbr, t]));
+    const buildFn = options.buildFunction || buildModalBodyHtml;
     const oddsLinkHtml = options.oddsLink ? '<div class="nfl-team-modal__actions"><a class="nfl-team-modal__odds-link btn btn-primary btn-sm mb-3" href="' + options.oddsLink.url + '">' + options.oddsLink.label + '</a></div>' : '';
-    modalBody.innerHTML = oddsLinkHtml + '<div class="nfl-team-modal__grid">' + buildModalBodyHtml(options.columns, teamMap, options.logoUrl) + '</div>';;
+    modalBody.innerHTML = oddsLinkHtml + '<div class="nfl-team-modal__grid">' + buildFn(options.columns, teamMap, options.logoUrl) + '</div>';;
 
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
       backdrop: true,
@@ -288,6 +344,16 @@
     modalEl.addEventListener('click', (e) => {
       const team = e.target.closest('.nfl-team-modal__team');
       if (!team) return;
+      
+      // Check if this is a real link (not "#") - if so, let it open
+      const href = team.getAttribute('href');
+      if (href && href !== '#') {
+        // Let the link open in new tab, then hide modal
+        modal.hide();
+        return;
+      }
+      
+      // For placeholder links (#), prevent default and just close
       e.preventDefault();
       modal.hide();
     });
@@ -320,6 +386,7 @@
       teams: cbbTeams,
       columns: cbbColumns,
       logoUrl: cbbLogoUrl,
+      buildFunction: buildCBBModalBodyHtml,
       oddsLink: { url: '/Odds/CBB', label: 'View CBB Odds' }
     });
   });
