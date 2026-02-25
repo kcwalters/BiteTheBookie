@@ -63,6 +63,15 @@
         min-width: 60px;
         text-align: center;
     }
+    
+    .odds-table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .odds-table tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+    }
 </style>
 
 <div class="container py-4">
@@ -91,7 +100,7 @@
                 <tbody>
                     @foreach (var game in Model)
                     {
-                        <tr>
+                        <tr data-href="https://sportsbook.draftkings.com/leagues/football/nfl" onclick="window.open(this.dataset.href, '_blank')">
                             <td>
                                 <div class="fw-bold">@game.AwayTeam</div>
                                 <div class="text-muted">&#64; @game.HomeTeam</div>
