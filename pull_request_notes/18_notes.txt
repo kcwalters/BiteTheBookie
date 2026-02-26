@@ -1,0 +1,4 @@
+Notes added on 2026-02-26 UTC
+PR: https://github.com/kcwalters/BiteTheBookie/pull/18
+Title: Add mlb
+Author: kcwalters
