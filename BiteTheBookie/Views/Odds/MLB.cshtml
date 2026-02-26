@@ -1,0 +1,183 @@
+@model IEnumerable<BiteTheBookie.ViewModels.MLBOddsViewModel>
+
+@{
+    ViewData["Title"] = "MLB Odds";
+}
+
+<div class="container">
+    <div class="tickers-row">
+        <div id="nfl-ticker">
+            @await Component.InvokeAsync("NFLTicker")
+        </div>
+        <div id="nba-ticker">
+            @await Component.InvokeAsync("NBATicker")
+        </div>
+        <div id="nhl-ticker">
+            @await Component.InvokeAsync("NHLTicker")
+        </div>
+        <div id="ncaa-ticker">
+            @await Component.InvokeAsync("NCAATicker")
+        </div>
+    </div>
+</div>
+
+<style>
+    .odds-table th,
+    .odds-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .odds-column {
+        min-width: 220px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .odds-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+    }
+    
+    .odds-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 300px;
+        min-width: 240px;
+    }
+    
+    .odds-item .team-label {
+        margin-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        flex: 0 0 auto;
+    }
+    
+    .odds-item .badge {
+        flex: 0 0 auto;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    .odds-table tbody tr {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .odds-table tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+    }
+</style>
+
+<div class="container py-4">
+    <h2 class="mb-4">MLB Odds</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <p class="mb-0">No MLB odds available at this time. Please check back later or ensure your Odds API key is configured.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover odds-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Game</th>
+                        <th>Time</th>
+                        <th class="odds-column">Moneyline</th>
+                        <th class="odds-column">Spread</th>
+                        <th class="odds-column">Total</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var game in Model)
+                    {
+                        <tr data-href="https://sportsbook.draftkings.com/leagues/baseball/mlb" onclick="window.open(this.dataset.href, '_blank')">
+                            <td>
+                                <div class="fw-bold">@game.AwayTeam</div>
+                                <div class="text-muted">&#64; @game.HomeTeam</div>
+                            </td>
+                            <td>
+                                @game.CommenceTime.ToLocalTime().ToString("MMM dd, h:mm tt")
+                            </td>
+                            <td class="odds-column">
+                                <div class="odds-row">
+                                    <div class="odds-item">
+                                        <span class="team-label">@game.AwayTeam:</span>
+                                        <span class="badge bg-primary">@game.AwayMoneyline</span>
+                                    </div>
+                                    <div class="odds-item">
+                                        <span class="team-label">@game.HomeTeam:</span>
+                                        <span class="badge bg-primary">@game.HomeMoneyline</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="odds-column">
+                                <div class="odds-row">
+                                    @if (!string.IsNullOrEmpty(game.AwaySpread))
+                                    {
+                                        <div class="odds-item">
+                                            <span class="team-label">@game.AwayTeam:</span>
+                                            <span class="badge bg-success">@game.AwaySpread (@game.AwaySpreadPrice)</span>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(game.HomeSpread))
+                                    {
+                                        <div class="odds-item">
+                                            <span class="team-label">@game.HomeTeam:</span>
+                                            <span class="badge bg-success">@game.HomeSpread (@game.HomeSpreadPrice)</span>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="odds-column">
+                                <div class="odds-row">
+                                    @if (!string.IsNullOrEmpty(game.OverPoint))
+                                    {
+                                        <div class="odds-item">
+                                            <span class="team-label">O @game.OverPoint:</span>
+                                            <span class="badge bg-warning text-dark">@game.OverPrice</span>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(game.UnderPoint))
+                                    {
+                                        <div class="odds-item">
+                                            <span class="team-label">U @game.UnderPoint:</span>
+                                            <span class="badge bg-warning text-dark">@game.UnderPrice</span>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted">@game.Bookmaker</small>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-3">
+            <p class="text-muted small">
+                <strong>Note:</strong> Odds are provided by @Model.FirstOrDefault()?.Bookmaker and are updated periodically. 
+                Please verify odds with your sportsbook before placing bets.
+            </p>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a asp-controller="Odds" asp-action="Index" class="btn btn-secondary">Back to Odds</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/home-page.js" asp-append-version="true"></script>
+}

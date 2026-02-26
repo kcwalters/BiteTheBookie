@@ -164,6 +164,50 @@
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 
+  const mlbTeams = [
+    // American League East
+    { abbr: 'BAL', name: 'Baltimore Orioles' },
+    { abbr: 'BOS', name: 'Boston Red Sox' },
+    { abbr: 'NYY', name: 'New York Yankees' },
+    { abbr: 'TB', name: 'Tampa Bay Rays' },
+    { abbr: 'TOR', name: 'Toronto Blue Jays' },
+    // American League Central
+    { abbr: 'CWS', name: 'Chicago White Sox' },
+    { abbr: 'CLE', name: 'Cleveland Guardians' },
+    { abbr: 'DET', name: 'Detroit Tigers' },
+    { abbr: 'KC', name: 'Kansas City Royals' },
+    { abbr: 'MIN', name: 'Minnesota Twins' },
+    // American League West
+    { abbr: 'HOU', name: 'Houston Astros' },
+    { abbr: 'LAA', name: 'Los Angeles Angels' },
+    { abbr: 'OAK', name: 'Oakland Athletics' },
+    { abbr: 'SEA', name: 'Seattle Mariners' },
+    { abbr: 'TEX', name: 'Texas Rangers' },
+    // National League East
+    { abbr: 'ATL', name: 'Atlanta Braves' },
+    { abbr: 'MIA', name: 'Miami Marlins' },
+    { abbr: 'NYM', name: 'New York Mets' },
+    { abbr: 'PHI', name: 'Philadelphia Phillies' },
+    { abbr: 'WSH', name: 'Washington Nationals' },
+    // National League Central
+    { abbr: 'CHC', name: 'Chicago Cubs' },
+    { abbr: 'CIN', name: 'Cincinnati Reds' },
+    { abbr: 'MIL', name: 'Milwaukee Brewers' },
+    { abbr: 'PIT', name: 'Pittsburgh Pirates' },
+    { abbr: 'STL', name: 'St. Louis Cardinals' },
+    // National League West
+    { abbr: 'ARI', name: 'Arizona Diamondbacks' },
+    { abbr: 'COL', name: 'Colorado Rockies' },
+    { abbr: 'LAD', name: 'Los Angeles Dodgers' },
+    { abbr: 'SD', name: 'San Diego Padres' },
+    { abbr: 'SF', name: 'San Francisco Giants' }
+  ];
+
+  function mlbLogoUrl(abbr) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="72" height="72" rx="12" fill="#002D62"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">${abbr}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
   // ESPN team ID mappings for major college basketball teams
   const espnTeamIds = {
     'DUKE': '150', 'UNC': '153', 'UVA': '258', 'CLEM': '228', 'NCSU': '152',
@@ -274,8 +318,17 @@
     { title: 'Big East', teams: ['BUT', 'CRE', 'DPU', 'GTWN', 'MARQ', 'PROV', 'SHU', 'SJU', 'VILL', 'XAV'] }
   ];
 
+  const mlbColumns = [
+    { title: 'AL East', teams: ['BAL', 'BOS', 'NYY', 'TB', 'TOR'] },
+    { title: 'AL Central', teams: ['CWS', 'CLE', 'DET', 'KC', 'MIN'] },
+    { title: 'AL West', teams: ['HOU', 'LAA', 'OAK', 'SEA', 'TEX'] },
+    { title: 'NL East', teams: ['ATL', 'MIA', 'NYM', 'PHI', 'WSH'] },
+    { title: 'NL Central', teams: ['CHC', 'CIN', 'MIL', 'PIT', 'STL'] },
+    { title: 'NL West', teams: ['ARI', 'COL', 'LAD', 'SD', 'SF'] }
+  ];
+
   function showTicker(league) {
-    const tickers = ['nfl', 'nba', 'nhl', 'ncaa'];
+    const tickers = ['nfl', 'nba', 'nhl', 'ncaa', 'mlb'];
     tickers.forEach(item => {
       const ticker = document.getElementById(item + '-ticker');
       if (ticker) {
@@ -388,6 +441,15 @@
       logoUrl: cbbLogoUrl,
       buildFunction: buildCBBModalBodyHtml,
       oddsLink: { url: '/Odds/CBB', label: 'View CBB Odds' }
+    });
+
+    initLeagueTeamModal({
+      league: 'mlb',
+      modalId: 'mlbTeamModal',
+      teams: mlbTeams,
+      columns: mlbColumns,
+      logoUrl: mlbLogoUrl,
+      oddsLink: { url: '/Odds/MLB', label: 'View MLB Odds' }
     });
   });
 
