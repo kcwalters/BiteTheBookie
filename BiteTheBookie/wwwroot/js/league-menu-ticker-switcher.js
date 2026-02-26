@@ -3,7 +3,7 @@
     const container = document.querySelector('.league-menu .container');
     if (!container) return;
 
-    const leagues = ['nfl', 'nba', 'nhl', 'ncaa'];
+    const leagues = ['nfl', 'nba', 'nhl', 'ncaa', 'mlb'];
 
     function showTicker(league) {
       leagues.forEach(l => {
@@ -29,3 +29,4 @@
 
   document.addEventListener('DOMContentLoaded', initLeagueMenuTickerSwitcher);
 })();
+

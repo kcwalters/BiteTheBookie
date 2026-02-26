@@ -494,7 +494,345 @@ public class OddsService : IOddsService
             }
         }
     }
+
+    public async Task<IEnumerable<MLBOddsViewModel>> GetMLBOddsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_oddsApiClient == null)
+        {
+            Console.WriteLine("MLB Odds: _oddsApiClient is null");
+            return Enumerable.Empty<MLBOddsViewModel>();
+        }
+
+        try
+        {
+            var response = await _oddsApiClient.GetAsync(
+                "sports/baseball_mlb/odds/?regions=us&markets=h2h,spreads,totals&oddsFormat=american",
+                cancellationToken);
+
+            Console.WriteLine($"MLB API Response Type: {response.ValueKind}");
+            
+            var odds = new List<MLBOddsViewModel>();
+
+            if (response.ValueKind == JsonValueKind.Array)
+            {
+                var count = 0;
+                foreach (var game in response.EnumerateArray())
+                {
+                    count++;
+                    var gameOdds = ParseMLBGame(game);
+                    if (gameOdds != null)
+                    {
+                        odds.Add(gameOdds);
+                        Console.WriteLine($"MLB: Parsed game {count}: {gameOdds.AwayTeam} @ {gameOdds.HomeTeam}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"MLB: Failed to parse game {count}");
+                    }
+                }
+                Console.WriteLine($"MLB: Total games in response: {count}, Parsed successfully: {odds.Count}");
+            }
+            else
+            {
+                Console.WriteLine($"MLB: Response is not an array. Raw response: {response.GetRawText()}");
+            }
+
+            return odds;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"MLB Odds Error: {ex.Message}");
+            Console.WriteLine($"MLB Stack Trace: {ex.StackTrace}");
+            return Enumerable.Empty<MLBOddsViewModel>();
+        }
+    }
+
+    private MLBOddsViewModel? ParseMLBGame(JsonElement game)
+    {
+        try
+        {
+            var gameId = game.GetProperty("id").GetString() ?? "";
+            var awayTeam = game.GetProperty("away_team").GetString() ?? "";
+            var homeTeam = game.GetProperty("home_team").GetString() ?? "";
+            var commenceTime = game.GetProperty("commence_time").GetDateTime();
+
+            var oddsViewModel = new MLBOddsViewModel
+            {
+                GameId = gameId,
+                AwayTeam = awayTeam,
+                HomeTeam = homeTeam,
+                CommenceTime = commenceTime
+            };
+
+            if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
+            {
+                var draftkings = bookmakers.EnumerateArray()
+                    .FirstOrDefault(b => b.GetProperty("key").GetString() == "draftkings");
+
+                if (draftkings.ValueKind != JsonValueKind.Undefined)
+                {
+                    if (draftkings.TryGetProperty("markets", out var markets))
+                    {
+                        foreach (var market in markets.EnumerateArray())
+                        {
+                            var marketKey = market.GetProperty("key").GetString();
+                            var outcomes = market.GetProperty("outcomes");
+
+                            if (marketKey == "h2h")
+                            {
+                                ParseMLBMoneyline(outcomes, awayTeam, homeTeam, oddsViewModel);
+                            }
+                            else if (marketKey == "spreads")
+                            {
+                                ParseMLBSpreads(outcomes, awayTeam, homeTeam, oddsViewModel);
+                            }
+                            else if (marketKey == "totals")
+                            {
+                                ParseMLBTotals(outcomes, oddsViewModel);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return oddsViewModel;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void ParseMLBMoneyline(JsonElement outcomes, string awayTeam, string homeTeam, MLBOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var team = outcome.GetProperty("name").GetString();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            if (team == awayTeam)
+            {
+                model.AwayMoneyline = price > 0 ? $"+{price}" : price.ToString();
+            }
+            else if (team == homeTeam)
+            {
+                model.HomeMoneyline = price > 0 ? $"+{price}" : price.ToString();
+            }
+        }
+    }
+
+    private void ParseMLBSpreads(JsonElement outcomes, string awayTeam, string homeTeam, MLBOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var team = outcome.GetProperty("name").GetString();
+            var point = outcome.GetProperty("point").GetDouble();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            var priceStr = price > 0 ? $"+{price}" : price.ToString();
+            var pointStr = point > 0 ? $"+{point:0.0}" : point.ToString("0.0");
+
+            if (team == awayTeam)
+            {
+                model.AwaySpread = pointStr;
+                model.AwaySpreadPrice = priceStr;
+            }
+            else if (team == homeTeam)
+            {
+                model.HomeSpread = pointStr;
+                model.HomeSpreadPrice = priceStr;
+            }
+        }
+    }
+
+    private void ParseMLBTotals(JsonElement outcomes, MLBOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var name = outcome.GetProperty("name").GetString();
+            var point = outcome.GetProperty("point").GetDouble();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            var priceStr = price > 0 ? $"+{price}" : price.ToString();
+
+            if (name == "Over")
+            {
+                model.OverPoint = point.ToString("0.0");
+                model.OverPrice = priceStr;
+            }
+            else if (name == "Under")
+            {
+                model.UnderPoint = point.ToString("0.0");
+                model.UnderPrice = priceStr;
+            }
+        }
+    }
+
+    public async Task<IEnumerable<NHLOddsViewModel>> GetNHLOddsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_oddsApiClient == null)
+        {
+            return Enumerable.Empty<NHLOddsViewModel>();
+        }
+
+        try
+        {
+            var response = await _oddsApiClient.GetAsync(
+                "sports/icehockey_nhl/odds/?regions=us&markets=h2h,spreads,totals&oddsFormat=american",
+                cancellationToken);
+
+            var odds = new List<NHLOddsViewModel>();
+
+            if (response.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var game in response.EnumerateArray())
+                {
+                    var gameOdds = ParseNHLGame(game);
+                    if (gameOdds != null)
+                    {
+                        odds.Add(gameOdds);
+                    }
+                }
+            }
+
+            return odds;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"NHL Odds Error: {ex.Message}");
+            return Enumerable.Empty<NHLOddsViewModel>();
+        }
+    }
+
+    private NHLOddsViewModel? ParseNHLGame(JsonElement game)
+    {
+        try
+        {
+            var gameId = game.GetProperty("id").GetString() ?? "";
+            var awayTeam = game.GetProperty("away_team").GetString() ?? "";
+            var homeTeam = game.GetProperty("home_team").GetString() ?? "";
+            var commenceTime = game.GetProperty("commence_time").GetDateTime();
+
+            var oddsViewModel = new NHLOddsViewModel
+            {
+                GameId = gameId,
+                AwayTeam = awayTeam,
+                HomeTeam = homeTeam,
+                CommenceTime = commenceTime
+            };
+
+            if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
+            {
+                var draftkings = bookmakers.EnumerateArray()
+                    .FirstOrDefault(b => b.GetProperty("key").GetString() == "draftkings");
+
+                if (draftkings.ValueKind != JsonValueKind.Undefined)
+                {
+                    if (draftkings.TryGetProperty("markets", out var markets))
+                    {
+                        foreach (var market in markets.EnumerateArray())
+                        {
+                            var marketKey = market.GetProperty("key").GetString();
+                            var outcomes = market.GetProperty("outcomes");
+
+                            if (marketKey == "h2h")
+                            {
+                                ParseNHLMoneyline(outcomes, awayTeam, homeTeam, oddsViewModel);
+                            }
+                            else if (marketKey == "spreads")
+                            {
+                                ParseNHLSpreads(outcomes, awayTeam, homeTeam, oddsViewModel);
+                            }
+                            else if (marketKey == "totals")
+                            {
+                                ParseNHLTotals(outcomes, oddsViewModel);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return oddsViewModel;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void ParseNHLMoneyline(JsonElement outcomes, string awayTeam, string homeTeam, NHLOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var team = outcome.GetProperty("name").GetString();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            if (team == awayTeam)
+            {
+                model.AwayMoneyline = price > 0 ? $"+{price}" : price.ToString();
+            }
+            else if (team == homeTeam)
+            {
+                model.HomeMoneyline = price > 0 ? $"+{price}" : price.ToString();
+            }
+        }
+    }
+
+    private void ParseNHLSpreads(JsonElement outcomes, string awayTeam, string homeTeam, NHLOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var team = outcome.GetProperty("name").GetString();
+            var point = outcome.GetProperty("point").GetDouble();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            var priceStr = price > 0 ? $"+{price}" : price.ToString();
+            var pointStr = point > 0 ? $"+{point:0.0}" : point.ToString("0.0");
+
+            if (team == awayTeam)
+            {
+                model.AwaySpread = pointStr;
+                model.AwaySpreadPrice = priceStr;
+            }
+            else if (team == homeTeam)
+            {
+                model.HomeSpread = pointStr;
+                model.HomeSpreadPrice = priceStr;
+            }
+        }
+    }
+
+    private void ParseNHLTotals(JsonElement outcomes, NHLOddsViewModel model)
+    {
+        foreach (var outcome in outcomes.EnumerateArray())
+        {
+            var name = outcome.GetProperty("name").GetString();
+            var point = outcome.GetProperty("point").GetDouble();
+            var price = outcome.GetProperty("price").GetInt32();
+
+            var priceStr = price > 0 ? $"+{price}" : price.ToString();
+
+            if (name == "Over")
+            {
+                model.OverPoint = point.ToString("0.0");
+                model.OverPrice = priceStr;
+            }
+            else if (name == "Under")
+            {
+                model.UnderPoint = point.ToString("0.0");
+                model.UnderPrice = priceStr;
+            }
+        }
+    }
 }
+
+
+
+
+
+
+
+
 
 
 
