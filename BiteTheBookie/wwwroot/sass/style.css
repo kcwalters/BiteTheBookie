@@ -933,14 +933,17 @@ body {
 }
 .league-menu a {
   color: #fff;
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
   margin-right: 22px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   opacity: 0.85;
+  transition: opacity 0.2s ease;
 }
 .league-menu a:hover {
   opacity: 1;
+  text-decoration: underline;
 }
 
 .content-wrapper {
@@ -953,16 +956,6 @@ body {
   height: 150px;
   width: auto;
   display: block;
-}
-
-/* Menu links */
-.league-menu a {
-  color: #fff;
-  font-weight: 700;
-  opacity: 1;
-}
-.league-menu a:hover {
-  opacity: 1;
 }
 
 /* ---------------------------------

@@ -29,11 +29,11 @@
 
   function initHomeTickerVisibility() {
     const STORAGE_KEY = 'selectedSportsTicker';
-    const DEFAULT = 'nba';
+    const DEFAULT = 'nfl';
 
     function normalize(v) {
       v = (v || '').toString().toLowerCase();
-      return (v === 'nfl' || v === 'nba' || v === 'nhl' || v === 'ncaa') ? v : DEFAULT;
+      return (v === 'nfl' || v === 'nba' || v === 'nhl' || v === 'ncaa' || v === 'mlb') ? v : DEFAULT;
     }
 
     function showTicker(league) {
@@ -41,12 +41,14 @@
       const nba = document.getElementById('nba-ticker');
       const nhl = document.getElementById('nhl-ticker');
       const ncaa = document.getElementById('ncaa-ticker');
-      if (!nfl || !nba || !nhl || !ncaa) return;
+      const mlb = document.getElementById('mlb-ticker');
+      if (!nfl || !nba || !nhl || !ncaa || !mlb) return;
 
       nfl.style.display = league === 'nfl' ? '' : 'none';
       nba.style.display = league === 'nba' ? '' : 'none';
       nhl.style.display = league === 'nhl' ? '' : 'none';
       ncaa.style.display = league === 'ncaa' ? '' : 'none';
+      mlb.style.display = league === 'mlb' ? '' : 'none';
     }
 
     function applySelection(league) {

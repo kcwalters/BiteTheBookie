@@ -1,18 +1,18 @@
-@model IEnumerable<BiteTheBookie.ViewModels.NFLOddsViewModel>
+@model IEnumerable<BiteTheBookie.ViewModels.NHLOddsViewModel>
 
 @{
-    ViewData["Title"] = "NFL Odds";
+    ViewData["Title"] = "NHL Odds";
 }
 
 <div class="container">
     <div class="tickers-row">
-        <div id="nfl-ticker">
+        <div id="nfl-ticker" style="display: none;">
             @await Component.InvokeAsync("NFLTicker")
         </div>
         <div id="nba-ticker" style="display: none;">
             @await Component.InvokeAsync("NBATicker")
         </div>
-        <div id="nhl-ticker" style="display: none;">
+        <div id="nhl-ticker">
             @await Component.InvokeAsync("NHLTicker")
         </div>
         <div id="ncaa-ticker" style="display: none;">
@@ -78,12 +78,12 @@
 </style>
 
 <div class="container py-4">
-    <h2 class="mb-4">NFL Odds</h2>
+    <h2 class="mb-4">NHL Odds</h2>
 
     @if (!Model.Any())
     {
         <div class="alert alert-info">
-            <p class="mb-0">No NFL odds available at this time. Please check back later or ensure your Odds API key is configured.</p>
+            <p class="mb-0">No NHL odds available at this time. Please check back later or ensure your Odds API key is configured.</p>
         </div>
     }
     else
@@ -95,7 +95,7 @@
                         <th>Game</th>
                         <th>Time</th>
                         <th class="odds-column">Moneyline</th>
-                        <th class="odds-column">Spread</th>
+                        <th class="odds-column">Puck Line</th>
                         <th class="odds-column">Total</th>
                         <th>Source</th>
                     </tr>
@@ -103,7 +103,7 @@
                 <tbody>
                     @foreach (var game in Model)
                     {
-                        <tr data-href="https://sportsbook.draftkings.com/leagues/football/nfl" onclick="window.open(this.dataset.href, '_blank')">
+                        <tr data-href="https://sportsbook.draftkings.com/leagues/hockey/nhl" onclick="window.open(this.dataset.href, '_blank')">
                             <td>
                                 <div class="fw-bold">@game.AwayTeam</div>
                                 <div class="text-muted">&#64; @game.HomeTeam</div>

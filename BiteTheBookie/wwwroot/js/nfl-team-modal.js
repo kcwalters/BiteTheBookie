@@ -309,6 +309,57 @@
     { title: 'Southwest', teams: ['DAL', 'HOU', 'MEM', 'NOP', 'SAS'] }
   ];
 
+  const nhlTeams = [
+    // Atlantic Division
+    { abbr: 'BOS', name: 'Boston Bruins' },
+    { abbr: 'BUF', name: 'Buffalo Sabres' },
+    { abbr: 'DET', name: 'Detroit Red Wings' },
+    { abbr: 'FLA', name: 'Florida Panthers' },
+    { abbr: 'MTL', name: 'Montreal Canadiens' },
+    { abbr: 'OTT', name: 'Ottawa Senators' },
+    { abbr: 'TBL', name: 'Tampa Bay Lightning' },
+    { abbr: 'TOR', name: 'Toronto Maple Leafs' },
+    // Metropolitan Division
+    { abbr: 'CAR', name: 'Carolina Hurricanes' },
+    { abbr: 'CBJ', name: 'Columbus Blue Jackets' },
+    { abbr: 'NJD', name: 'New Jersey Devils' },
+    { abbr: 'NYI', name: 'New York Islanders' },
+    { abbr: 'NYR', name: 'New York Rangers' },
+    { abbr: 'PHI', name: 'Philadelphia Flyers' },
+    { abbr: 'PIT', name: 'Pittsburgh Penguins' },
+    { abbr: 'WSH', name: 'Washington Capitals' },
+    // Central Division
+    { abbr: 'ARI', name: 'Arizona Coyotes' },
+    { abbr: 'CHI', name: 'Chicago Blackhawks' },
+    { abbr: 'COL', name: 'Colorado Avalanche' },
+    { abbr: 'DAL', name: 'Dallas Stars' },
+    { abbr: 'MIN', name: 'Minnesota Wild' },
+    { abbr: 'NSH', name: 'Nashville Predators' },
+    { abbr: 'STL', name: 'St. Louis Blues' },
+    { abbr: 'WPG', name: 'Winnipeg Jets' },
+    // Pacific Division
+    { abbr: 'ANA', name: 'Anaheim Ducks' },
+    { abbr: 'CGY', name: 'Calgary Flames' },
+    { abbr: 'EDM', name: 'Edmonton Oilers' },
+    { abbr: 'LAK', name: 'Los Angeles Kings' },
+    { abbr: 'SEA', name: 'Seattle Kraken' },
+    { abbr: 'SJS', name: 'San Jose Sharks' },
+    { abbr: 'VAN', name: 'Vancouver Canucks' },
+    { abbr: 'VGK', name: 'Vegas Golden Knights' }
+  ];
+
+  function nhlLogoUrl(abbr) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="72" height="72" rx="12" fill="#111111"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">${abbr}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
+  const nhlColumns = [
+    { title: 'Atlantic', teams: ['BOS', 'BUF', 'DET', 'FLA', 'MTL', 'OTT', 'TBL', 'TOR'] },
+    { title: 'Metropolitan', teams: ['CAR', 'CBJ', 'NJD', 'NYI', 'NYR', 'PHI', 'PIT', 'WSH'] },
+    { title: 'Central', teams: ['ARI', 'CHI', 'COL', 'DAL', 'MIN', 'NSH', 'STL', 'WPG'] },
+    { title: 'Pacific', teams: ['ANA', 'CGY', 'EDM', 'LAK', 'SEA', 'SJS', 'VAN', 'VGK'] }
+  ];
+
   const cbbColumns = [
     { title: 'ACC', teams: ['DUKE', 'UNC', 'UVA', 'CLEM', 'NCSU', 'WAKE', 'VT', 'MIA', 'FSU', 'LOU', 'PITT', 'SYR', 'BC', 'GT', 'ND'] },
     { title: 'Big Ten', teams: ['ILL', 'IND', 'IOWA', 'MD', 'MICH', 'MSU', 'MINN', 'NEB', 'NW', 'OSU', 'PSU', 'PUR', 'RUT', 'WIS'] },
@@ -360,38 +411,20 @@
       focus: false
     });
 
-    let hideTimer = null;
-    function clearHideTimer() {
-      if (hideTimer) {
-        clearTimeout(hideTimer);
-        hideTimer = null;
-      }
-    }
-
-    function scheduleHide() {
-      clearHideTimer();
-      hideTimer = setTimeout(() => {
-        modal.hide();
-      }, 0);
-    }
-
     function show() {
-      clearHideTimer();
       modal.show();
       showTicker(options.league);
     }
 
-    link.addEventListener('mouseenter', show);
-    link.addEventListener('focus', show);
-    link.addEventListener('mouseleave', scheduleHide);
+    // Hover: Only change ticker (don't show modal)
+    link.addEventListener('mouseenter', () => {
+      showTicker(options.league);
+    });
 
+    // Click: Show modal AND change ticker
     link.addEventListener('click', (e) => {
       e.preventDefault();
       show();
-    });
-
-    modalEl.addEventListener('mouseleave', () => {
-      modal.hide();
     });
 
     modalEl.addEventListener('click', (e) => {
@@ -410,8 +443,6 @@
       e.preventDefault();
       modal.hide();
     });
-
-    modalEl.addEventListener('hidden.bs.modal', clearHideTimer);
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -450,6 +481,15 @@
       columns: mlbColumns,
       logoUrl: mlbLogoUrl,
       oddsLink: { url: '/Odds/MLB', label: 'View MLB Odds' }
+    });
+
+    initLeagueTeamModal({
+      league: 'nhl',
+      modalId: 'nhlTeamModal',
+      teams: nhlTeams,
+      columns: nhlColumns,
+      logoUrl: nhlLogoUrl,
+      oddsLink: { url: '/Odds/NHL', label: 'View NHL Odds' }
     });
   });
 
