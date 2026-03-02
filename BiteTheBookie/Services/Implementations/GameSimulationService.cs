@@ -42,20 +42,24 @@ namespace BiteTheBookie.Services.Implementations
             {
                 var prompt = $@"Generate a detailed sports game simulation for an NBA game between {awayTeam} (away) and {homeTeam} (home). 
 
-Include the following sections in your response:
+Include the following sections in your response using Markdown formatting:
 
 1. **Final Score**: Provide a realistic final score
 2. **Game Summary**: Brief overview of how the game played out (2-3 sentences)
 3. **Key Performers**: List 3-5 players with their stats (points, rebounds, assists, etc.)
 4. **Quarter-by-Quarter Breakdown**: Describe key moments in each quarter with scores at each break
-5. **Team Statistics**: Compare both teams (FG%, 3PT%, rebounds, turnovers, fast-break points)
-6. **Betting Insights**: Mention how the game would affect spread, over/under, and moneyline bets
+5. **Team Statistics**: Create a comparison table with FG%, 3PT%, rebounds, turnovers, fast-break points
+6. **Betting Analysis**: Mention how the game would affect spread, over/under, and moneyline bets
 
-Format the response in a clear, readable way with emojis for visual appeal. Make it engaging and informative like a real sports analyst would write it.";
+IMPORTANT: 
+- Use standard ASCII characters only, NO emojis or special Unicode characters
+- Use Markdown tables for statistics
+- Make it engaging and informative like a real sports analyst would write it
+- Use bold text and headers to organize content clearly";
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage("You are an expert NBA analyst who creates detailed, realistic game simulations with accurate statistics and engaging narratives."),
+                    new SystemChatMessage("You are an expert NBA analyst who creates detailed, realistic game simulations with accurate statistics and engaging narratives. Use only standard ASCII characters in your response."),
                     new UserChatMessage(prompt)
                 };
 
@@ -72,48 +76,60 @@ Format the response in a clear, readable way with emojis for visual appeal. Make
 
         private static string GetMockSimulation(string homeTeam, string awayTeam)
         {
-            return $@"# ?? Game Simulation: {awayTeam} @ {homeTeam}
+            return $@"# GAME SIMULATION: {awayTeam} @ {homeTeam}
 
 ## Final Score
-**{awayTeam}**: 112
+**{awayTeam}**: 112  
 **{homeTeam}**: 108
 
-## ?? Game Summary
-In a tightly contested matchup, {awayTeam} edges out {homeTeam} 112-108 in a thrilling finish. The game was decided in the final minute with clutch free throws and defensive stops. Both teams showed impressive offensive firepower throughout the contest.
+## Game Summary
+In a tightly contested matchup, **{awayTeam}** edges out **{homeTeam}** 112-108 in a thrilling finish. The game was decided in the final minute with clutch free throws and defensive stops. Both teams showed impressive offensive firepower throughout the contest.
 
-## ? Key Performers
+## Key Performers
 
-### {awayTeam}
-- **Star Player**: 31 pts, 8 reb, 6 ast
-- **Supporting Player**: 24 pts, 5 reb, 3 stl
-- **Role Player**: 19 pts, 11 reb
+### {awayTeam} Top Players
+- **Star Player**: 31 pts, 8 reb, 6 ast - Led the team in scoring with efficient shooting
+- **Supporting Player**: 24 pts, 5 reb, 3 stl - Provided crucial defensive stops
+- **Role Player**: 19 pts, 11 reb - Dominated the boards
 
-### {homeTeam}
-- **Star Player**: 29 pts, 10 ast, 5 reb
-- **Supporting Player**: 26 pts, 7 reb
-- **Role Player**: 18 pts, 4 ast
+### {homeTeam} Top Players
+- **Star Player**: 29 pts, 10 ast, 5 reb - Orchestrated the offense beautifully
+- **Supporting Player**: 26 pts, 7 reb - Kept the team in the game with clutch shots
+- **Role Player**: 18 pts, 4 ast - Solid contribution off the bench
 
-## ?? Quarter Breakdown
+## Quarter-by-Quarter Breakdown
 
-**Q1**: Close start with both teams trading baskets - {awayTeam} 28, {homeTeam} 26
-**Q2**: {homeTeam} takes brief lead before halftime - Halftime: {homeTeam} 56, {awayTeam} 54
-**Q3**: {awayTeam} comes out strong, taking control - End Q3: {awayTeam} 83, {homeTeam} 79
-**Q4**: Back and forth finish, {awayTeam} seals it late - Final: {awayTeam} 112, {homeTeam} 108
+**1st Quarter**: Close start with both teams trading baskets  
+Score: {awayTeam} 28, {homeTeam} 26
 
-## ?? Team Statistics
-- **FG%**: {awayTeam} 48% | {homeTeam} 46%
-- **3PT**: {awayTeam} 13/32 | {homeTeam} 11/35
-- **Rebounds**: {awayTeam} 42 | {homeTeam} 45
-- **Turnovers**: {awayTeam} 12 | {homeTeam} 14
-- **Fast-break**: {awayTeam} 16 | {homeTeam} 11
+**2nd Quarter**: {homeTeam} takes brief lead before halftime  
+Halftime Score: {homeTeam} 56, {awayTeam} 54
 
-## ?? Betting Impact
-Based on this simulation:
-- **Spread**: Check current spread to see if {awayTeam} covers
-- **Over/Under**: Total of 220 points - compare to betting line
-- **Moneyline**: {awayTeam} wins outright
+**3rd Quarter**: {awayTeam} comes out strong, taking control  
+End of 3rd: {awayTeam} 83, {homeTeam} 79
 
-*Note: This is a simulated game for entertainment purposes.*";
+**4th Quarter**: Back and forth finish, {awayTeam} seals it late  
+Final Score: {awayTeam} 112, {homeTeam} 108
+
+## Team Statistics Comparison
+
+| Statistic | {awayTeam} | {homeTeam} |
+|-----------|------------|------------|
+| FG% | 48% | 46% |
+| 3-Pointers | 13/32 (40.6%) | 11/35 (31.4%) |
+| Rebounds | 42 | 45 |
+| Turnovers | 12 | 14 |
+| Fast-break Points | 16 | 11 |
+
+## Betting Analysis
+
+**Spread**: {awayTeam} wins by 4 points - check your spread line  
+**Over/Under**: Total of 220 points  
+**Moneyline**: {awayTeam} wins outright
+
+---
+
+*This is a simulated game for entertainment purposes. Results may vary from actual games.*";
         }
     }
 }

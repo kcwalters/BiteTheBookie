@@ -107,62 +107,115 @@
 <style>
     .simulation-content {
         line-height: 1.8;
+        color: #212529;
+        background-color: #ffffff;
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .markdown-content {
+        color: #212529;
     }
 
     .markdown-content h1 {
         font-size: 2rem;
         margin-top: 2rem;
         margin-bottom: 1rem;
-        color: #0d6efd;
+        color: #0066cc;
+        font-weight: 700;
     }
 
     .markdown-content h2 {
         font-size: 1.5rem;
         margin-top: 1.5rem;
         margin-bottom: 0.75rem;
-        border-bottom: 2px solid #dee2e6;
+        border-bottom: 3px solid #0066cc;
         padding-bottom: 0.5rem;
+        color: #0066cc;
+        font-weight: 600;
     }
 
     .markdown-content h3 {
         font-size: 1.25rem;
         margin-top: 1rem;
         margin-bottom: 0.5rem;
+        color: #0088ff;
+        font-weight: 600;
     }
 
     .markdown-content ul, .markdown-content ol {
         margin-left: 1.5rem;
         margin-bottom: 1rem;
+        color: #212529;
     }
 
     .markdown-content li {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
+        line-height: 1.6;
+        color: #212529;
     }
 
     .markdown-content strong {
-        color: #0d6efd;
-        font-weight: 600;
+        color: #0066cc;
+        font-weight: 700;
     }
 
     .markdown-content p {
         margin-bottom: 1rem;
+        color: #212529;
+        font-size: 1.05rem;
     }
 
     .markdown-content table {
         width: 100%;
         margin: 1rem 0;
         border-collapse: collapse;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .markdown-content table th,
     .markdown-content table td {
         padding: 0.75rem;
         border: 1px solid #dee2e6;
+        color: #212529;
     }
 
     .markdown-content table th {
-        background-color: #f8f9fa;
+        background-color: #0066cc;
+        color: #ffffff;
         font-weight: 600;
+    }
+
+    .markdown-content table tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    .markdown-content table tr:hover {
+        background-color: #e9ecef;
+    }
+
+    /* Make sure text is always visible */
+    .content-card {
+        background-color: #ffffff;
+        color: #212529;
+    }
+
+    /* Improve alert visibility */
+    .alert {
+        border-width: 2px;
+        font-weight: 500;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+        color: #721c24;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border-color: #17a2b8;
+        color: #0c5460;
     }
 </style>
 

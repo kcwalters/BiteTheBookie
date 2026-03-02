@@ -36,18 +36,18 @@
         </div>
 
         <!-- Filter tabs -->
-        <ul class="nav nav-pills mb-4">
+        <ul class="nav nav-pills mb-4" id="picksTabs">
             <li class="nav-item">
-                <a class="nav-link active" href="#all">All</a>
+                <a class="nav-link active" href="#" data-filter="all">All</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#spread">Against the Spread</a>
+                <a class="nav-link" href="#" data-filter="spread">Against the Spread</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#moneyline">Money Line</a>
+                <a class="nav-link" href="#" data-filter="moneyline">Money Line</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#overunder">Over / Under</a>
+                <a class="nav-link" href="#" data-filter="overunder">Over / Under</a>
             </li>
         </ul>
 
@@ -63,8 +63,8 @@
                         <th>Simulation</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
+                <tbody id="picksTableBody">
+                    <tr data-bet-types="spread overunder moneyline">
                         <td>
                             <div class="text-muted small">Mar 03, 12:30AM UTC</div>
                             <div class="d-flex align-items-center gap-2 mt-2">
@@ -81,8 +81,8 @@
                             <div>--</div>
                         </td>
                         <td>
-                            <div>O/U 215.5</div>
-                            <div>+2.5</div>
+                            <div><strong>O/U:</strong> 215.5</div>
+                            <div><strong>Spread:</strong> +2.5</div>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary">View Picks</button>
@@ -91,7 +91,7 @@
                             <a href="@Url.Action("Detail", "Picks", new { gameId = "bos-mil-20260303" })" class="btn btn-sm btn-outline-secondary">Simulation</a>
                         </td>
                     </tr>
-                    <tr>
+                    <tr data-bet-types="spread overunder moneyline">
                         <td>
                             <div class="text-muted small">Mar 03, 2:00AM UTC</div>
                             <div class="d-flex align-items-center gap-2 mt-2">
@@ -108,8 +108,8 @@
                             <div>--</div>
                         </td>
                         <td>
-                            <div>O/U 243.5</div>
-                            <div>+11.5</div>
+                            <div><strong>O/U:</strong> 243.5</div>
+                            <div><strong>Spread:</strong> +11.5</div>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary">View Picks</button>
@@ -118,7 +118,7 @@
                             <a href="@Url.Action("Detail", "Picks", new { gameId = "den-uta-20260303" })" class="btn btn-sm btn-outline-secondary">Simulation</a>
                         </td>
                     </tr>
-                    <tr>
+                    <tr data-bet-types="spread overunder moneyline">
                         <td>
                             <div class="text-muted small">Mar 03, 12:00AM UTC</div>
                             <div class="d-flex align-items-center gap-2 mt-2">
@@ -135,8 +135,8 @@
                             <div>--</div>
                         </td>
                         <td>
-                            <div>O/U 225.5</div>
-                            <div>+14.5</div>
+                            <div><strong>O/U:</strong> 225.5</div>
+                            <div><strong>Spread:</strong> +14.5</div>
                         </td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary">View Picks</button>
@@ -202,4 +202,160 @@
 
 @section Scripts {
     <script src="~/js/tickers.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterLinks = document.querySelectorAll('#picksTabs .nav-link');
+            const tableRows = document.querySelectorAll('#picksTableBody tr');
+
+            filterLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    filterLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Get the filter type
+                    const filterType = this.getAttribute('data-filter');
+                    
+                    // Filter the table rows
+                    tableRows.forEach(row => {
+                        if (filterType === 'all') {
+                            // Show all rows
+                            row.style.display = '';
+                        } else {
+                            // Check if row has the filter type in its data-bet-types attribute
+                            const betTypes = row.getAttribute('data-bet-types');
+                            if (betTypes && betTypes.includes(filterType)) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        }
+                    });
+                    
+                    // Update the count of visible games
+                    const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+                    console.log(`Showing ${visibleRows.length} games for filter: ${filterType}`);
+                });
+            });
+        });
+    </script>
 }
+
+<style>
+    /* Improved visibility and styling for Picks page */
+    .content-card {
+        background-color: #ffffff;
+        color: #212529;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .table {
+        color: #212529;
+    }
+
+    .table thead th {
+        background-color: #0066cc;
+        color: #ffffff;
+        font-weight: 600;
+        border: none;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f0f8ff;
+    }
+
+    .btn-primary {
+        background-color: #0066cc;
+        border-color: #0066cc;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        background-color: #0052a3;
+        border-color: #0052a3;
+    }
+
+    .btn-outline-primary {
+        color: #0066cc;
+        border-color: #0066cc;
+        font-weight: 600;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #0066cc;
+        border-color: #0066cc;
+        color: #ffffff;
+    }
+
+    .btn-outline-secondary {
+        color: #6c757d;
+        border-color: #6c757d;
+        font-weight: 500;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+
+    .nav-pills .nav-link {
+        color: #495057;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .nav-pills .nav-link:hover {
+        background-color: #e9ecef;
+        color: #0066cc;
+    }
+
+    .nav-pills .nav-link.active {
+        background-color: #0066cc;
+        font-weight: 600;
+    }
+
+    .card {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .card-body {
+        color: #212529;
+    }
+
+    .text-success {
+        color: #28a745 !important;
+        font-weight: 600;
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+    }
+
+    .fw-semibold {
+        color: #212529;
+        font-weight: 600;
+    }
+
+    h1, h2, h3, h4, h5 {
+        color: #212529;
+    }
+
+    .h3 {
+        color: #0066cc;
+        font-weight: 700;
+    }
+</style>
+
