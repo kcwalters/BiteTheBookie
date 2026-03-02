@@ -1,0 +1,205 @@
+@{
+    ViewData["Title"] = "NBA Picks - Expert Predictions";
+}
+
+<div class="container">
+    <div class="tickers-row">
+        <div id="nfl-ticker" style="display: none;">
+            @await Component.InvokeAsync("NFLTicker")
+        </div>
+        <div id="nba-ticker">
+            @await Component.InvokeAsync("NBATicker")
+        </div>
+        <div id="nhl-ticker" style="display: none;">
+            @await Component.InvokeAsync("NHLTicker")
+        </div>
+        <div id="ncaa-ticker" style="display: none;">
+            @await Component.InvokeAsync("NCAATicker")
+        </div>
+        <div id="mlb-ticker" style="display: none;">
+            @await Component.InvokeAsync("MLBTicker")
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="content-card">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="https://sports.cbsimg.net/fly/images/league-logos/54.svg" alt="NBA" style="width: 48px; height: 48px;" />
+                <h1 class="h2 mb-0">NBA Expert Picks</h1>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="@Url.Action("Index", "Picks")" class="btn btn-primary">Pick Sheet</a>
+                <a href="@Url.Action("NBA", "Picks")" class="btn btn-outline-primary">Expert Picks</a>
+            </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" href="#all">All</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#spread">Against the Spread</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#moneyline">Money Line</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#overunder">Over / Under</a>
+            </li>
+        </ul>
+
+        <!-- Picks table -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Game Information</th>
+                        <th>Projected Score</th>
+                        <th>Odds</th>
+                        <th>Picks</th>
+                        <th>Simulation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="text-muted small">Mar 03, 12:30AM UTC</div>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/334.svg" alt="Boston" style="width: 32px; height: 32px;" />
+                                <span class="fw-semibold">Boston</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg" alt="Milwaukee" style="width: 32px; height: 32px;" />
+                                <span class="fw-semibold">Milwaukee</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div>--</div>
+                            <div>--</div>
+                        </td>
+                        <td>
+                            <div>O/U 215.5</div>
+                            <div>+2.5</div>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary">Simulation</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="text-muted small">Mar 03, 2:00AM UTC</div>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/339.svg" alt="Denver" style="width: 32px; height: 32px;" />
+                                <span class="fw-semibold">Denver</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/359.svg" alt="Utah" style="width: 32px; height: 32px;" />
+                                <span class="fw-semibold">Utah</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div>--</div>
+                            <div>--</div>
+                        </td>
+                        <td>
+                            <div>O/U 243.5</div>
+                            <div>+11.5</div>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary">Simulation</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="text-muted small">Mar 03, 12:00AM UTC</div>
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/342.svg" alt="Houston" style="width: 32px; height: 32px;" />
+                                <span class="fw-semibold">Houston</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/361.svg" alt="Washington" style="width: 32px; height: 32px;" />
+                                <span class="fw-semibold">Washington</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div>--</div>
+                            <div>--</div>
+                        </td>
+                        <td>
+                            <div>O/U 225.5</div>
+                            <div>+14.5</div>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary">Simulation</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Hottest NBA Experts Section -->
+    <div class="content-card mt-4">
+        <h2 class="h3 mb-4">Hottest NBA Experts</h2>
+        <div class="row g-3">
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
+                            <div>
+                                <h5 class="mb-0">Mike Barner</h5>
+                                <div class="text-success">+2253 (67%)</div>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-0">54-27 Last 81 NBA</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
+                            <div>
+                                <h5 class="mb-0">Prop Bet Guy</h5>
+                                <div class="text-success">+2040 (59%)</div>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-0">116-82 Last 198 NBA Player Props</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
+                            <div>
+                                <h5 class="mb-0">Bruce Marshall</h5>
+                                <div class="text-success">+1517 (62%)</div>
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-0">46-28 Last 74 NBA</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/tickers.js" asp-append-version="true"></script>
+}

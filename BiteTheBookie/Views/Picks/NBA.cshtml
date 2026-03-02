@@ -1,0 +1,296 @@
+@{
+    ViewData["Title"] = "NBA Expert Picks & Predictions";
+}
+
+<div class="container">
+    <div class="tickers-row">
+        <div id="nfl-ticker" style="display: none;">
+            @await Component.InvokeAsync("NFLTicker")
+        </div>
+        <div id="nba-ticker">
+            @await Component.InvokeAsync("NBATicker")
+        </div>
+        <div id="nhl-ticker" style="display: none;">
+            @await Component.InvokeAsync("NHLTicker")
+        </div>
+        <div id="ncaa-ticker" style="display: none;">
+            @await Component.InvokeAsync("NCAATicker")
+        </div>
+        <div id="mlb-ticker" style="display: none;">
+            @await Component.InvokeAsync("MLBTicker")
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="content-card">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="https://sports.cbsimg.net/fly/images/league-logos/54.svg" alt="NBA" style="width: 48px; height: 48px;" />
+                <h1 class="h2 mb-0">NBA Expert Picks</h1>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="@Url.Action("Index", "Picks")" class="btn btn-outline-primary">Pick Sheet</a>
+                <a href="@Url.Action("NBA", "Picks")" class="btn btn-primary">Expert Picks</a>
+            </div>
+        </div>
+
+        <!-- Expert Analysis Cards -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="h5 mb-0">Today's Featured Pick</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>Celtics vs. Bucks - Expert Analysis</h4>
+                                <p class="text-muted">By Mike Barner • Updated 2 hours ago</p>
+                                <p>The Boston Celtics travel to Milwaukee to face the Bucks in what promises to be an exciting Eastern Conference matchup. Our advanced model has analyzed thousands of simulations to provide you with the best picks...</p>
+                                <div class="d-flex gap-2 mt-3">
+                                    <span class="badge bg-success">67% Win Rate</span>
+                                    <span class="badge bg-info">+2253 Units</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="p-3 border rounded">
+                                    <h5>Recommended Pick</h5>
+                                    <p class="h3 text-primary mb-0">Celtics -2.5</p>
+                                    <p class="text-muted small">Confidence: High</p>
+                                    <button class="btn btn-primary mt-2">View Full Analysis</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <h3 class="h4 mb-3">All NBA Games Today</h3>
+            </div>
+
+            <!-- Game 1 -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted small">Mar 03, 12:30AM UTC</span>
+                            <span class="badge bg-secondary">Final</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/334.svg" alt="Boston" style="width: 40px; height: 40px;" />
+                                <div>
+                                    <div class="fw-bold">Boston Celtics</div>
+                                    <div class="text-muted small">Away</div>
+                                </div>
+                            </div>
+                            <div class="h4 mb-0">--</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg" alt="Milwaukee" style="width: 40px; height: 40px;" />
+                                <div>
+                                    <div class="fw-bold">Milwaukee Bucks</div>
+                                    <div class="text-muted small">Home</div>
+                                </div>
+                            </div>
+                            <div class="h4 mb-0">--</div>
+                        </div>
+                        <hr />
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="small text-muted">Spread</div>
+                                <div class="fw-bold">+2.5</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">O/U</div>
+                                <div class="fw-bold">215.5</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">ML</div>
+                                <div class="fw-bold">+110</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3">View Expert Picks</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game 2 -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted small">Mar 03, 2:00AM UTC</span>
+                            <span class="badge bg-success">Live</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/339.svg" alt="Denver" style="width: 40px; height: 40px;" />
+                                <div>
+                                    <div class="fw-bold">Denver Nuggets</div>
+                                    <div class="text-muted small">Away</div>
+                                </div>
+                            </div>
+                            <div class="h4 mb-0">--</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/359.svg" alt="Utah" style="width: 40px; height: 40px;" />
+                                <div>
+                                    <div class="fw-bold">Utah Jazz</div>
+                                    <div class="text-muted small">Home</div>
+                                </div>
+                            </div>
+                            <div class="h4 mb-0">--</div>
+                        </div>
+                        <hr />
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="small text-muted">Spread</div>
+                                <div class="fw-bold">+11.5</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">O/U</div>
+                                <div class="fw-bold">243.5</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">ML</div>
+                                <div class="fw-bold">-450</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3">View Expert Picks</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game 3 -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="text-muted small">Mar 03, 12:00AM UTC</span>
+                            <span class="badge bg-secondary">Upcoming</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/342.svg" alt="Houston" style="width: 40px; height: 40px;" />
+                                <div>
+                                    <div class="fw-bold">Houston Rockets</div>
+                                    <div class="text-muted small">Away</div>
+                                </div>
+                            </div>
+                            <div class="h4 mb-0">--</div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/361.svg" alt="Washington" style="width: 40px; height: 40px;" />
+                                <div>
+                                    <div class="fw-bold">Washington Wizards</div>
+                                    <div class="text-muted small">Home</div>
+                                </div>
+                            </div>
+                            <div class="h4 mb-0">--</div>
+                        </div>
+                        <hr />
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="small text-muted">Spread</div>
+                                <div class="fw-bold">+14.5</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">O/U</div>
+                                <div class="fw-bold">225.5</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">ML</div>
+                                <div class="fw-bold">-800</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-3">View Expert Picks</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expert Stats Section -->
+    <div class="content-card mt-4">
+        <h2 class="h3 mb-4">Top NBA Experts</h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Expert</th>
+                        <th>Units Won</th>
+                        <th>Win Rate</th>
+                        <th>Recent Record</th>
+                        <th>Specialty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>
+                            <div class="fw-bold">Mike Barner</div>
+                        </td>
+                        <td class="text-success">+2253</td>
+                        <td>67%</td>
+                        <td>54-27 (Last 81)</td>
+                        <td><span class="badge bg-info">NBA</span></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>
+                            <div class="fw-bold">Prop Bet Guy</div>
+                        </td>
+                        <td class="text-success">+2040</td>
+                        <td>59%</td>
+                        <td>116-82 (Last 198)</td>
+                        <td><span class="badge bg-warning">Player Props</span></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>
+                            <div class="fw-bold">Bruce Marshall</div>
+                        </td>
+                        <td class="text-success">+1517</td>
+                        <td>62%</td>
+                        <td>46-28 (Last 74)</td>
+                        <td><span class="badge bg-info">NBA</span></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>
+                            <div class="fw-bold">Matt Severance</div>
+                        </td>
+                        <td class="text-success">+504</td>
+                        <td>61%</td>
+                        <td>11-7 (Last 18)</td>
+                        <td><span class="badge bg-success">Moneyline</span></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>
+                            <div class="fw-bold">Larry Hartstein</div>
+                        </td>
+                        <td class="text-success">+394</td>
+                        <td>62%</td>
+                        <td>13-8 (Last 21)</td>
+                        <td><span class="badge bg-warning">Player Props</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center mt-3">
+            <a href="#" class="btn btn-outline-primary">View All Experts</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/tickers.js" asp-append-version="true"></script>
+}

@@ -9,14 +9,17 @@
         <div id="nfl-ticker">
             @await Component.InvokeAsync("NFLTicker")
         </div>
-        <div id="nba-ticker">
+        <div id="nba-ticker" style="display: none;">
             @await Component.InvokeAsync("NBATicker")
         </div>
-        <div id="nhl-ticker">
+        <div id="nhl-ticker" style="display: none;">
             @await Component.InvokeAsync("NHLTicker")
         </div>
-        <div id="ncaa-ticker">
+        <div id="ncaa-ticker" style="display: none;">
             @await Component.InvokeAsync("NCAATicker")
+        </div>
+        <div id="mlb-ticker" style="display: none;">
+            @await Component.InvokeAsync("MLBTicker")
         </div>
     </div>
 </div>
