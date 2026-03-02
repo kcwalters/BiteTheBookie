@@ -69,6 +69,9 @@ builder.Services.AddHttpClient<IMlbService, MlbService>(c =>
 // Bind options from configuration
 builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection("SportsTicker"));
 
+// Game Simulation Service
+builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
+
 // Razor Pages
 builder.Services.AddRazorPages();
 

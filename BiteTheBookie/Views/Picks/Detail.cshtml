@@ -1,5 +1,7 @@
+@model BiteTheBookie.ViewModels.GameSimulationViewModel
+
 @{
-    ViewData["Title"] = "Game Simulation - Celtics vs Bucks";
+    ViewData["Title"] = $"Game Simulation - {Model.AwayTeam} vs {Model.HomeTeam}";
 }
 
 <div class="container">
@@ -35,252 +37,134 @@
         <div class="text-center py-4">
             <div class="d-flex justify-content-center align-items-center gap-4 mb-3">
                 <div class="text-center">
-                    <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/334.svg" alt="Boston" style="width: 80px; height: 80px;" />
-                    <h3 class="mt-2 mb-0">Boston Celtics</h3>
+                    <img src="@Model.AwayTeamLogo" alt="@Model.AwayTeam" style="width: 80px; height: 80px;" />
+                    <h3 class="mt-2 mb-0">@Model.AwayTeam</h3>
                 </div>
                 <div class="text-center">
-                    <div class="h1 text-primary mb-0">114 - 109</div>
-                    <div class="text-muted small">Simulated Final</div>
+                    <div class="h1 text-primary mb-0">VS</div>
+                    <div class="text-muted small">@Model.League</div>
                 </div>
                 <div class="text-center">
-                    <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg" alt="Milwaukee" style="width: 80px; height: 80px;" />
-                    <h3 class="mt-2 mb-0">Milwaukee Bucks</h3>
-                </div>
-            </div>
-            <p class="text-muted mb-0">March 3, 2026</p>
-        </div>
-    </div>
-
-    <!-- Game Summary -->
-    <div class="content-card mb-4">
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <span style="font-size: 1.5rem;">??</span>
-            <h2 class="h4 mb-0">Simulated Game Summary</h2>
-        </div>
-        <p class="lead">Boston edges Milwaukee in a tight, playoff-style battle on March 3, 2026, with a simulated final score of 114–109, driven by late-game execution and a standout two-way performance from Jayson Tatum.</p>
-        <p class="mb-0">Boston's depth and perimeter defense swing the matchup, while Milwaukee leans heavily on Giannis to keep it close.</p>
-    </div>
-
-    <!-- Key Performers -->
-    <div class="content-card mb-4">
-        <div class="d-flex align-items-center gap-2 mb-4">
-            <span style="font-size: 1.5rem;">?</span>
-            <h2 class="h4 mb-0">Key Performers</h2>
-        </div>
-
-        <div class="row g-3">
-            <!-- Boston Players -->
-            <div class="col-12 col-lg-6">
-                <div class="card h-100 border-primary">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Boston Celtics</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3 pb-3 border-bottom">
-                            <h6 class="fw-bold">Jayson Tatum</h6>
-                            <div class="d-flex gap-3 mb-2">
-                                <span class="badge bg-success">33 pts</span>
-                                <span class="badge bg-info">9 reb</span>
-                                <span class="badge bg-warning text-dark">5 ast</span>
-                                <span class="badge bg-secondary">2 stl</span>
-                            </div>
-                            <p class="small mb-0 text-muted">Efficient scoring and clutch shot-making in the final two minutes.</p>
-                        </div>
-                        <div class="mb-3 pb-3 border-bottom">
-                            <h6 class="fw-bold">Jaylen Brown</h6>
-                            <div class="d-flex gap-3 mb-2">
-                                <span class="badge bg-success">26 pts</span>
-                                <span class="badge bg-info">6 reb</span>
-                            </div>
-                            <p class="small mb-0 text-muted">Attacked mismatches and hit two big third-quarter threes.</p>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold">Kristaps Porzi??is</h6>
-                            <div class="d-flex gap-3 mb-2">
-                                <span class="badge bg-success">18 pts</span>
-                                <span class="badge bg-danger">3 blk</span>
-                            </div>
-                            <p class="small mb-0 text-muted">Rim protection changed Milwaukee's drives late.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Milwaukee Players -->
-            <div class="col-12 col-lg-6">
-                <div class="card h-100 border-success">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Milwaukee Bucks</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3 pb-3 border-bottom">
-                            <h6 class="fw-bold">Giannis Antetokounmpo</h6>
-                            <div class="d-flex gap-3 mb-2">
-                                <span class="badge bg-success">37 pts</span>
-                                <span class="badge bg-info">12 reb</span>
-                                <span class="badge bg-warning text-dark">7 ast</span>
-                            </div>
-                            <p class="small mb-0 text-muted">Dominant but forced into tough shots in crunch time.</p>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold">Damian Lillard</h6>
-                            <div class="d-flex gap-3 mb-2">
-                                <span class="badge bg-success">24 pts</span>
-                                <span class="badge bg-warning text-dark">8 ast</span>
-                            </div>
-                            <p class="small mb-0 text-muted">Hot early, cooled late under Boston's switching defense.</p>
-                        </div>
-                    </div>
+                    <img src="@Model.HomeTeamLogo" alt="@Model.HomeTeam" style="width: 80px; height: 80px;" />
+                    <h3 class="mt-2 mb-0">@Model.HomeTeam</h3>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- How the Game Played Out -->
-    <div class="content-card mb-4">
-        <div class="d-flex align-items-center gap-2 mb-4">
-            <span style="font-size: 1.5rem;">??</span>
-            <h2 class="h4 mb-0">How the Game Played Out</h2>
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Error Generating Simulation</h4>
+            <p>@Model.ErrorMessage</p>
         </div>
+    }
 
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">First Half</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-3">
-                            <li class="mb-2">? Milwaukee opens strong behind Giannis attacking early mismatches.</li>
-                            <li class="mb-2">? Boston counters with balanced scoring; Tatum finds rhythm from mid-range.</li>
-                        </ul>
-                        <div class="text-center p-3 bg-light rounded">
-                            <strong>Halftime: MIL 58 – BOS 56</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Third Quarter</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-3">
-                            <li class="mb-2">? Boston's defense tightens, forcing turnovers that lead to transition buckets.</li>
-                            <li class="mb-2">? Brown sparks a 10–2 run with back-to-back threes.</li>
-                        </ul>
-                        <div class="text-center p-3 bg-light rounded">
-                            <strong>End of 3rd: BOS 87 – MIL 82</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12">
-                <div class="card border-danger">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0">Fourth Quarter - Crunch Time</h5>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2">?? Giannis powers a Milwaukee comeback, tying the game at 102 with 3:11 left.</li>
-                            <li class="mb-2">?? Tatum responds with a step-back three and a tough drive.</li>
-                            <li class="mb-2">?? Porzi??is blocks Lillard at the rim with 40 seconds left, sealing momentum.</li>
-                            <li class="mb-2">?? Boston hits free throws to close it out.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Team Stats -->
-    <div class="content-card mb-4">
-        <div class="d-flex align-items-center gap-2 mb-4">
-            <span style="font-size: 1.5rem;">??</span>
-            <h2 class="h4 mb-0">Team Stats (Simulated)</h2>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Category</th>
-                        <th class="text-center">Celtics</th>
-                        <th class="text-center">Bucks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="fw-semibold">Field Goal %</td>
-                        <td class="text-center"><span class="badge bg-success">49%</span></td>
-                        <td class="text-center"><span class="badge bg-secondary">46%</span></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">3-Point Makes</td>
-                        <td class="text-center"><span class="badge bg-success">15/38</span></td>
-                        <td class="text-center"><span class="badge bg-secondary">12/35</span></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Rebounds</td>
-                        <td class="text-center"><span class="badge bg-success">44</span></td>
-                        <td class="text-center"><span class="badge bg-secondary">41</span></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Turnovers</td>
-                        <td class="text-center"><span class="badge bg-success">11</span></td>
-                        <td class="text-center"><span class="badge bg-warning text-dark">14</span></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Fast-break Points</td>
-                        <td class="text-center"><span class="badge bg-success">18</span></td>
-                        <td class="text-center"><span class="badge bg-secondary">10</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="alert alert-info mb-0" role="alert">
-            <strong>Key Takeaway:</strong> Boston wins by controlling the perimeter and getting timely stops.
-        </div>
-    </div>
-
-    <!-- Betting Insights -->
+    <!-- AI Generated Simulation Content -->
     <div class="content-card">
-        <h3 class="h4 mb-3">Betting Insights</h3>
-        <div class="row g-3">
-            <div class="col-12 col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Spread</h5>
-                        <p class="h3 text-success mb-2">BOS -2.5 ?</p>
-                        <p class="small text-muted mb-0">Boston covers by 2.5 points</p>
-                    </div>
+        @if (Model.IsLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
+                <p class="mt-3 text-muted">Generating simulation with AI...</p>
             </div>
-            <div class="col-12 col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Over/Under</h5>
-                        <p class="h3 text-success mb-2">Over 215.5 ?</p>
-                        <p class="small text-muted mb-0">Total: 223 (7.5 over)</p>
+        }
+        else
+        {
+            <div class="simulation-content">
+                @if (!string.IsNullOrEmpty(Model.SimulationContent))
+                {
+                    <!-- Render AI-generated content as Markdown -->
+                    <div class="markdown-content">
+                        @Html.Raw(Markdig.Markdown.ToHtml(Model.SimulationContent))
                     </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">Moneyline</h5>
-                        <p class="h3 text-success mb-2">BOS Wins ?</p>
-                        <p class="small text-muted mb-0">Boston prevails 114-109</p>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <p class="mb-0">No simulation content available. Please try again.</p>
                     </div>
-                </div>
+                }
             </div>
+        }
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="content-card mt-4">
+        <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-primary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Regenerate Simulation
+            </button>
+            <a href="@Url.Action("Index", "Picks")" class="btn btn-outline-secondary">
+                View All Picks
+            </a>
         </div>
     </div>
 </div>
+
+<style>
+    .simulation-content {
+        line-height: 1.8;
+    }
+
+    .markdown-content h1 {
+        font-size: 2rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: #0d6efd;
+    }
+
+    .markdown-content h2 {
+        font-size: 1.5rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+
+    .markdown-content h3 {
+        font-size: 1.25rem;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .markdown-content ul, .markdown-content ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .markdown-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .markdown-content strong {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    .markdown-content p {
+        margin-bottom: 1rem;
+    }
+
+    .markdown-content table {
+        width: 100%;
+        margin: 1rem 0;
+        border-collapse: collapse;
+    }
+
+    .markdown-content table th,
+    .markdown-content table td {
+        padding: 0.75rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .markdown-content table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+</style>
 
 @section Scripts {
     <script src="~/js/tickers.js" asp-append-version="true"></script>
