@@ -1,7 +1,7 @@
-﻿using BiteTheBookie.Models;
-using BiteTheBookie.Services.Interfaces;
-using Azure;
+﻿using Azure;
 using Azure.AI.OpenAI;
+using BiteTheBookie.Models;
+using BiteTheBookie.Services.Interfaces;
 using OpenAI.Chat;
 using System.Text.Json;
 

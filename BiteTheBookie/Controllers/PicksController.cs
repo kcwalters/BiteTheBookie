@@ -96,14 +96,6 @@ namespace BiteTheBookie.Controllers
             var awayTeamCode = parts[0].ToUpper();
             var homeTeamCode = parts[1].ToUpper();
 
-            // Get team rosters for actual players
-            var awayRoster = _rosterService.GetTeamRoster(awayTeamCode);
-            var homeRoster = _rosterService.GetTeamRoster(homeTeamCode);
-
-            // Get injury reports for both teams
-            var gameTime = DateTime.UtcNow.AddHours(6); // Default game time (can be improved with actual game time from schedule)
-            var injuries = await _injuryReportService.GetCurrentInjuriesForGameAsync(awayTeamCode, homeTeamCode, gameTime, cancellationToken);
-
             // Map team codes to full names and logo IDs
             var teamNames = new Dictionary<string, (string FullName, string LogoId)>
             {
@@ -112,17 +104,46 @@ namespace BiteTheBookie.Controllers
                 { "DEN", ("Denver Nuggets", "339") },
                 { "UTA", ("Utah Jazz", "359") },
                 { "HOU", ("Houston Rockets", "342") },
-                { "WAS", ("Washington Wizards", "361") }
+                { "WAS", ("Washington Wizards", "361") },
+                { "LAL", ("Los Angeles Lakers", "343") },
+                { "GSW", ("Golden State Warriors", "341") },
+                { "PHI", ("Philadelphia 76ers", "352") },
+                { "MIA", ("Miami Heat", "346") },
+                { "BKN", ("Brooklyn Nets", "335") },
+                { "DAL", ("Dallas Mavericks", "338") },
+                { "PHX", ("Phoenix Suns", "353") },
+                { "LAC", ("LA Clippers", "344") }
             };
 
             var awayTeamInfo = teamNames.GetValueOrDefault(awayTeamCode, ("Unknown", ""));
             var homeTeamInfo = teamNames.GetValueOrDefault(homeTeamCode, ("Unknown", ""));
 
+            // Get team rosters for actual players
+            var awayRoster = _rosterService.GetTeamRoster(awayTeamCode);
+            var homeRoster = _rosterService.GetTeamRoster(homeTeamCode);
+
+            // Get injury reports for both teams
+            var gameTime = DateTime.UtcNow.AddHours(6); // Default game time (can be improved with actual game time from schedule)
+            var injuries = await _injuryReportService.GetCurrentInjuriesForGameAsync(awayTeamCode, homeTeamCode, gameTime, cancellationToken);
+
+            // Use roster team name if available, otherwise fall back to mapped name
+            var awayTeamName = string.IsNullOrEmpty(awayRoster.TeamName) 
+                || awayRoster.TeamName == "Unknown" 
+                || awayRoster.TeamName == "Unknown Team"
+                ? awayTeamInfo.Item1 
+                : awayRoster.TeamName;
+            
+            var homeTeamName = string.IsNullOrEmpty(homeRoster.TeamName) 
+                || homeRoster.TeamName == "Unknown" 
+                || homeRoster.TeamName == "Unknown Team"
+                ? homeTeamInfo.Item1 
+                : homeRoster.TeamName;
+
             var viewModel = new GameSimulationViewModel
             {
                 GameId = gameId ?? string.Empty,
-                AwayTeam = awayRoster.TeamName,
-                HomeTeam = homeRoster.TeamName,
+                AwayTeam = awayTeamName,
+                HomeTeam = homeTeamName,
                 League = "NBA",
                 AwayTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{awayTeamInfo.Item2}.svg",
                 HomeTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{homeTeamInfo.Item2}.svg",
@@ -152,6 +173,3 @@ namespace BiteTheBookie.Controllers
         }
     }
 }
-
-
-
