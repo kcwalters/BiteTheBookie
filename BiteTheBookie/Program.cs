@@ -71,6 +71,8 @@ builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection
 
 // Game Simulation Service
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
+builder.Services.AddSingleton<INBARosterService, NBARosterService>();
+builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
 
 // Razor Pages
 builder.Services.AddRazorPages();

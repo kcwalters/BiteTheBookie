@@ -1,3 +1,5 @@
+@model BiteTheBookie.ViewModels.PicksIndexViewModel
+
 @{
     ViewData["Title"] = "NBA Picks - Expert Predictions";
 }
@@ -64,87 +66,65 @@
                     </tr>
                 </thead>
                 <tbody id="picksTableBody">
-                    <tr data-bet-types="spread overunder moneyline">
-                        <td>
-                            <div class="text-muted small">Mar 03, 12:30AM UTC</div>
-                            <div class="d-flex align-items-center gap-2 mt-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/334.svg" alt="Boston" style="width: 32px; height: 32px;" />
-                                <span class="fw-semibold">Boston</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg" alt="Milwaukee" style="width: 32px; height: 32px;" />
-                                <span class="fw-semibold">Milwaukee</span>
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <div>--</div>
-                            <div>--</div>
-                        </td>
-                        <td>
-                            <div><strong>O/U:</strong> 215.5</div>
-                            <div><strong>Spread:</strong> +2.5</div>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary">View Picks</button>
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Detail", "Picks", new { gameId = "bos-mil-20260303" })" class="btn btn-sm btn-outline-secondary">Simulation</a>
-                        </td>
-                    </tr>
-                    <tr data-bet-types="spread overunder moneyline">
-                        <td>
-                            <div class="text-muted small">Mar 03, 2:00AM UTC</div>
-                            <div class="d-flex align-items-center gap-2 mt-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/339.svg" alt="Denver" style="width: 32px; height: 32px;" />
-                                <span class="fw-semibold">Denver</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/359.svg" alt="Utah" style="width: 32px; height: 32px;" />
-                                <span class="fw-semibold">Utah</span>
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <div>--</div>
-                            <div>--</div>
-                        </td>
-                        <td>
-                            <div><strong>O/U:</strong> 243.5</div>
-                            <div><strong>Spread:</strong> +11.5</div>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary">View Picks</button>
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Detail", "Picks", new { gameId = "den-uta-20260303" })" class="btn btn-sm btn-outline-secondary">Simulation</a>
-                        </td>
-                    </tr>
-                    <tr data-bet-types="spread overunder moneyline">
-                        <td>
-                            <div class="text-muted small">Mar 03, 12:00AM UTC</div>
-                            <div class="d-flex align-items-center gap-2 mt-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/342.svg" alt="Houston" style="width: 32px; height: 32px;" />
-                                <span class="fw-semibold">Houston</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-1">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/361.svg" alt="Washington" style="width: 32px; height: 32px;" />
-                                <span class="fw-semibold">Washington</span>
-                            </div>
-                        </td>
-                        <td class="text-center">
-                            <div>--</div>
-                            <div>--</div>
-                        </td>
-                        <td>
-                            <div><strong>O/U:</strong> 225.5</div>
-                            <div><strong>Spread:</strong> +14.5</div>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary">View Picks</button>
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Detail", "Picks", new { gameId = "hou-was-20260303" })" class="btn btn-sm btn-outline-secondary">Simulation</a>
-                        </td>
-                    </tr>
+                    @if (Model.Games != null && Model.Games.Any())
+                    {
+                        @foreach (var game in Model.Games)
+                        {
+                            <tr data-bet-types="spread overunder moneyline">
+                                <td>
+                                    <div class="text-muted small">@game.GameTimeDisplay</div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" style="width: 32px; height: 32px;" />
+                                        <span class="fw-semibold">@game.AwayTeamName</span>
+                                        @if (game.AwayScore.HasValue)
+                                        {
+                                            <span class="badge bg-primary ms-2">@game.AwayScore</span>
+                                        }
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" style="width: 32px; height: 32px;" />
+                                        <span class="fw-semibold">@game.HomeTeamName</span>
+                                        @if (game.HomeScore.HasValue)
+                                        {
+                                            <span class="badge bg-primary ms-2">@game.HomeScore</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div>@(game.AwayScore?.ToString() ?? "--")</div>
+                                    <div>@(game.HomeScore?.ToString() ?? "--")</div>
+                                </td>
+                                <td>
+                                    @if (game.OverUnder.HasValue)
+                                    {
+                                        <div><strong>O/U:</strong> @game.OverUnder.Value</div>
+                                    }
+                                    @if (game.Spread.HasValue)
+                                    {
+                                        <div><strong>Spread:</strong> @(game.Spread > 0 ? "+" : "")@game.Spread</div>
+                                    }
+                                    @if (game.HomeMoneyline.HasValue)
+                                    {
+                                        <div class="small text-muted">ML: @(game.HomeMoneyline > 0 ? "+" : "")@game.HomeMoneyline</div>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })" class="btn btn-sm btn-outline-secondary">Simulation</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <p class="text-muted mb-0">No games available at this time.</p>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>

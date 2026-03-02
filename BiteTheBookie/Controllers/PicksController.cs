@@ -7,16 +7,31 @@ namespace BiteTheBookie.Controllers
     public class PicksController : Controller
     {
         private readonly IGameSimulationService _simulationService;
+        private readonly INBARosterService _rosterService;
+        private readonly INBAGamesService _gamesService;
 
-        public PicksController(IGameSimulationService simulationService)
+        public PicksController(
+            IGameSimulationService simulationService, 
+            INBARosterService rosterService,
+            INBAGamesService gamesService)
         {
             _simulationService = simulationService;
+            _rosterService = rosterService;
+            _gamesService = gamesService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
-            // Default view shows NBA picks
-            return View();
+            // Fetch upcoming NBA games dynamically
+            var games = await _gamesService.GetUpcomingGamesAsync(cancellationToken);
+            
+            var viewModel = new PicksIndexViewModel
+            {
+                League = "NBA",
+                Games = games
+            };
+
+            return View(viewModel);
         }
 
         public IActionResult NBA()
@@ -58,7 +73,11 @@ namespace BiteTheBookie.Controllers
             var awayTeamCode = parts[0].ToUpper();
             var homeTeamCode = parts[1].ToUpper();
 
-            // Map team codes to full names (you could expand this or use a database)
+            // Get team rosters for actual players
+            var awayRoster = _rosterService.GetTeamRoster(awayTeamCode);
+            var homeRoster = _rosterService.GetTeamRoster(homeTeamCode);
+
+            // Map team codes to full names and logo IDs
             var teamNames = new Dictionary<string, (string FullName, string LogoId)>
             {
                 { "BOS", ("Boston Celtics", "334") },
@@ -75,8 +94,8 @@ namespace BiteTheBookie.Controllers
             var viewModel = new GameSimulationViewModel
             {
                 GameId = gameId ?? string.Empty,
-                AwayTeam = awayTeamInfo.Item1,
-                HomeTeam = homeTeamInfo.Item1,
+                AwayTeam = awayRoster.TeamName,
+                HomeTeam = homeRoster.TeamName,
                 League = "NBA",
                 AwayTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{awayTeamInfo.Item2}.svg",
                 HomeTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{homeTeamInfo.Item2}.svg",
@@ -85,11 +104,13 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                // Generate simulation using AI
+                // Generate simulation using AI with actual team rosters
                 viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
                     viewModel.HomeTeam, 
                     viewModel.AwayTeam, 
-                    viewModel.League, 
+                    viewModel.League,
+                    homeRoster,
+                    awayRoster,
                     cancellationToken);
             }
             catch (Exception ex)
@@ -102,5 +123,6 @@ namespace BiteTheBookie.Controllers
         }
     }
 }
+
 
 
