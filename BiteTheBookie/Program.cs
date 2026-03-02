@@ -73,6 +73,11 @@ builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddSingleton<INBARosterService, NBARosterService>();
 builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
+builder.Services.AddScoped<ISpreadAnalysisService, SpreadAnalysisService>();
+builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();
+
+// ESPN API Client for real injury data
+builder.Services.AddHttpClient<EspnApiClient>();
 
 // Razor Pages
 builder.Services.AddRazorPages();

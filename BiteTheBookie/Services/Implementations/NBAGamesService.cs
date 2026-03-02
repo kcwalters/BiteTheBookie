@@ -1,4 +1,4 @@
-using BiteTheBookie.Models;
+﻿using BiteTheBookie.Models;
 using BiteTheBookie.Services.Interfaces;
 using Azure;
 using Azure.AI.OpenAI;
@@ -11,11 +11,16 @@ namespace BiteTheBookie.Services.Implementations
     {
         private readonly ILogger<NBAGamesService> _logger;
         private readonly ChatClient? _chatClient;
+        private readonly TheOddsApiClient _oddsApiClient;
         private readonly Dictionary<string, (string Name, string Logo, string Code)> _teamInfo;
 
-        public NBAGamesService(IConfiguration configuration, ILogger<NBAGamesService> logger)
+        public NBAGamesService(
+            IConfiguration configuration, 
+            ILogger<NBAGamesService> logger,
+            TheOddsApiClient oddsApiClient)
         {
             _logger = logger;
+            _oddsApiClient = oddsApiClient;
             
             // Initialize team information
             _teamInfo = InitializeTeamInfo();
@@ -26,7 +31,7 @@ namespace BiteTheBookie.Services.Implementations
 
             if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(deploymentName))
             {
-                _logger.LogWarning("Azure OpenAI configuration is missing. Will use fallback game data.");
+                _logger.LogWarning("Azure OpenAI configuration is missing. Will use fallback game data if The Odds API fails.");
                 _chatClient = null;
             }
             else
@@ -38,14 +43,213 @@ namespace BiteTheBookie.Services.Implementations
 
         public async Task<List<NBAGameMatchup>> GetUpcomingGamesAsync(CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Fetching real NBA games from The Odds API");
+            
+            // Fetch real games from The Odds API
+            var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_nba/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
+            
+            var games = ParseOddsApiResponse(oddsData);
+            
+            if (games.Any())        
+            {
+                _logger.LogInformation("Successfully fetched {Count} real NBA games from The Odds API", games.Count);
+                return games;
+            }
+            
+            // Return empty list instead of falling back to mock data
+            _logger.LogWarning("No games available from The Odds API");
+            return new List<NBAGameMatchup>();
+        }
+
+        private List<NBAGameMatchup> ParseOddsApiResponse(JsonElement oddsData)
+        {
+            var games = new List<NBAGameMatchup>();
+
+            if (oddsData.ValueKind != JsonValueKind.Array)
+            {
+                _logger.LogWarning("Unexpected response format from The Odds API");
+                return games;
+            }
+
+            var totalGames = oddsData.GetArrayLength();
+            _logger.LogInformation("Processing {TotalGames} games from The Odds API", totalGames);
+            
+            var skippedGames = 0;
+            var unmappedTeams = new HashSet<string>();
+
+            foreach (var game in oddsData.EnumerateArray())
+            {
+                try
+                {
+                    var homeTeam = game.GetProperty("home_team").GetString() ?? "";
+                    var awayTeam = game.GetProperty("away_team").GetString() ?? "";
+                    var commenceTime = game.GetProperty("commence_time").GetDateTime();
+
+                    // Map team names to our codes
+                    var homeTeamCode = MapTeamNameToCode(homeTeam);
+                    var awayTeamCode = MapTeamNameToCode(awayTeam);
+
+                    if (string.IsNullOrEmpty(homeTeamCode) || string.IsNullOrEmpty(awayTeamCode))
+                    {
+                        _logger.LogWarning("Could not map teams: {Home} ({HomeCode}) / {Away} ({AwayCode})", 
+                            homeTeam, homeTeamCode, awayTeam, awayTeamCode);
+                        
+                        if (string.IsNullOrEmpty(homeTeamCode)) unmappedTeams.Add(homeTeam);
+                        if (string.IsNullOrEmpty(awayTeamCode)) unmappedTeams.Add(awayTeam);
+                        
+                        skippedGames++;
+                        continue;
+                    }
+
+                    _logger.LogDebug("Mapped teams: {Away} → {AwayCode} @ {Home} → {HomeCode}", 
+                        awayTeam, awayTeamCode, homeTeam, homeTeamCode);
+
+                    var homeInfo = _teamInfo.GetValueOrDefault(homeTeamCode);
+                    var awayInfo = _teamInfo.GetValueOrDefault(awayTeamCode);
+
+                    if (homeInfo == default || awayInfo == default)
+                    {
+                        _logger.LogWarning("Team code lookup failed: {HomeCode} or {AwayCode} not found in team info dictionary", 
+                            homeTeamCode, awayTeamCode);
+                        skippedGames++;
+                        continue;
+                    }
+
+                    // Extract betting lines from bookmakers
+                    decimal? spread = null;
+                    decimal? overUnder = null;
+                    int? homeMoneyline = null;
+                    int? awayMoneyline = null;
+
+                    if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var bookmaker in bookmakers.EnumerateArray())
+                        {
+                            if (bookmaker.TryGetProperty("markets", out var markets) && markets.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var market in markets.EnumerateArray())
+                                {
+                                    var marketKey = market.GetProperty("key").GetString();
+
+                                    if (marketKey == "spreads" && !spread.HasValue)
+                                    {
+                                        var outcomes = market.GetProperty("outcomes").EnumerateArray().ToList();
+                                        var homeOutcome = outcomes.FirstOrDefault(o => o.GetProperty("name").GetString() == homeTeam);
+                                        if (homeOutcome.ValueKind != JsonValueKind.Undefined)
+                                        {
+                                            spread = homeOutcome.GetProperty("point").GetDecimal();
+                                        }
+                                    }
+                                    else if (marketKey == "totals" && !overUnder.HasValue)
+                                    {
+                                        var outcomes = market.GetProperty("outcomes").EnumerateArray().ToList();
+                                        if (outcomes.Any())
+                                        {
+                                            overUnder = outcomes.First().GetProperty("point").GetDecimal();
+                                        }
+                                    }
+                                    else if (marketKey == "h2h")
+                                    {
+                                        var outcomes = market.GetProperty("outcomes").EnumerateArray().ToList();
+                                        var homeOutcome = outcomes.FirstOrDefault(o => o.GetProperty("name").GetString() == homeTeam);
+                                        var awayOutcome = outcomes.FirstOrDefault(o => o.GetProperty("name").GetString() == awayTeam);
+                                        
+                                        if (homeOutcome.ValueKind != JsonValueKind.Undefined && !homeMoneyline.HasValue)
+                                        {
+                                            homeMoneyline = homeOutcome.GetProperty("price").GetInt32();
+                                        }
+                                        if (awayOutcome.ValueKind != JsonValueKind.Undefined && !awayMoneyline.HasValue)
+                                        {
+                                            awayMoneyline = awayOutcome.GetProperty("price").GetInt32();
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Break after first bookmaker with data
+                            if (spread.HasValue && overUnder.HasValue)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    _logger.LogDebug("Successfully parsed game: {AwayCode} @ {HomeCode} at {GameTime} (Spread: {Spread}, O/U: {OverUnder})",
+                        awayTeamCode, homeTeamCode, commenceTime, spread, overUnder);
+
+                    games.Add(new NBAGameMatchup
+                    {
+                        GameId = $"{awayTeamCode.ToLower()}-{homeTeamCode.ToLower()}-{commenceTime:yyyyMMdd}",
+                        AwayTeamCode = awayInfo.Code,
+                        AwayTeamName = awayInfo.Name,
+                        AwayTeamLogo = awayInfo.Logo,
+                        HomeTeamCode = homeInfo.Code,
+                        HomeTeamName = homeInfo.Name,
+                        HomeTeamLogo = homeInfo.Logo,
+                        GameTime = commenceTime,
+                        Spread = spread,
+                        OverUnder = overUnder,
+                        HomeMoneyline = homeMoneyline,
+                        AwayMoneyline = awayMoneyline,
+                        Status = "Scheduled"
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error parsing game from Odds API");
+                    skippedGames++;
+                }
+            }
+
+            // Summary logging
+            if (unmappedTeams.Any())
+            {
+                _logger.LogWarning("⚠️ Unmapped teams detected: {UnmappedTeams}. Add these to MapTeamNameToCode() dictionary.", 
+                    string.Join(", ", unmappedTeams));
+            }
+
+            _logger.LogInformation("Parsing complete: {ParsedGames}/{TotalGames} games parsed successfully, {SkippedGames} skipped", 
+                games.Count, totalGames, skippedGames);
+
+            return games.OrderBy(g => g.GameTime).ToList();
+        }
+
+        private string MapTeamNameToCode(string teamName)
+        {
+            // Map The Odds API team names to our team codes
+            var mapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Boston Celtics", "BOS" },
+                { "Milwaukee Bucks", "MIL" },
+                { "Denver Nuggets", "DEN" },
+                { "Utah Jazz", "UTA" },
+                { "Houston Rockets", "HOU" },
+                { "Washington Wizards", "WAS" },
+                { "Los Angeles Lakers", "LAL" },
+                { "Golden State Warriors", "GSW" },
+                { "Philadelphia 76ers", "PHI" },
+                { "Miami Heat", "MIA" },
+                { "Brooklyn Nets", "BKN" },
+                { "Dallas Mavericks", "DAL" },
+                { "Phoenix Suns", "PHX" },
+                { "Los Angeles Clippers", "LAC" }
+            };
+
+            return mapping.GetValueOrDefault(teamName, "");
+        }
+
+        private async Task<List<NBAGameMatchup>> GetAIGeneratedGamesAsync(CancellationToken cancellationToken)
+        {
             if (_chatClient == null)
             {
-                _logger.LogInformation("Using fallback game data");
+                _logger.LogInformation("No AI available, using fallback game data");
                 return GetFallbackGames();
             }
 
             try
             {
+                _logger.LogInformation("Using AI to generate game schedule as fallback");
+                
                 var today = DateTime.UtcNow.Date;
                 var tomorrow = today.AddDays(1);
 
@@ -86,22 +290,11 @@ Ensure game times are realistic for today/tomorrow and teams don't play multiple
                 var response = await _chatClient.CompleteChatAsync(messages, cancellationToken: cancellationToken);
                 var content = response.Value.Content[0].Text;
 
-                _logger.LogInformation("OpenAI Response: {Content}", content);
-
                 // Clean up the response (remove markdown if present)
                 content = content.Trim();
-                if (content.StartsWith("```json"))
-                {
-                    content = content.Substring(7);
-                }
-                if (content.StartsWith("```"))
-                {
-                    content = content.Substring(3);
-                }
-                if (content.EndsWith("```"))
-                {
-                    content = content.Substring(0, content.Length - 3);
-                }
+                if (content.StartsWith("```json")) content = content.Substring(7);
+                if (content.StartsWith("```")) content = content.Substring(3);
+                if (content.EndsWith("```")) content = content.Substring(0, content.Length - 3);
                 content = content.Trim();
 
                 // Parse the JSON response
@@ -112,7 +305,7 @@ Ensure game times are realistic for today/tomorrow and teams don't play multiple
 
                 if (gamesData == null || !gamesData.Any())
                 {
-                    _logger.LogWarning("No games returned from OpenAI, using fallback");
+                    _logger.LogWarning("No games returned from AI, using static fallback");
                     return GetFallbackGames();
                 }
 
@@ -147,12 +340,12 @@ Ensure game times are realistic for today/tomorrow and teams don't play multiple
                     });
                 }
 
-                _logger.LogInformation("Successfully generated {Count} NBA games from OpenAI", games.Count);
+                _logger.LogInformation("Successfully generated {Count} NBA games from AI", games.Count);
                 return games.OrderBy(g => g.GameTime).ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating games from OpenAI");
+                _logger.LogError(ex, "Error generating games from AI, using static fallback");
                 return GetFallbackGames();
             }
         }
@@ -249,4 +442,5 @@ Ensure game times are realistic for today/tomorrow and teams don't play multiple
         }
     }
 }
+
 

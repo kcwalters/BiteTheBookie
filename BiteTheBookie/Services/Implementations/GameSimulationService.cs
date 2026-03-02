@@ -35,7 +35,9 @@ namespace BiteTheBookie.Services.Implementations
             string awayTeam, 
             string league, 
             NBATeamRoster? homeRoster = null, 
-            NBATeamRoster? awayRoster = null, 
+            NBATeamRoster? awayRoster = null,
+            List<PlayerInjuryReport>? injuries = null,
+            DateTime? gameTime = null,
             CancellationToken cancellationToken = default)
         {
             // Always generate a fresh simulation - no caching
@@ -45,32 +47,89 @@ namespace BiteTheBookie.Services.Implementations
             _logger.LogInformation("Generating NEW simulation #{SimulationId} for {HomeTeam} vs {AwayTeam} at {Timestamp}", 
                 simulationId, homeTeam, awayTeam, timestamp);
             
+            // Filter out ALL players on injured reserve (status = "Out")
+            var injuredPlayers = injuries?
+                .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
+                .Select(i => i.PlayerName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
+
+            if (injuredPlayers.Any())
+            {
+                _logger.LogWarning("?? EXCLUDING {Count} injured players from simulation: {Players}", 
+                    injuredPlayers.Count, string.Join(", ", injuredPlayers));
+                
+                // Log which team each injured player belongs to
+                foreach (var injury in injuries.Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase)))
+                {
+                    _logger.LogWarning("  ? {Player} ({Team}) - OUT: {Description}", 
+                        injury.PlayerName, injury.TeamCode, injury.InjuryDescription);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("? No injured players to exclude for this game");
+            }
+            
             // If no API configuration, return mock data
             if (_chatClient == null)
             {
                 _logger.LogInformation("Using mock simulation data for {HomeTeam} vs {AwayTeam}", homeTeam, awayTeam);
-                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster);
+                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayers);
             }
 
             try
             {
                 _logger.LogInformation("Generating AI simulation for {HomeTeam} vs {AwayTeam}", homeTeam, awayTeam);
                 
-                // Build player roster strings
-                var awayStarters = awayRoster?.Players.Where(p => p.IsStarter).Select(p => $"{p.Name} ({p.Position})").ToList() ?? new List<string>();
-                var homeStarters = homeRoster?.Players.Where(p => p.IsStarter).Select(p => $"{p.Name} ({p.Position})").ToList() ?? new List<string>();
-                var awayBench = awayRoster?.Players.Where(p => !p.IsStarter).Select(p => p.Name).ToList() ?? new List<string>();
-                var homeBench = homeRoster?.Players.Where(p => !p.IsStarter).Select(p => p.Name).ToList() ?? new List<string>();
+                // Build player roster strings, excluding injured players
+                var awayStarters = awayRoster?.Players
+                    .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Select(p => $"{p.Name} ({p.Position})")
+                    .ToList() ?? new List<string>();
+                var homeStarters = homeRoster?.Players
+                    .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Select(p => $"{p.Name} ({p.Position})")
+                    .ToList() ?? new List<string>();
+                var awayBench = awayRoster?.Players
+                    .Where(p => !p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Select(p => p.Name)
+                    .ToList() ?? new List<string>();
+                var homeBench = homeRoster?.Players
+                    .Where(p => !p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Select(p => p.Name)
+                    .ToList() ?? new List<string>();
+
+                // Build injury report string
+                var injuryInfo = "";
+                if (injuredPlayers.Any())
+                {
+                    var awayInjuries = injuries?.Where(i => i.TeamCode == awayRoster?.TeamCode && injuredPlayers.Contains(i.PlayerName)).ToList() ?? new();
+                    var homeInjuries = injuries?.Where(i => i.TeamCode == homeRoster?.TeamCode && injuredPlayers.Contains(i.PlayerName)).ToList() ?? new();
+
+                    if (awayInjuries.Any() || homeInjuries.Any())
+                    {
+                        injuryInfo = "\n\n**INJURY REPORT (Players OUT for this game):**\n";
+                        
+                        if (awayInjuries.Any())
+                        {
+                            injuryInfo += $"{awayTeam}: {string.Join(", ", awayInjuries.Select(i => $"{i.PlayerName} ({i.InjuryDescription})"))}\n";
+                        }
+                        if (homeInjuries.Any())
+                        {
+                            injuryInfo += $"{homeTeam}: {string.Join(", ", homeInjuries.Select(i => $"{i.PlayerName} ({i.InjuryDescription})"))}\n";
+                        }
+                    }
+                }
 
                 var rosterInfo = $@"
-**{awayTeam} Roster:**
+**{awayTeam} Available Roster:**
 Starting 5: {string.Join(", ", awayStarters)}
 Key Bench: {string.Join(", ", awayBench)}
 
-**{homeTeam} Roster:**
+**{homeTeam} Available Roster:**
 Starting 5: {string.Join(", ", homeStarters)}
 Key Bench: {string.Join(", ", homeBench)}
-";
+{injuryInfo}";
 
                 var prompt = $@"Generate a FRESH, UNIQUE sports game simulation for an NBA game between {awayTeam} (away) and {homeTeam} (home). 
 
@@ -79,10 +138,18 @@ GENERATED AT: {timestamp}
 
 {rosterInfo}
 
-CRITICAL INSTRUCTIONS: 
+CRITICAL INSTRUCTIONS - INJURY RULES:
+- **AT THE VERY TOP OF YOUR SIMULATION**, list all injured players under a heading ""## Injury Report""
+- Format: ""**Player Name** - OUT (Injury Description)""
+- DO NOT UNDER ANY CIRCUMSTANCES include injured players in the game simulation
+- DO NOT mention injured players in game action, statistics, or narratives
+- ONLY use players from the AVAILABLE ROSTER lists above
+- If a key star player is injured, mention how the team is adjusting WITHOUT that player
+
+SIMULATION REQUIREMENTS:
 - This is simulation #{simulationId} - make it COMPLETELY DIFFERENT from any previous simulations
-- Use ONLY the players listed above in your simulation
-- Base the key performers and statistics on these ACTUAL PLAYERS
+- Use ONLY the players listed in the AVAILABLE ROSTER above
+- Base the key performers and statistics on these ACTUAL AVAILABLE PLAYERS
 - Make this simulation UNIQUE and SPECIFIC to {awayTeam} vs {homeTeam}
 - Consider the actual strengths and playing styles of these teams
 - DO NOT generate a generic simulation - make it about THIS SPECIFIC matchup
@@ -111,7 +178,7 @@ CRITICAL REQUIREMENTS:
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage($"You are an expert NBA analyst who creates detailed, realistic game simulations. Each simulation must be UNIQUE with different scores, different star performers, and different narratives. Generate simulation #{simulationId} with fresh content - never repeat previous simulations. Use actual player names from rosters and vary which players have big games. Use only standard ASCII characters."),
+                    new SystemChatMessage($"You are an expert NBA analyst who creates detailed, realistic game simulations. CRITICAL: Start EVERY simulation with an '## Injury Report' section listing ALL injured players as 'OUT'. NEVER include injured players in game action or statistics. Each simulation must be UNIQUE with different scores, different star performers, and different narratives. Generate simulation #{simulationId} with fresh content. Use only standard ASCII characters."),
                     new UserChatMessage(prompt)
                 };
 
@@ -131,15 +198,21 @@ CRITICAL REQUIREMENTS:
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating game simulation for {HomeTeam} vs {AwayTeam}, falling back to mock", homeTeam, awayTeam);
-                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster);
+                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayers);
             }
         }
 
-        private static string GetMockSimulation(string homeTeam, string awayTeam, NBATeamRoster? homeRoster, NBATeamRoster? awayRoster)
+        private static string GetMockSimulation(string homeTeam, string awayTeam, NBATeamRoster? homeRoster, NBATeamRoster? awayRoster, HashSet<string> injuredPlayers)
         {
-            // Get actual player names if rosters are available
-            var awayPlayers = awayRoster?.Players.Where(p => p.IsStarter).Take(3).ToList() ?? new List<NBAPlayer>();
-            var homePlayers = homeRoster?.Players.Where(p => p.IsStarter).Take(3).ToList() ?? new List<NBAPlayer>();
+            // Get actual player names if rosters are available, excluding injured
+            var awayPlayers = awayRoster?.Players
+                .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
+                .Take(3)
+                .ToList() ?? new List<NBAPlayer>();
+            var homePlayers = homeRoster?.Players
+                .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
+                .Take(3)
+                .ToList() ?? new List<NBAPlayer>();
 
             string awayPlayer1 = awayPlayers.Count > 0 ? awayPlayers[0].Name : "Star Player";
             string awayPlayer2 = awayPlayers.Count > 1 ? awayPlayers[1].Name : "Supporting Player";
@@ -193,9 +266,39 @@ CRITICAL REQUIREMENTS:
             int q3Away = random.Next(72, 92);
             int q3Home = random.Next(72, 92);
 
+            // Build injury report section
+            var injuryReport = "";
+            if (injuredPlayers.Any())
+            {
+                injuryReport = "## Injury Report\n\n";
+                
+                var awayInjured = injuredPlayers.Where(p => awayRoster?.Players.Any(rp => rp.Name.Equals(p, StringComparison.OrdinalIgnoreCase)) ?? false).ToList();
+                var homeInjured = injuredPlayers.Where(p => homeRoster?.Players.Any(rp => rp.Name.Equals(p, StringComparison.OrdinalIgnoreCase)) ?? false).ToList();
+                
+                if (awayInjured.Any())
+                {
+                    injuryReport += $"**{awayTeam}:**\n";
+                    foreach (var player in awayInjured)
+                    {
+                        injuryReport += $"- **{player}** - OUT (Injured)\n";
+                    }
+                    injuryReport += "\n";
+                }
+                
+                if (homeInjured.Any())
+                {
+                    injuryReport += $"**{homeTeam}:**\n";
+                    foreach (var player in homeInjured)
+                    {
+                        injuryReport += $"- **{player}** - OUT (Injured)\n";
+                    }
+                    injuryReport += "\n";
+                }
+            }
+
             return $@"# GAME SIMULATION: {awayTeam} @ {homeTeam}
 
-## Final Score
+{injuryReport}## Final Score
 **{awayTeam}**: {awayScore}  
 **{homeTeam}**: {homeScore}
 
