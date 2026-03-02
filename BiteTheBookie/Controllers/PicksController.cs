@@ -35,5 +35,14 @@ namespace BiteTheBookie.Controllers
         {
             return View();
         }
+
+        public IActionResult Detail(string gameId)
+        {
+            // In a real app, you would fetch game data based on gameId
+            // For now, we'll pass the gameId to the view
+            ViewBag.GameId = gameId;
+            return View();
+        }
     }
 }
+
