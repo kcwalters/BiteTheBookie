@@ -41,14 +41,14 @@ namespace BiteTheBookie.Services.Implementations
             }
         }
 
-        public async Task<List<NBAGameMatchup>> GetUpcomingGamesAsync(CancellationToken cancellationToken = default)
+        public async Task<List<NBAGameMatchup>> GetUpcomingNBAGamesAsync(CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Fetching real NBA games from The Odds API");
             
             // Fetch real games from The Odds API
             var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_nba/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
             
-            var games = ParseOddsApiResponse(oddsData);
+            var games = ParseNBAOddsApiResponse(oddsData);
             
             if (games.Any())        
             {
@@ -61,7 +61,27 @@ namespace BiteTheBookie.Services.Implementations
             return new List<NBAGameMatchup>();
         }
 
-        private List<NBAGameMatchup> ParseOddsApiResponse(JsonElement oddsData)
+        public async Task<List<CBBGameMatchup>> GetUpcomingCBBGamesAsync(CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Fetching real NCAA games from The Odds API");
+
+            // Fetch real games from The Odds API
+            var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_cbb/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
+
+            var games = ParseCBBOddsApiResponse(oddsData);
+
+            if (games.Any())
+            {
+                _logger.LogInformation("Successfully fetched {Count} real NBA games from The Odds API", games.Count);
+                return games;
+            }
+
+            // Return empty list instead of falling back to mock data
+            _logger.LogWarning("No games available from The Odds API");
+            return new List<CBBGameMatchup>();
+        }
+
+        private List<NBAGameMatchup> ParseNBAOddsApiResponse(JsonElement oddsData)
         {
             var games = new List<NBAGameMatchup>();
 
@@ -215,6 +235,165 @@ namespace BiteTheBookie.Services.Implementations
             }
 
             _logger.LogInformation("Parsing complete: {ParsedGames}/{TotalGames} games parsed successfully, {SkippedGames} skipped", 
+                games.Count, totalGames, skippedGames);
+
+            return games.OrderBy(g => g.GameTime).ToList();
+        }
+
+        private List<CBBGameMatchup> ParseCBBOddsApiResponse(JsonElement oddsData)
+        {
+            var games = new List<CBBGameMatchup>();
+
+            if (oddsData.ValueKind != JsonValueKind.Array)
+            {
+                _logger.LogWarning("Unexpected response format from The Odds API");
+                return games;
+            }
+
+            var totalGames = oddsData.GetArrayLength();
+            _logger.LogInformation("Processing {TotalGames} games from The Odds API", totalGames);
+
+            var skippedGames = 0;
+            var unmappedTeams = new HashSet<string>();
+
+            foreach (var game in oddsData.EnumerateArray())
+            {
+                try
+                {
+                    var homeTeam = game.GetProperty("home_team").GetString() ?? "";
+                    var awayTeam = game.GetProperty("away_team").GetString() ?? "";
+                    var commenceTime = game.GetProperty("commence_time").GetDateTime();
+
+                    // Ensure DateTime is properly marked as UTC for correct timezone conversion
+                    if (commenceTime.Kind == DateTimeKind.Unspecified)
+                    {
+                        commenceTime = DateTime.SpecifyKind(commenceTime, DateTimeKind.Utc);
+                    }
+
+                    // Map team names to our codes
+                    var homeTeamCode = MapTeamNameToCode(homeTeam);
+                    var awayTeamCode = MapTeamNameToCode(awayTeam);
+
+                    if (string.IsNullOrEmpty(homeTeamCode) || string.IsNullOrEmpty(awayTeamCode))
+                    {
+                        _logger.LogWarning("Could not map teams: {Home} ({HomeCode}) / {Away} ({AwayCode})",
+                            homeTeam, homeTeamCode, awayTeam, awayTeamCode);
+
+                        if (string.IsNullOrEmpty(homeTeamCode)) unmappedTeams.Add(homeTeam);
+                        if (string.IsNullOrEmpty(awayTeamCode)) unmappedTeams.Add(awayTeam);
+
+                        skippedGames++;
+                        continue;
+                    }
+
+                    _logger.LogDebug("Mapped teams: {Away} → {AwayCode} @ {Home} → {HomeCode}",
+                        awayTeam, awayTeamCode, homeTeam, homeTeamCode);
+
+                    var homeInfo = _teamInfo.GetValueOrDefault(homeTeamCode);
+                    var awayInfo = _teamInfo.GetValueOrDefault(awayTeamCode);
+
+                    if (homeInfo == default || awayInfo == default)
+                    {
+                        _logger.LogWarning("Team code lookup failed: {HomeCode} or {AwayCode} not found in team info dictionary",
+                            homeTeamCode, awayTeamCode);
+                        skippedGames++;
+                        continue;
+                    }
+
+                    // Extract betting lines from bookmakers
+                    decimal? spread = null;
+                    decimal? overUnder = null;
+                    int? homeMoneyline = null;
+                    int? awayMoneyline = null;
+
+                    if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var bookmaker in bookmakers.EnumerateArray())
+                        {
+                            if (bookmaker.TryGetProperty("markets", out var markets) && markets.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var market in markets.EnumerateArray())
+                                {
+                                    var marketKey = market.GetProperty("key").GetString();
+
+                                    if (marketKey == "spreads" && !spread.HasValue)
+                                    {
+                                        var outcomes = market.GetProperty("outcomes").EnumerateArray().ToList();
+                                        var homeOutcome = outcomes.FirstOrDefault(o => o.GetProperty("name").GetString() == homeTeam);
+                                        if (homeOutcome.ValueKind != JsonValueKind.Undefined)
+                                        {
+                                            spread = homeOutcome.GetProperty("point").GetDecimal();
+                                        }
+                                    }
+                                    else if (marketKey == "totals" && !overUnder.HasValue)
+                                    {
+                                        var outcomes = market.GetProperty("outcomes").EnumerateArray().ToList();
+                                        if (outcomes.Any())
+                                        {
+                                            overUnder = outcomes.First().GetProperty("point").GetDecimal();
+                                        }
+                                    }
+                                    else if (marketKey == "h2h")
+                                    {
+                                        var outcomes = market.GetProperty("outcomes").EnumerateArray().ToList();
+                                        var homeOutcome = outcomes.FirstOrDefault(o => o.GetProperty("name").GetString() == homeTeam);
+                                        var awayOutcome = outcomes.FirstOrDefault(o => o.GetProperty("name").GetString() == awayTeam);
+
+                                        if (homeOutcome.ValueKind != JsonValueKind.Undefined && !homeMoneyline.HasValue)
+                                        {
+                                            homeMoneyline = homeOutcome.GetProperty("price").GetInt32();
+                                        }
+                                        if (awayOutcome.ValueKind != JsonValueKind.Undefined && !awayMoneyline.HasValue)
+                                        {
+                                            awayMoneyline = awayOutcome.GetProperty("price").GetInt32();
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Break after first bookmaker with data
+                            if (spread.HasValue && overUnder.HasValue)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    _logger.LogDebug("Successfully parsed game: {AwayCode} @ {HomeCode} at {GameTime} (Spread: {Spread}, O/U: {OverUnder})",
+                        awayTeamCode, homeTeamCode, commenceTime, spread, overUnder);
+
+                    games.Add(new CBBGameMatchup
+                    {
+                        GameId = $"{awayTeamCode.ToLower()}-{homeTeamCode.ToLower()}-{commenceTime:yyyyMMdd}",
+                        AwayTeamCode = awayInfo.Code,
+                        AwayTeamName = awayInfo.Name,
+                        AwayTeamLogo = awayInfo.Logo,
+                        HomeTeamCode = homeInfo.Code,
+                        HomeTeamName = homeInfo.Name,
+                        HomeTeamLogo = homeInfo.Logo,
+                        GameTime = commenceTime,
+                        Spread = spread,
+                        OverUnder = overUnder,
+                        HomeMoneyline = homeMoneyline,
+                        AwayMoneyline = awayMoneyline,
+                        Status = "Scheduled"
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error parsing game from Odds API");
+                    skippedGames++;
+                }
+            }
+
+            // Summary logging
+            if (unmappedTeams.Any())
+            {
+                _logger.LogWarning("⚠️ Unmapped teams detected: {UnmappedTeams}. Add these to MapTeamNameToCode() dictionary.",
+                    string.Join(", ", unmappedTeams));
+            }
+
+            _logger.LogInformation("Parsing complete: {ParsedGames}/{TotalGames} games parsed successfully, {SkippedGames} skipped",
                 games.Count, totalGames, skippedGames);
 
             return games.OrderBy(g => g.GameTime).ToList();

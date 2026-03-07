@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
-using BiteTheBookie.ViewModels;
 using BiteTheBookie.Services.Interfaces;
+using BiteTheBookie.ViewModels;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading;
 
 namespace BiteTheBookie.Controllers
 {
@@ -9,6 +10,8 @@ namespace BiteTheBookie.Controllers
         private readonly IGameSimulationService _simulationService;
         private readonly INBARosterService _rosterService;
         private readonly INBAGamesService _gamesService;
+        private readonly ICBBGamesService _cbbGamesService;
+        private readonly ICBBRosterService _cbbRosterService;
         private readonly ISpreadAnalysisService _spreadAnalysisService;
         private readonly IInjuryReportService _injuryReportService;
 
@@ -16,12 +19,16 @@ namespace BiteTheBookie.Controllers
             IGameSimulationService simulationService, 
             INBARosterService rosterService,
             INBAGamesService gamesService,
+            ICBBGamesService cbbGamesService,
+            ICBBRosterService cbbRosterService,
             ISpreadAnalysisService spreadAnalysisService,
             IInjuryReportService injuryReportService)
         {
             _simulationService = simulationService;
             _rosterService = rosterService;
             _gamesService = gamesService;
+            _cbbGamesService = cbbGamesService;
+            _cbbRosterService = cbbRosterService;
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService = injuryReportService;
         }
@@ -29,7 +36,7 @@ namespace BiteTheBookie.Controllers
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
             // Fetch upcoming NBA games dynamically
-            var games = await _gamesService.GetUpcomingGamesAsync(cancellationToken);
+            var games = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
             
             // SHOW ALL GAMES - NO FILTERING
             var viewModel = new PicksIndexViewModel
@@ -44,7 +51,7 @@ namespace BiteTheBookie.Controllers
         public async Task<IActionResult> AgainstTheSpread(CancellationToken cancellationToken)
         {
             // Fetch upcoming games
-            var games = await _gamesService.GetUpcomingGamesAsync(cancellationToken);
+            var games = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
             
             // Analyze for contrarian betting opportunities
             var opportunities = await _spreadAnalysisService.AnalyzeSpreadOpportunitiesAsync(games, cancellationToken);
@@ -73,9 +80,17 @@ namespace BiteTheBookie.Controllers
             return View();
         }
 
-        public IActionResult CBB()
+        public async Task<IActionResult> CBB(CancellationToken cancellationToken)
         {
-            return View();
+            var games = await _cbbGamesService.GetUpcomingGamesAsync(cancellationToken);
+            
+            var viewModel = new CBBPicksIndexViewModel
+            {
+                League = "CBB",
+                Games = games
+            };
+
+            return View(viewModel);
         }
 
         public IActionResult MLB()

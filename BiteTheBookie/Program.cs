@@ -88,6 +88,15 @@ builder.Services.AddMemoryCache();
 // Register tickers services and typed HttpClients with resilience policies
 builder.Services.AddSportsTickers(builder.Configuration);
 
+// Register services
+builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
+builder.Services.AddScoped<INBARosterService, NBARosterService>();
+builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
+builder.Services.AddScoped<ISpreadAnalysisService, SpreadAnalysisService>();
+builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();
+builder.Services.AddHttpClient<TheOddsApiClient>();
+builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
+builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
 
 var app = builder.Build();
 
