@@ -50,7 +50,7 @@ namespace BiteTheBookie.Controllers
                     League = "NBA",
                     Games = games
                 };
-                                    
+                                                        
                 return View(viewModel);
             }
             catch (Exception ex)

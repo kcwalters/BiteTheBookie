@@ -586,3 +586,76 @@ img.team-logo {
     object-fit: contain;
     border-radius: 4px;
 }
+
+/* Picks Dropdown Hover Styles */
+.picks-dropdown .dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 12px 0;
+    min-width: 250px;
+    margin-top: 0;
+}
+
+/* Show dropdown on hover */
+.picks-dropdown:hover .dropdown-menu {
+    display: block;
+    animation: fadeInDown 0.3s ease;
+}
+
+/* Dropdown item styling */
+.picks-dropdown .dropdown-item {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.picks-dropdown .dropdown-item:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateX(5px);
+}
+
+/* League icons in dropdown */
+.picks-dropdown .league-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+/* Dropdown divider */
+.picks-dropdown .dropdown-divider {
+    margin: 8px 0;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Animation */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile responsive - click instead of hover */
+@media (max-width: 991px) {
+    .picks-dropdown:hover .dropdown-menu {
+        display: none;
+    }
+}
+
+/* Arrow indicator */
+.picks-dropdown .dropdown-toggle::after {
+    transition: transform 0.3s ease;
+}
+
+.picks-dropdown:hover .dropdown-toggle::after {
+    transform: rotate(180deg);
+}
