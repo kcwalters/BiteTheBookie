@@ -31,12 +31,13 @@ namespace BiteTheBookie.Controllers
             // Fetch upcoming NBA games dynamically
             var games = await _gamesService.GetUpcomingGamesAsync(cancellationToken);
             
+            // SHOW ALL GAMES - NO FILTERING
             var viewModel = new PicksIndexViewModel
             {
                 League = "NBA",
                 Games = games
             };
-
+                                        
             return View(viewModel);
         }
 
@@ -99,20 +100,36 @@ namespace BiteTheBookie.Controllers
             // Map team codes to full names and logo IDs
             var teamNames = new Dictionary<string, (string FullName, string LogoId)>
             {
+                { "ATL", ("Atlanta Hawks", "333") },
                 { "BOS", ("Boston Celtics", "334") },
-                { "MIL", ("Milwaukee Bucks", "347") },
-                { "DEN", ("Denver Nuggets", "339") },
-                { "UTA", ("Utah Jazz", "359") },
-                { "HOU", ("Houston Rockets", "342") },
-                { "WAS", ("Washington Wizards", "361") },
-                { "LAL", ("Los Angeles Lakers", "343") },
-                { "GSW", ("Golden State Warriors", "341") },
-                { "PHI", ("Philadelphia 76ers", "352") },
-                { "MIA", ("Miami Heat", "346") },
                 { "BKN", ("Brooklyn Nets", "335") },
+                { "CHA", ("Charlotte Hornets", "336") },
+                { "CHI", ("Chicago Bulls", "337") },
+                { "CLE", ("Cleveland Cavaliers", "338") },
                 { "DAL", ("Dallas Mavericks", "338") },
+                { "DEN", ("Denver Nuggets", "339") },
+                { "DET", ("Detroit Pistons", "340") },
+                { "GSW", ("Golden State Warriors", "341") },
+                { "HOU", ("Houston Rockets", "342") },
+                { "IND", ("Indiana Pacers", "343") },
+                { "LAC", ("LA Clippers", "344") },
+                { "LAL", ("Los Angeles Lakers", "343") },
+                { "MEM", ("Memphis Grizzlies", "345") },
+                { "MIA", ("Miami Heat", "346") },
+                { "MIL", ("Milwaukee Bucks", "347") },
+                { "MIN", ("Minnesota Timberwolves", "348") },
+                { "NOP", ("New Orleans Pelicans", "349") },
+                { "NYK", ("New York Knicks", "350") },
+                { "OKC", ("Oklahoma City Thunder", "351") },
+                { "ORL", ("Orlando Magic", "352") },
+                { "PHI", ("Philadelphia 76ers", "352") },
                 { "PHX", ("Phoenix Suns", "353") },
-                { "LAC", ("LA Clippers", "344") }
+                { "POR", ("Portland Trail Blazers", "354") },
+                { "SAC", ("Sacramento Kings", "355") },
+                { "SAS", ("San Antonio Spurs", "356") },
+                { "TOR", ("Toronto Raptors", "357") },
+                { "UTA", ("Utah Jazz", "359") },
+                { "WAS", ("Washington Wizards", "361") }
             };
 
             var awayTeamInfo = teamNames.GetValueOrDefault(awayTeamCode, ("Unknown", ""));

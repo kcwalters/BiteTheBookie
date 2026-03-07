@@ -85,6 +85,12 @@ namespace BiteTheBookie.Services.Implementations
                     var awayTeam = game.GetProperty("away_team").GetString() ?? "";
                     var commenceTime = game.GetProperty("commence_time").GetDateTime();
 
+                    // Ensure DateTime is properly marked as UTC for correct timezone conversion
+                    if (commenceTime.Kind == DateTimeKind.Unspecified)
+                    {
+                        commenceTime = DateTime.SpecifyKind(commenceTime, DateTimeKind.Utc);
+                    }
+
                     // Map team names to our codes
                     var homeTeamCode = MapTeamNameToCode(homeTeam);
                     var awayTeamCode = MapTeamNameToCode(awayTeam);
@@ -219,20 +225,37 @@ namespace BiteTheBookie.Services.Implementations
             // Map The Odds API team names to our team codes
             var mapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
+                { "Atlanta Hawks", "ATL" },
                 { "Boston Celtics", "BOS" },
-                { "Milwaukee Bucks", "MIL" },
-                { "Denver Nuggets", "DEN" },
-                { "Utah Jazz", "UTA" },
-                { "Houston Rockets", "HOU" },
-                { "Washington Wizards", "WAS" },
-                { "Los Angeles Lakers", "LAL" },
-                { "Golden State Warriors", "GSW" },
-                { "Philadelphia 76ers", "PHI" },
-                { "Miami Heat", "MIA" },
                 { "Brooklyn Nets", "BKN" },
+                { "Charlotte Hornets", "CHA" },
+                { "Chicago Bulls", "CHI" },
+                { "Cleveland Cavaliers", "CLE" },
                 { "Dallas Mavericks", "DAL" },
+                { "Denver Nuggets", "DEN" },
+                { "Detroit Pistons", "DET" },
+                { "Golden State Warriors", "GSW" },
+                { "Houston Rockets", "HOU" },
+                { "Indiana Pacers", "IND" },
+                { "Los Angeles Clippers", "LAC" },
+                { "LA Clippers", "LAC" },  // Alternative
+                { "Los Angeles Lakers", "LAL" },
+                { "Memphis Grizzlies", "MEM" },
+                { "Miami Heat", "MIA" },
+                { "Milwaukee Bucks", "MIL" },
+                { "Minnesota Timberwolves", "MIN" },
+                { "New Orleans Pelicans", "NOP" },
+                { "New York Knicks", "NYK" },
+                { "Oklahoma City Thunder", "OKC" },
+                { "Orlando Magic", "ORL" },
+                { "Philadelphia 76ers", "PHI" },
                 { "Phoenix Suns", "PHX" },
-                { "Los Angeles Clippers", "LAC" }
+                { "Portland Trail Blazers", "POR" },
+                { "Sacramento Kings", "SAC" },
+                { "San Antonio Spurs", "SAS" },
+                { "Toronto Raptors", "TOR" },
+                { "Utah Jazz", "UTA" },
+                { "Washington Wizards", "WAS" }
             };
 
             return mapping.GetValueOrDefault(teamName, "");
@@ -412,20 +435,36 @@ Ensure game times are realistic for today/tomorrow and teams don't play multiple
         {
             return new Dictionary<string, (string Name, string Logo, string Code)>
             {
+                { "ATL", ("Atlanta Hawks", "https://sports.cbsimg.net/fly/images/nba/logos/team/333.svg", "ATL") },
                 { "BOS", ("Boston Celtics", "https://sports.cbsimg.net/fly/images/nba/logos/team/334.svg", "BOS") },
-                { "MIL", ("Milwaukee Bucks", "https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg", "MIL") },
-                { "DEN", ("Denver Nuggets", "https://sports.cbsimg.net/fly/images/nba/logos/team/339.svg", "DEN") },
-                { "UTA", ("Utah Jazz", "https://sports.cbsimg.net/fly/images/nba/logos/team/359.svg", "UTA") },
-                { "HOU", ("Houston Rockets", "https://sports.cbsimg.net/fly/images/nba/logos/team/342.svg", "HOU") },
-                { "WAS", ("Washington Wizards", "https://sports.cbsimg.net/fly/images/nba/logos/team/361.svg", "WAS") },
-                { "LAL", ("Los Angeles Lakers", "https://sports.cbsimg.net/fly/images/nba/logos/team/343.svg", "LAL") },
-                { "GSW", ("Golden State Warriors", "https://sports.cbsimg.net/fly/images/nba/logos/team/341.svg", "GSW") },
-                { "PHI", ("Philadelphia 76ers", "https://sports.cbsimg.net/fly/images/nba/logos/team/352.svg", "PHI") },
-                { "MIA", ("Miami Heat", "https://sports.cbsimg.net/fly/images/nba/logos/team/346.svg", "MIA") },
                 { "BKN", ("Brooklyn Nets", "https://sports.cbsimg.net/fly/images/nba/logos/team/335.svg", "BKN") },
+                { "CHA", ("Charlotte Hornets", "https://sports.cbsimg.net/fly/images/nba/logos/team/336.svg", "CHA") },
+                { "CHI", ("Chicago Bulls", "https://sports.cbsimg.net/fly/images/nba/logos/team/337.svg", "CHI") },
+                { "CLE", ("Cleveland Cavaliers", "https://sports.cbsimg.net/fly/images/nba/logos/team/338.svg", "CLE") },
                 { "DAL", ("Dallas Mavericks", "https://sports.cbsimg.net/fly/images/nba/logos/team/338.svg", "DAL") },
+                { "DEN", ("Denver Nuggets", "https://sports.cbsimg.net/fly/images/nba/logos/team/339.svg", "DEN") },
+                { "DET", ("Detroit Pistons", "https://sports.cbsimg.net/fly/images/nba/logos/team/340.svg", "DET") },
+                { "GSW", ("Golden State Warriors", "https://sports.cbsimg.net/fly/images/nba/logos/team/341.svg", "GSW") },
+                { "HOU", ("Houston Rockets", "https://sports.cbsimg.net/fly/images/nba/logos/team/342.svg", "HOU") },
+                { "IND", ("Indiana Pacers", "https://sports.cbsimg.net/fly/images/nba/logos/team/343.svg", "IND") },
+                { "LAC", ("LA Clippers", "https://sports.cbsimg.net/fly/images/nba/logos/team/344.svg", "LAC") },
+                { "LAL", ("Los Angeles Lakers", "https://sports.cbsimg.net/fly/images/nba/logos/team/343.svg", "LAL") },
+                { "MEM", ("Memphis Grizzlies", "https://sports.cbsimg.net/fly/images/nba/logos/team/345.svg", "MEM") },
+                { "MIA", ("Miami Heat", "https://sports.cbsimg.net/fly/images/nba/logos/team/346.svg", "MIA") },
+                { "MIL", ("Milwaukee Bucks", "https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg", "MIL") },
+                { "MIN", ("Minnesota Timberwolves", "https://sports.cbsimg.net/fly/images/nba/logos/team/348.svg", "MIN") },
+                { "NOP", ("New Orleans Pelicans", "https://sports.cbsimg.net/fly/images/nba/logos/team/349.svg", "NOP") },
+                { "NYK", ("New York Knicks", "https://sports.cbsimg.net/fly/images/nba/logos/team/350.svg", "NYK") },
+                { "OKC", ("Oklahoma City Thunder", "https://sports.cbsimg.net/fly/images/nba/logos/team/351.svg", "OKC") },
+                { "ORL", ("Orlando Magic", "https://sports.cbsimg.net/fly/images/nba/logos/team/352.svg", "ORL") },
+                { "PHI", ("Philadelphia 76ers", "https://sports.cbsimg.net/fly/images/nba/logos/team/352.svg", "PHI") },
                 { "PHX", ("Phoenix Suns", "https://sports.cbsimg.net/fly/images/nba/logos/team/353.svg", "PHX") },
-                { "LAC", ("LA Clippers", "https://sports.cbsimg.net/fly/images/nba/logos/team/344.svg", "LAC") }
+                { "POR", ("Portland Trail Blazers", "https://sports.cbsimg.net/fly/images/nba/logos/team/354.svg", "POR") },
+                { "SAC", ("Sacramento Kings", "https://sports.cbsimg.net/fly/images/nba/logos/team/355.svg", "SAC") },
+                { "SAS", ("San Antonio Spurs", "https://sports.cbsimg.net/fly/images/nba/logos/team/356.svg", "SAS") },
+                { "TOR", ("Toronto Raptors", "https://sports.cbsimg.net/fly/images/nba/logos/team/357.svg", "TOR") },
+                { "UTA", ("Utah Jazz", "https://sports.cbsimg.net/fly/images/nba/logos/team/359.svg", "UTA") },
+                { "WAS", ("Washington Wizards", "https://sports.cbsimg.net/fly/images/nba/logos/team/361.svg", "WAS") }
             };
         }
 
