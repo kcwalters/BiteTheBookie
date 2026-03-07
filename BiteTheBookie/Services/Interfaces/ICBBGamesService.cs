@@ -4,6 +4,6 @@ namespace BiteTheBookie.Services.Interfaces
 {
     public interface ICBBGamesService
     {
-        Task<List<CBBGameMatchup>> GetUpcomingGamesAsync(CancellationToken cancellationToken = default);
+        Task<List<CBBGameMatchup>> GetUpcomingCBBGamesAsync(CancellationToken cancellationToken = default);
     }
 }

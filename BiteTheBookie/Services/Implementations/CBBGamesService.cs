@@ -19,13 +19,13 @@ namespace BiteTheBookie.Services.Implementations
             _teamInfo = InitializeTeamInfo();
         }
 
-        public async Task<List<CBBGameMatchup>> GetUpcomingGamesAsync(CancellationToken cancellationToken = default)
+        public async Task<List<CBBGameMatchup>> GetUpcomingCBBGamesAsync(CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Fetching NCAA Men's Basketball games from The Odds API");
 
             var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_ncaab/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
 
-            var games = ParseOddsApiResponse(oddsData);
+            var games = ParseCBBOddsApiResponse(oddsData);
 
             if (games.Any())
             {
@@ -37,7 +37,7 @@ namespace BiteTheBookie.Services.Implementations
             return new List<CBBGameMatchup>();
         }
 
-        private List<CBBGameMatchup> ParseOddsApiResponse(JsonElement oddsData)
+        private List<CBBGameMatchup> ParseCBBOddsApiResponse(JsonElement oddsData)
         {
             var games = new List<CBBGameMatchup>();
 

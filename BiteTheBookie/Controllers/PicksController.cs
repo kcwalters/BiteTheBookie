@@ -1,7 +1,6 @@
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading;
 
 namespace BiteTheBookie.Controllers
 {
@@ -82,11 +81,13 @@ namespace BiteTheBookie.Controllers
 
         public async Task<IActionResult> CBB(CancellationToken cancellationToken)
         {
-            var games = await _cbbGamesService.GetUpcomingGamesAsync(cancellationToken);
-            
+            // Fetch upcoming CBB games dynamically
+            var games = await _cbbGamesService.GetUpcomingCBBGamesAsync(cancellationToken);
+
+            // SHOW ALL GAMES - NO FILTERING
             var viewModel = new CBBPicksIndexViewModel
             {
-                League = "CBB",
+                League = "NBA",
                 Games = games
             };
 

@@ -1,7 +1,8 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace BiteTheBookie.Services.Implementations
 {
@@ -10,14 +11,16 @@ namespace BiteTheBookie.Services.Implementations
         private readonly HttpClient _http;
         private readonly IMemoryCache _cache;
         private readonly OddsApiOptions _options;
+        private readonly ILogger<TheOddsApiClient> _logger;
 
         private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-        public TheOddsApiClient(HttpClient http, IMemoryCache cache, IOptions<OddsApiOptions> options)
+        public TheOddsApiClient(HttpClient http, IMemoryCache cache, IOptions<OddsApiOptions> options, ILogger<TheOddsApiClient> logger)
         {
             _http = http;
             _cache = cache;
             _options = options.Value;
+            _logger = logger;
 
             if (!string.IsNullOrWhiteSpace(_options.BaseUrl))
             {
@@ -27,38 +30,62 @@ namespace BiteTheBookie.Services.Implementations
 
         public async Task<JsonElement> GetAsync(string pathAndQuery, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(_options.ApiKey))
+            try
             {
-                throw new InvalidOperationException("Odds API key is not configured. Set OddsApi:ApiKey.");
+                if (string.IsNullOrWhiteSpace(_options.ApiKey))
+                {
+                    _logger.LogError("❌ Odds API key is not configured");
+                    throw new InvalidOperationException("Odds API key is not configured. Set OddsApi:ApiKey.");
+                }
+
+                // Add API key to the query string
+                var separator = pathAndQuery.Contains('?') ? "&" : "?";
+                var fullPath = $"{pathAndQuery}{separator}apiKey={_options.ApiKey}";
+                
+                _logger.LogInformation("🔗 Calling Odds API: {BaseUrl}{Path}", _http.BaseAddress, pathAndQuery);
+
+                var cacheKey = "oddsapi:" + pathAndQuery;
+                if (_cache.TryGetValue(cacheKey, out JsonElement cached))
+                {
+                    _logger.LogInformation("✅ Returning cached response for {Path}", pathAndQuery);
+                    return cached;
+                }
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, fullPath);
+                request.Headers.TryAddWithoutValidation("Accept", "application/json");
+
+                using var response = await _http.SendAsync(request, cancellationToken);
+                
+                _logger.LogInformation("📡 Odds API Response: {StatusCode}", response.StatusCode);
+                
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    _logger.LogError("❌ Odds API unauthorized - check API key");
+                    throw new InvalidOperationException("Odds API request unauthorized. Check OddsApi:ApiKey.");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("❌ Odds API error {StatusCode}: {Error}", response.StatusCode, errorBody);
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                var root = doc.RootElement.Clone();
+
+                _cache.Set(cacheKey, root, TimeSpan.FromSeconds(Math.Max(5, _options.CacheSeconds)));
+                
+                _logger.LogInformation("✅ Successfully fetched and cached Odds API data for {Path}", pathAndQuery);
+                return root;
             }
-
-            // Add API key to the query string
-            var separator = pathAndQuery.Contains('?') ? "&" : "?";
-            var fullPath = $"{pathAndQuery}{separator}apiKey={_options.ApiKey}";
-
-            var cacheKey = "oddsapi:" + pathAndQuery;
-            if (_cache.TryGetValue(cacheKey, out JsonElement cached))
+            catch (Exception ex)
             {
-                return cached;
+                _logger.LogError(ex, "💥 Error calling Odds API for {Path}", pathAndQuery);
+                throw;
             }
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, fullPath);
-            request.Headers.TryAddWithoutValidation("Accept", "application/json");
-
-            using var response = await _http.SendAsync(request, cancellationToken);
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
-            {
-                throw new InvalidOperationException("Odds API request unauthorized. Check OddsApi:ApiKey.");
-            }
-
-            response.EnsureSuccessStatusCode();
-
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            var root = doc.RootElement.Clone();
-
-            _cache.Set(cacheKey, root, TimeSpan.FromSeconds(Math.Max(5, _options.CacheSeconds)));
-            return root;
         }
     }
 }

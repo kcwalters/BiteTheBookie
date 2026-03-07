@@ -61,26 +61,7 @@ namespace BiteTheBookie.Services.Implementations
             return new List<NBAGameMatchup>();
         }
 
-        public async Task<List<CBBGameMatchup>> GetUpcomingCBBGamesAsync(CancellationToken cancellationToken = default)
-        {
-            _logger.LogInformation("Fetching real NCAA games from The Odds API");
-
-            // Fetch real games from The Odds API
-            var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_cbb/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
-
-            var games = ParseCBBOddsApiResponse(oddsData);
-
-            if (games.Any())
-            {
-                _logger.LogInformation("Successfully fetched {Count} real NBA games from The Odds API", games.Count);
-                return games;
-            }
-
-            // Return empty list instead of falling back to mock data
-            _logger.LogWarning("No games available from The Odds API");
-            return new List<CBBGameMatchup>();
-        }
-
+       
         private List<NBAGameMatchup> ParseNBAOddsApiResponse(JsonElement oddsData)
         {
             var games = new List<NBAGameMatchup>();
