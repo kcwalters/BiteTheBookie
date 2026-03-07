@@ -6,5 +6,6 @@ namespace BiteTheBookie.ViewModels
     {
         public string League { get; set; } = "NBA";
         public List<NBAGameMatchup> Games { get; set; } = new();
+        public string? ErrorMessage { get; set; }
     }
 }

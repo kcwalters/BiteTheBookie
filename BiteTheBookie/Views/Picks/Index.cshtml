@@ -180,6 +180,13 @@
     </div>
 </div>
 
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Error:</strong> @Model.ErrorMessage
+    </div>
+}
+
 @section Scripts {
     <script src="~/js/tickers.js" asp-append-version="true"></script>
     <script>
@@ -338,4 +345,5 @@
         font-weight: 700;
     }
 </style>
+
 

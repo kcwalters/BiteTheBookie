@@ -1,6 +1,9 @@
+using BiteTheBookie.Models;
 using BiteTheBookie.Services.Interfaces;
+using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace BiteTheBookie.Controllers
 {
@@ -13,6 +16,7 @@ namespace BiteTheBookie.Controllers
         private readonly ICBBRosterService _cbbRosterService;
         private readonly ISpreadAnalysisService _spreadAnalysisService;
         private readonly IInjuryReportService _injuryReportService;
+        private readonly ILogger<PicksController> _logger;
 
         public PicksController(
             IGameSimulationService simulationService, 
@@ -21,7 +25,8 @@ namespace BiteTheBookie.Controllers
             ICBBGamesService cbbGamesService,
             ICBBRosterService cbbRosterService,
             ISpreadAnalysisService spreadAnalysisService,
-            IInjuryReportService injuryReportService)
+            IInjuryReportService injuryReportService,
+            ILogger<PicksController> logger)
         {
             _simulationService = simulationService;
             _rosterService = rosterService;
@@ -30,21 +35,39 @@ namespace BiteTheBookie.Controllers
             _cbbRosterService = cbbRosterService;
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService = injuryReportService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(CancellationToken cancellationToken)
         {
-            // Fetch upcoming NBA games dynamically
-            var games = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
-            
-            // SHOW ALL GAMES - NO FILTERING
-            var viewModel = new PicksIndexViewModel
+            try
             {
-                League = "NBA",
-                Games = games
-            };
-                                        
-            return View(viewModel);
+                // Fetch upcoming NBA games dynamically
+                var games = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
+                
+                var viewModel = new PicksIndexViewModel
+                {
+                    League = "NBA",
+                    Games = games
+                };
+                                    
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                _logger?.LogError(ex, "Error loading NBA picks");
+                
+                // Return empty view with error message
+                var viewModel = new PicksIndexViewModel
+                {
+                    League = "NBA",
+                    Games = new List<NBAGameMatchup>(),
+                    ErrorMessage = $"Unable to load games: {ex.Message}"
+                };
+                
+                return View(viewModel);
+            }
         }
 
         public async Task<IActionResult> AgainstTheSpread(CancellationToken cancellationToken)
@@ -203,6 +226,37 @@ namespace BiteTheBookie.Controllers
             }
 
             return View(viewModel);
+        }
+
+        [HttpGet("/api/test-odds-api")]
+        public async Task<IActionResult> TestOddsApi([FromServices] IOptions<OddsApiOptions> options, [FromServices] TheOddsApiClient client)
+        {
+            var opts = options.Value;
+            
+            try
+            {
+                var result = await client.GetAsync("/v4/sports", CancellationToken.None);
+                
+                return Ok(new
+                {
+                    Success = true,
+                    HasApiKey = !string.IsNullOrEmpty(opts.ApiKey),
+                    ApiKeyLength = opts.ApiKey?.Length ?? 0,
+                    BaseUrl = opts.BaseUrl,
+                    SportsCount = result.GetArrayLength()
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new
+                {
+                    Success = false,
+                    Error = ex.Message,
+                    HasApiKey = !string.IsNullOrEmpty(opts.ApiKey),
+                    ApiKeyLength = opts.ApiKey?.Length ?? 0,
+                    BaseUrl = opts.BaseUrl
+                });
+            }
         }
     }
 }
