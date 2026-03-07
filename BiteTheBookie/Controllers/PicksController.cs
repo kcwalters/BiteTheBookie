@@ -87,7 +87,7 @@ namespace BiteTheBookie.Controllers
             // SHOW ALL GAMES - NO FILTERING
             var viewModel = new CBBPicksIndexViewModel
             {
-                League = "NBA",
+                League = "CBB",
                 Games = games
             };
 
