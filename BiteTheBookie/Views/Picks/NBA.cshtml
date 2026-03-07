@@ -1,5 +1,13 @@
+@model BiteTheBookie.ViewModels.PicksIndexViewModel
+
 @{
     ViewData["Title"] = "NBA Expert Picks & Predictions";
+    
+    // Group games by date
+    var today = DateTime.UtcNow.Date;
+    var tomorrow = today.AddDays(1);
+    var todayGames = Model.Games.Where(g => g.GameTime.Date == today).ToList();
+    var tomorrowGames = Model.Games.Where(g => g.GameTime.Date == tomorrow).ToList();
 }
 
 <div class="container">
@@ -36,270 +44,342 @@
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div class="d-flex align-items-center gap-3">
                 <img src="https://sports.cbsimg.net/fly/images/league-logos/54.svg" alt="NBA" style="width: 48px; height: 48px;" />
-                <h1 class="h2 mb-0">NBA Expert Picks</h1>
+                <h1 class="h2 mb-0">NBA Games - Today & Tomorrow</h1>
             </div>
-            <div class="btn-group" role="group">
-                <a href="@Url.Action("Index", "Picks")" class="btn btn-outline-primary">Pick Sheet</a>
-                <a href="@Url.Action("NBA", "Picks")" class="btn btn-primary">Expert Picks</a>
-            </div>
-        </div>
-
-        <!-- Expert Analysis Cards -->
-        <div class="row g-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h3 class="h5 mb-0">Today's Featured Pick</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h4>Celtics vs. Bucks - Expert Analysis</h4>
-                                <p class="text-muted">By Mike Barner • Updated 2 hours ago</p>
-                                <p>The Boston Celtics travel to Milwaukee to face the Bucks in what promises to be an exciting Eastern Conference matchup. Our advanced model has analyzed thousands of simulations to provide you with the best picks...</p>
-                                <div class="d-flex gap-2 mt-3">
-                                    <span class="badge bg-success">67% Win Rate</span>
-                                    <span class="badge bg-info">+2253 Units</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 text-center">
-                                <div class="p-3 border rounded">
-                                    <h5>Recommended Pick</h5>
-                                    <p class="h3 text-primary mb-0">Celtics -2.5</p>
-                                    <p class="text-muted small">Confidence: High</p>
-                                    <button class="btn btn-primary mt-2">View Full Analysis</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12">
-                <h3 class="h4 mb-3">All NBA Games Today</h3>
-            </div>
-
-            <!-- Game 1 -->
-            <div class="col-12 col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-muted small">Mar 03, 12:30AM UTC</span>
-                            <span class="badge bg-secondary">Final</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/334.svg" alt="Boston" style="width: 40px; height: 40px;" />
-                                <div>
-                                    <div class="fw-bold">Boston Celtics</div>
-                                    <div class="text-muted small">Away</div>
-                                </div>
-                            </div>
-                            <div class="h4 mb-0">--</div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/347.svg" alt="Milwaukee" style="width: 40px; height: 40px;" />
-                                <div>
-                                    <div class="fw-bold">Milwaukee Bucks</div>
-                                    <div class="text-muted small">Home</div>
-                                </div>
-                            </div>
-                            <div class="h4 mb-0">--</div>
-                        </div>
-                        <hr />
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="small text-muted">Spread</div>
-                                <div class="fw-bold">+2.5</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">O/U</div>
-                                <div class="fw-bold">215.5</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">ML</div>
-                                <div class="fw-bold">+110</div>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary w-100 mt-3">View Expert Picks</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Game 2 -->
-            <div class="col-12 col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-muted small">Mar 03, 2:00AM UTC</span>
-                            <span class="badge bg-success">Live</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/339.svg" alt="Denver" style="width: 40px; height: 40px;" />
-                                <div>
-                                    <div class="fw-bold">Denver Nuggets</div>
-                                    <div class="text-muted small">Away</div>
-                                </div>
-                            </div>
-                            <div class="h4 mb-0">--</div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/359.svg" alt="Utah" style="width: 40px; height: 40px;" />
-                                <div>
-                                    <div class="fw-bold">Utah Jazz</div>
-                                    <div class="text-muted small">Home</div>
-                                </div>
-                            </div>
-                            <div class="h4 mb-0">--</div>
-                        </div>
-                        <hr />
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="small text-muted">Spread</div>
-                                <div class="fw-bold">+11.5</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">O/U</div>
-                                <div class="fw-bold">243.5</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">ML</div>
-                                <div class="fw-bold">-450</div>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary w-100 mt-3">View Expert Picks</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Game 3 -->
-            <div class="col-12 col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="text-muted small">Mar 03, 12:00AM UTC</span>
-                            <span class="badge bg-secondary">Upcoming</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/342.svg" alt="Houston" style="width: 40px; height: 40px;" />
-                                <div>
-                                    <div class="fw-bold">Houston Rockets</div>
-                                    <div class="text-muted small">Away</div>
-                                </div>
-                            </div>
-                            <div class="h4 mb-0">--</div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="https://sports.cbsimg.net/fly/images/nba/logos/team/361.svg" alt="Washington" style="width: 40px; height: 40px;" />
-                                <div>
-                                    <div class="fw-bold">Washington Wizards</div>
-                                    <div class="text-muted small">Home</div>
-                                </div>
-                            </div>
-                            <div class="h4 mb-0">--</div>
-                        </div>
-                        <hr />
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <div class="small text-muted">Spread</div>
-                                <div class="fw-bold">+14.5</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">O/U</div>
-                                <div class="fw-bold">225.5</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">ML</div>
-                                <div class="fw-bold">-800</div>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary w-100 mt-3">View Expert Picks</button>
-                    </div>
-                </div>
+            <div class="text-muted">
+                <i class="fas fa-calendar me-2"></i>
+                Showing all @Model.Games.Count games
             </div>
         </div>
-    </div>
 
-    <!-- Expert Stats Section -->
-    <div class="content-card mt-4">
-        <h2 class="h3 mb-4">Top NBA Experts</h2>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Expert</th>
-                        <th>Units Won</th>
-                        <th>Win Rate</th>
-                        <th>Recent Record</th>
-                        <th>Specialty</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>
-                            <div class="fw-bold">Mike Barner</div>
-                        </td>
-                        <td class="text-success">+2253</td>
-                        <td>67%</td>
-                        <td>54-27 (Last 81)</td>
-                        <td><span class="badge bg-info">NBA</span></td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>
-                            <div class="fw-bold">Prop Bet Guy</div>
-                        </td>
-                        <td class="text-success">+2040</td>
-                        <td>59%</td>
-                        <td>116-82 (Last 198)</td>
-                        <td><span class="badge bg-warning">Player Props</span></td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>
-                            <div class="fw-bold">Bruce Marshall</div>
-                        </td>
-                        <td class="text-success">+1517</td>
-                        <td>62%</td>
-                        <td>46-28 (Last 74)</td>
-                        <td><span class="badge bg-info">NBA</span></td>
-                    </tr>
-                    <tr>
-                        <td>4</td>
-                        <td>
-                            <div class="fw-bold">Matt Severance</div>
-                        </td>
-                        <td class="text-success">+504</td>
-                        <td>61%</td>
-                        <td>11-7 (Last 18)</td>
-                        <td><span class="badge bg-success">Moneyline</span></td>
-                    </tr>
-                    <tr>
-                        <td>5</td>
-                        <td>
-                            <div class="fw-bold">Larry Hartstein</div>
-                        </td>
-                        <td class="text-success">+394</td>
-                        <td>62%</td>
-                        <td>13-8 (Last 21)</td>
-                        <td><span class="badge bg-warning">Player Props</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="text-center mt-3">
-            <a href="#" class="btn btn-outline-primary">View All Experts</a>
-        </div>
+        @if (Model.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                @Model.ErrorMessage
+            </div>
+        }
+
+        @if (!Model.Games.Any())
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No NBA games scheduled for today or tomorrow.
+            </div>
+        }
+        else
+        {
+            <!-- TODAY'S GAMES -->
+            @if (todayGames.Any())
+            {
+                <div class="mb-5">
+                    <div class="d-flex align-items-center mb-3">
+                        <h2 class="h4 mb-0 me-3">Today's Games</h2>
+                        <span class="badge bg-primary">@todayGames.Count games</span>
+                    </div>
+                    
+                    <div class="row g-4">
+                        @foreach (var game in todayGames)
+                        {
+                            <div class="col-12 col-lg-6 col-xl-4">
+                                <div class="card h-100 game-card @(game.Status == "Live" ? "live-game" : "")">
+                                    <div class="card-body">
+                                        <!-- Game Header -->
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted small">@game.GameTimeDisplay</span>
+                                            <span class="badge @(game.Status == "Live" ? "bg-danger pulse" : game.Status == "Final" ? "bg-secondary" : "bg-primary")">
+                                                @if (game.Status == "Live")
+                                                {
+                                                    <i class="fas fa-circle me-1" style="font-size: 8px;"></i>
+                                                }
+                                                @game.Status
+                                            </span>
+                                        </div>
+
+                                        <!-- Away Team -->
+                                        <div class="d-flex justify-content-between align-items-center mb-2 team-row">
+                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" class="team-logo" />
+                                                <div>
+                                                    <div class="fw-bold team-name">@game.AwayTeamName</div>
+                                                    <div class="text-muted small">Away</div>
+                                                </div>
+                                            </div>
+                                            <div class="score @(game.AwayScore > game.HomeScore && game.Status == "Final" ? "winner" : "")">
+                                                @if (game.AwayScore.HasValue)
+                                                {
+                                                    <span class="h3 mb-0 fw-bold">@game.AwayScore</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="h4 mb-0 text-muted">--</span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <!-- Home Team -->
+                                        <div class="d-flex justify-content-between align-items-center mb-3 team-row">
+                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" class="team-logo" />
+                                                <div>
+                                                    <div class="fw-bold team-name">@game.HomeTeamName</div>
+                                                    <div class="text-muted small">Home</div>
+                                                </div>
+                                            </div>
+                                            <div class="score @(game.HomeScore > game.AwayScore && game.Status == "Final" ? "winner" : "")">
+                                                @if (game.HomeScore.HasValue)
+                                                {
+                                                    <span class="h3 mb-0 fw-bold">@game.HomeScore</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="h4 mb-0 text-muted">--</span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <hr />
+
+                                        <!-- Betting Lines -->
+                                        <div class="row text-center g-2 mb-3">
+                                            @if (game.Spread.HasValue)
+                                            {
+                                                <div class="col-4">
+                                                    <div class="small text-muted">Spread</div>
+                                                    <div class="fw-bold">@game.Spread.Value.ToString("+0.0;-0.0")</div>
+                                                </div>
+                                            }
+                                            @if (game.OverUnder.HasValue)
+                                            {
+                                                <div class="col-4">
+                                                    <div class="small text-muted">O/U</div>
+                                                    <div class="fw-bold">@game.OverUnder.Value</div>
+                                                </div>
+                                            }
+                                            @if (game.HomeMoneyline.HasValue)
+                                            {
+                                                <div class="col-4">
+                                                    <div class="small text-muted">ML</div>
+                                                    <div class="fw-bold">@game.HomeMoneyline.Value.ToString("+#;-#")</div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <!-- Action Button -->
+                                        @if (game.Status == "Scheduled")
+                                        {
+                                            <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
+                                               class="btn btn-primary w-100 btn-sm">
+                                                <i class="fas fa-chart-line me-2"></i> View Analysis
+                                            </a>
+                                        }
+                                        else if (game.Status == "Live")
+                                        {
+                                            <button class="btn btn-danger w-100 btn-sm" disabled>
+                                                <i class="fas fa-circle pulse me-2" style="font-size: 8px;"></i> In Progress
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-secondary w-100 btn-sm" disabled>
+                                                <i class="fas fa-check me-2"></i> Final
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No NBA games scheduled for today.
+                </div>
+            }
+
+            <!-- TOMORROW'S GAMES -->
+            @if (tomorrowGames.Any())
+            {
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <h2 class="h4 mb-0 me-3">Tomorrow's Games</h2>
+                        <span class="badge bg-info">@tomorrowGames.Count games</span>
+                    </div>
+                    
+                    <div class="row g-4">
+                        @foreach (var game in tomorrowGames)
+                        {
+                            <div class="col-12 col-lg-6 col-xl-4">
+                                <div class="card h-100 game-card tomorrow-game">
+                                    <div class="card-body">
+                                        <!-- Game Header -->
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted small">@game.GameTimeDisplay</span>
+                                            <span class="badge bg-info">Tomorrow</span>
+                                        </div>
+
+                                        <!-- Away Team -->
+                                        <div class="d-flex justify-content-between align-items-center mb-2 team-row">
+                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" class="team-logo" />
+                                                <div>
+                                                    <div class="fw-bold team-name">@game.AwayTeamName</div>
+                                                    <div class="text-muted small">Away</div>
+                                                </div>
+                                            </div>
+                                            <span class="h4 mb-0 text-muted">--</span>
+                                        </div>
+
+                                        <!-- Home Team -->
+                                        <div class="d-flex justify-content-between align-items-center mb-3 team-row">
+                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" class="team-logo" />
+                                                <div>
+                                                    <div class="fw-bold team-name">@game.HomeTeamName</div>
+                                                    <div class="text-muted small">Home</div>
+                                                </div>
+                                            </div>
+                                            <span class="h4 mb-0 text-muted">--</span>
+                                        </div>
+
+                                        <hr />
+
+                                        <!-- Betting Lines -->
+                                        <div class="row text-center g-2 mb-3">
+                                            @if (game.Spread.HasValue)
+                                            {
+                                                <div class="col-4">
+                                                    <div class="small text-muted">Spread</div>
+                                                    <div class="fw-bold">@game.Spread.Value.ToString("+0.0;-0.0")</div>
+                                                </div>
+                                            }
+                                            @if (game.OverUnder.HasValue)
+                                            {
+                                                <div class="col-4">
+                                                    <div class="small text-muted">O/U</div>
+                                                    <div class="fw-bold">@game.OverUnder.Value</div>
+                                                </div>
+                                            }
+                                            @if (game.HomeMoneyline.HasValue)
+                                            {
+                                                <div class="col-4">
+                                                    <div class="small text-muted">ML</div>
+                                                    <div class="fw-bold">@game.HomeMoneyline.Value.ToString("+#;-#")</div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <!-- Action Button -->
+                                        <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
+                                           class="btn btn-outline-primary w-100 btn-sm">
+                                            <i class="fas fa-chart-line me-2"></i> View Analysis
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No NBA games scheduled for tomorrow.
+                </div>
+            }
+        }
     </div>
 </div>
 
+<style>
+    .game-card {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .game-card.live-game {
+        border-color: #dc3545;
+        box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+    }
+    
+    .game-card.tomorrow-game {
+        opacity: 0.95;
+    }
+    
+    .team-logo {
+        width: 48px;
+        height: 48px;
+        object-fit: contain;
+    }
+    
+    .team-name {
+        font-size: 1rem;
+    }
+    
+    .score {
+        min-width: 50px;
+        text-align: right;
+    }
+    
+    .score.winner {
+        color: #198754;
+        font-weight: 700;
+    }
+    
+    .team-row {
+        padding: 8px;
+        border-radius: 8px;
+        transition: background-color 0.2s;
+    }
+    
+    .team-row:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .badge.pulse {
+        animation: pulse-badge 1.5s infinite;
+    }
+    
+    @@keyframes pulse-badge {
+        0%, 100% { 
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+        }
+        50% { 
+            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+        }
+    }
+</style>
+
 @section Scripts {
     <script src="~/js/tickers.js" asp-append-version="true"></script>
+    <script>
+        // Auto-refresh page every 30 seconds if there are live games
+        (function() {
+            const hasLiveGames = document.querySelector('.badge.bg-danger.pulse');
+            if (hasLiveGames) {
+                console.log('Live games detected - page will refresh in 30 seconds');
+                setTimeout(function() {
+                    location.reload();
+                }, 30000);
+            }
+        })();
+    </script>
 }

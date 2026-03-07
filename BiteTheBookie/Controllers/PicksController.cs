@@ -87,9 +87,36 @@ namespace BiteTheBookie.Controllers
             return View(viewModel);
         }
 
-        public IActionResult NBA()
+        public async Task<IActionResult> NBA(CancellationToken cancellationToken)
         {
-            return View();
+            try
+            {
+                // Fetch today's NBA games (scheduled, live, and finished)
+                var games = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
+                
+                var viewModel = new PicksIndexViewModel
+                {
+                    League = "NBA",
+                    Games = games
+                };
+                            
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                _logger?.LogError(ex, "Error loading NBA picks");
+                
+                // Return empty view with error message
+                var viewModel = new PicksIndexViewModel
+                {
+                    League = "NBA",
+                    Games = new List<NBAGameMatchup>(),
+                    ErrorMessage = $"Unable to load games: {ex.Message}"
+                };
+                
+                return View(viewModel);
+            }
         }
 
         public IActionResult NFL()

@@ -12,15 +12,18 @@ namespace BiteTheBookie.Services.Implementations
         private readonly ILogger<NBAGamesService> _logger;
         private readonly ChatClient? _chatClient;
         private readonly TheOddsApiClient _oddsApiClient;
+        private readonly INBAScoresService _scoresService; // ADD THIS
         private readonly Dictionary<string, (string Name, string Logo, string Code)> _teamInfo;
 
         public NBAGamesService(
             IConfiguration configuration, 
             ILogger<NBAGamesService> logger,
-            TheOddsApiClient oddsApiClient)
+            TheOddsApiClient oddsApiClient,
+            INBAScoresService scoresService) // ADD THIS PARAMETER
         {
             _logger = logger;
             _oddsApiClient = oddsApiClient;
+            _scoresService = scoresService; // ADD THIS
             
             // Initialize team information
             _teamInfo = InitializeTeamInfo();
@@ -43,22 +46,44 @@ namespace BiteTheBookie.Services.Implementations
 
         public async Task<List<NBAGameMatchup>> GetUpcomingNBAGamesAsync(CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Fetching real NBA games from The Odds API");
+            _logger.LogInformation("Fetching NBA games from The Odds API and ESPN Scores");
             
-            // Fetch real games from The Odds API
+            // Fetch odds from The Odds API
             var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_nba/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
-            
             var games = ParseNBAOddsApiResponse(oddsData);
             
-            if (games.Any())        
+            if (!games.Any())
             {
-                _logger.LogInformation("Successfully fetched {Count} real NBA games from The Odds API", games.Count);
-                return games;
+                _logger.LogWarning("No games available from The Odds API");
+                return new List<NBAGameMatchup>();
             }
             
-            // Return empty list instead of falling back to mock data
-            _logger.LogWarning("No games available from The Odds API");
-            return new List<NBAGameMatchup>();
+            // Fetch live scores from ESPN
+            try
+            {
+                var liveScores = await _scoresService.GetGamesAsync(cancellationToken);
+                _logger.LogInformation("Fetched {Count} live scores from ESPN", liveScores.Count);
+                
+                // Merge live scores with odds data
+                MergeScoresWithGames(games, liveScores);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch live scores from ESPN, continuing with odds data only");
+            }
+            
+            // Filter to include TODAY and TOMORROW games (all games, no exceptions)
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+            var todayAndTomorrowGames = games
+                .Where(g => g.GameTime.Date == today || g.GameTime.Date == tomorrow)
+                .OrderBy(g => g.GameTime)
+                .ToList();
+            
+            _logger.LogInformation("Returning {Count} games for today and tomorrow ({Today} - {Tomorrow})", 
+                todayAndTomorrowGames.Count, today.ToString("yyyy-MM-dd"), tomorrow.ToString("yyyy-MM-dd"));
+            
+            return todayAndTomorrowGames; // FIXED: Changed from todaysGames
         }
 
        
@@ -531,6 +556,56 @@ Ensure game times are realistic for today/tomorrow and teams don't play multiple
                 _logger.LogError(ex, "Error generating games from AI, using static fallback");
                 return GetFallbackGames();
             }
+        }
+
+        private void MergeScoresWithGames(List<NBAGameMatchup> games, IReadOnlyList<NBATickerView> liveScores)
+        {
+            _logger.LogInformation("Merging {ScoreCount} live scores with {GameCount} games", liveScores.Count, games.Count);
+            
+            foreach (var game in games)
+            {
+                // Try to find matching live score by team codes
+                var liveGameIndex = -1;
+                for (int i = 0; i < liveScores.Count; i++)
+                {
+                    var score = liveScores[i];
+                    if (score.AwayTeam?.Equals(game.AwayTeamCode, StringComparison.OrdinalIgnoreCase) == true && 
+                        score.HomeTeam?.Equals(game.HomeTeamCode, StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        liveGameIndex = i;
+                        break;
+                    }
+                }
+                
+                if (liveGameIndex >= 0)
+                {
+                    var liveGame = liveScores[liveGameIndex];
+            
+                    // Merge the scores and status
+                    game.AwayScore = liveGame.AwayScore;
+                    game.HomeScore = liveGame.HomeScore;
+                    game.Status = DetermineGameStatus(liveGame.IsLive, liveGame.IsFinal);
+            
+                    _logger.LogInformation("✅ Merged score: {Away} {AwayScore} @ {Home} {HomeScore} - {Status}",
+                        game.AwayTeamCode, game.AwayScore ?? 0, game.HomeTeamCode, game.HomeScore ?? 0, game.Status);
+                }
+                else
+                {
+                    _logger.LogDebug("No live score found for {Away} @ {Home}", game.AwayTeamCode, game.HomeTeamCode);
+                }
+            }
+        }
+
+        // Helper method using correct NBATickerView properties
+        private string DetermineGameStatus(bool isLive, bool isFinal)
+        {
+            if (isFinal)
+                return "Final";
+            
+            if (isLive)
+                return "Live";
+            
+            return "Scheduled";
         }
 
         private List<NBAGameMatchup> GetFallbackGames()

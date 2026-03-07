@@ -98,6 +98,9 @@ builder.Services.AddHttpClient<TheOddsApiClient>();
 builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
 builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
 
+// NBA Scores Service
+builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
