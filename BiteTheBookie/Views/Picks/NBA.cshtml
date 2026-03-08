@@ -2,7 +2,7 @@
 
 @{
     ViewData["Title"] = "NBA Expert Picks & Predictions";
-    
+
     // Group games by date
     var today = DateTime.UtcNow.Date;
     var tomorrow = today.AddDays(1);
@@ -77,114 +77,119 @@
                         <h2 class="h4 mb-0 me-3">Today's Games</h2>
                         <span class="badge bg-primary">@todayGames.Count games</span>
                     </div>
-                    
+
                     <div class="row g-4">
                         @foreach (var game in todayGames)
                         {
-                            <div class="col-12 col-lg-6 col-xl-4">
-                                <div class="card h-100 game-card @(game.Status == "Live" ? "live-game" : "")">
-                                    <div class="card-body">
-                                        <!-- Game Header -->
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span class="text-muted small">@game.GameTimeDisplay</span>
-                                            <span class="badge @(game.Status == "Live" ? "bg-danger pulse" : game.Status == "Final" ? "bg-secondary" : "bg-primary")">
-                                                @if (game.Status == "Live")
-                                                {
-                                                    <i class="fas fa-circle me-1" style="font-size: 8px;"></i>
-                                                }
-                                                @game.Status
-                                            </span>
-                                        </div>
+                            <div class="col-12">
+                                <div class="card game-card @(game.Status == "Live" ? "live-game" : "")">
+                                    <div class="card-body p-3">
+                                        <div class="row align-items-center">
+                                            <!-- Game Info Column (Time + Status) -->
+                                            <div class="col-auto" style="min-width: 150px;">
+                                                <div class="text-muted small mb-2">@game.GameTimeDisplay</div>
+                                                <span class="badge @(game.Status == "Live" ? "bg-danger pulse" : game.Status == "Final" ? "bg-secondary" : "bg-primary")">
+                                                    @if (game.Status == "Live")
+                                                    {
+                                                        <i class="fas fa-circle me-1" style="font-size: 8px;"></i>
+                                                    }
+                                                    @game.Status
+                                                </span>
+                                            </div>
 
-                                        <!-- Away Team -->
-                                        <div class="d-flex justify-content-between align-items-center mb-2 team-row">
-                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
-                                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" class="team-logo" />
-                                                <div>
-                                                    <div class="fw-bold team-name">@game.AwayTeamName</div>
-                                                    <div class="text-muted small">Away</div>
+                                            <!-- Teams & Scores Combined Column -->
+                                            <div class="col">
+                                                <!-- Away Team Row -->
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" class="team-logo me-2" />
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-bold">@game.AwayTeamName</div>
+                                                        <div class="text-muted small">Away</div>
+                                                    </div>
+                                                    <!-- Away Score Box -->
+                                                    <div class="score-box @(game.AwayScore > game.HomeScore && game.Status == "Final" ? "winner-box" : "")">
+                                                        @if (game.AwayScore.HasValue)
+                                                        {
+                                                            <span class="score-number">@game.AwayScore</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="score-number text-muted">--</span>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <!-- Home Team Row -->
+                                                <div class="d-flex align-items-center">
+                                                    <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" class="team-logo me-2" />
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-bold">@game.HomeTeamName</div>
+                                                        <div class="text-muted small">Home</div>
+                                                    </div>
+                                                    <!-- Home Score Box -->
+                                                    <div class="score-box @(game.HomeScore > game.AwayScore && game.Status == "Final" ? "winner-box" : "")">
+                                                        @if (game.HomeScore.HasValue)
+                                                        {
+                                                            <span class="score-number">@game.HomeScore</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="score-number text-muted">--</span>
+                                                        }
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="score @(game.AwayScore > game.HomeScore && game.Status == "Final" ? "winner" : "")">
-                                                @if (game.AwayScore.HasValue)
+
+                                            <!-- Betting Lines Column -->
+                                            <div class="col-auto">
+                                                <div class="d-flex gap-3 betting-lines">
+                                                    @if (game.Spread.HasValue)
+                                                    {
+                                                        <div class="text-center">
+                                                            <div class="small text-muted">Spread</div>
+                                                            <div class="fw-bold">@game.Spread.Value.ToString("+0.0;-0.0")</div>
+                                                        </div>
+                                                    }
+                                                    @if (game.OverUnder.HasValue)
+                                                    {
+                                                        <div class="text-center">
+                                                            <div class="small text-muted">O/U</div>
+                                                            <div class="fw-bold">@game.OverUnder.Value</div>
+                                                        </div>
+                                                    }
+                                                    @if (game.HomeMoneyline.HasValue)
+                                                    {
+                                                        <div class="text-center">
+                                                            <div class="small text-muted">ML</div>
+                                                            <div class="fw-bold">@game.HomeMoneyline.Value.ToString("+#;-#")</div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            <!-- Action Button Column -->
+                                            <div class="col-auto">
+                                                @if (game.Status == "Scheduled")
                                                 {
-                                                    <span class="h3 mb-0 fw-bold">@game.AwayScore</span>
+                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-chart-line me-1"></i> Analysis
+                                                    </a>
+                                                }
+                                                else if (game.Status == "Live")
+                                                {
+                                                    <button class="btn btn-danger btn-sm" disabled>
+                                                        <i class="fas fa-circle pulse me-1" style="font-size: 8px;"></i> Live
+                                                    </button>
                                                 }
                                                 else
                                                 {
-                                                    <span class="h4 mb-0 text-muted">--</span>
+                                                    <button class="btn btn-secondary btn-sm" disabled>
+                                                        <i class="fas fa-check me-1"></i> Final
+                                                    </button>
                                                 }
                                             </div>
                                         </div>
-
-                                        <!-- Home Team -->
-                                        <div class="d-flex justify-content-between align-items-center mb-3 team-row">
-                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
-                                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" class="team-logo" />
-                                                <div>
-                                                    <div class="fw-bold team-name">@game.HomeTeamName</div>
-                                                    <div class="text-muted small">Home</div>
-                                                </div>
-                                            </div>
-                                            <div class="score @(game.HomeScore > game.AwayScore && game.Status == "Final" ? "winner" : "")">
-                                                @if (game.HomeScore.HasValue)
-                                                {
-                                                    <span class="h3 mb-0 fw-bold">@game.HomeScore</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="h4 mb-0 text-muted">--</span>
-                                                }
-                                            </div>
-                                        </div>
-
-                                        <hr />
-
-                                        <!-- Betting Lines -->
-                                        <div class="row text-center g-2 mb-3">
-                                            @if (game.Spread.HasValue)
-                                            {
-                                                <div class="col-4">
-                                                    <div class="small text-muted">Spread</div>
-                                                    <div class="fw-bold">@game.Spread.Value.ToString("+0.0;-0.0")</div>
-                                                </div>
-                                            }
-                                            @if (game.OverUnder.HasValue)
-                                            {
-                                                <div class="col-4">
-                                                    <div class="small text-muted">O/U</div>
-                                                    <div class="fw-bold">@game.OverUnder.Value</div>
-                                                </div>
-                                            }
-                                            @if (game.HomeMoneyline.HasValue)
-                                            {
-                                                <div class="col-4">
-                                                    <div class="small text-muted">ML</div>
-                                                    <div class="fw-bold">@game.HomeMoneyline.Value.ToString("+#;-#")</div>
-                                                </div>
-                                            }
-                                        </div>
-
-                                        <!-- Action Button -->
-                                        @if (game.Status == "Scheduled")
-                                        {
-                                            <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
-                                               class="btn btn-primary w-100 btn-sm">
-                                                <i class="fas fa-chart-line me-2"></i> View Analysis
-                                            </a>
-                                        }
-                                        else if (game.Status == "Live")
-                                        {
-                                            <button class="btn btn-danger w-100 btn-sm" disabled>
-                                                <i class="fas fa-circle pulse me-2" style="font-size: 8px;"></i> In Progress
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-secondary w-100 btn-sm" disabled>
-                                                <i class="fas fa-check me-2"></i> Final
-                                            </button>
-                                        }
                                     </div>
                                 </div>
                             </div>
@@ -208,75 +213,84 @@
                         <h2 class="h4 mb-0 me-3">Tomorrow's Games</h2>
                         <span class="badge bg-info">@tomorrowGames.Count games</span>
                     </div>
-                    
+
                     <div class="row g-4">
                         @foreach (var game in tomorrowGames)
                         {
-                            <div class="col-12 col-lg-6 col-xl-4">
-                                <div class="card h-100 game-card tomorrow-game">
-                                    <div class="card-body">
-                                        <!-- Game Header -->
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span class="text-muted small">@game.GameTimeDisplay</span>
-                                            <span class="badge bg-info">Tomorrow</span>
-                                        </div>
+                            <div class="col-12">
+                                <div class="card game-card tomorrow-game">
+                                    <div class="card-body p-3">
+                                        <div class="row align-items-center">
+                                            <!-- Game Info Column -->
+                                            <div class="col-auto" style="min-width: 150px;">
+                                                <div class="text-muted small mb-2">@game.GameTimeDisplay</div>
+                                                <span class="badge bg-info">Tomorrow</span>
+                                            </div>
 
-                                        <!-- Away Team -->
-                                        <div class="d-flex justify-content-between align-items-center mb-2 team-row">
-                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
-                                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" class="team-logo" />
-                                                <div>
-                                                    <div class="fw-bold team-name">@game.AwayTeamName</div>
-                                                    <div class="text-muted small">Away</div>
+                                            <!-- Teams & Scores Combined Column -->
+                                            <div class="col">
+                                                <!-- Away Team Row -->
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" class="team-logo me-2" />
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-bold">@game.AwayTeamName</div>
+                                                        <div class="text-muted small">Away</div>
+                                                    </div>
+                                                    <!-- Away Score Box -->
+                                                    <div class="score-box scheduled-box">
+                                                        <span class="score-number text-muted">--</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Home Team Row -->
+                                                <div class="d-flex align-items-center">
+                                                    <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" class="team-logo me-2" />
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-bold">@game.HomeTeamName</div>
+                                                        <div class="text-muted small">Home</div>
+                                                    </div>
+                                                    <!-- Home Score Box -->
+                                                    <div class="score-box scheduled-box">
+                                                        <span class="score-number text-muted">--</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <span class="h4 mb-0 text-muted">--</span>
-                                        </div>
 
-                                        <!-- Home Team -->
-                                        <div class="d-flex justify-content-between align-items-center mb-3 team-row">
-                                            <div class="d-flex align-items-center gap-2 flex-grow-1">
-                                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" class="team-logo" />
-                                                <div>
-                                                    <div class="fw-bold team-name">@game.HomeTeamName</div>
-                                                    <div class="text-muted small">Home</div>
+                                            <!-- Betting Lines Column -->
+                                            <div class="col-auto">
+                                                <div class="d-flex gap-3 betting-lines">
+                                                    @if (game.Spread.HasValue)
+                                                    {
+                                                        <div class="text-center">
+                                                            <div class="small text-muted">Spread</div>
+                                                            <div class="fw-bold">@game.Spread.Value.ToString("+0.0;-0.0")</div>
+                                                        </div>
+                                                    }
+                                                    @if (game.OverUnder.HasValue)
+                                                    {
+                                                        <div class="text-center">
+                                                            <div class="small text-muted">O/U</div>
+                                                            <div class="fw-bold">@game.OverUnder.Value</div>
+                                                        </div>
+                                                    }
+                                                    @if (game.HomeMoneyline.HasValue)
+                                                    {
+                                                        <div class="text-center">
+                                                            <div class="small text-muted">ML</div>
+                                                            <div class="fw-bold">@game.HomeMoneyline.Value.ToString("+#;-#")</div>
+                                                        </div>
+                                                    }
                                                 </div>
                                             </div>
-                                            <span class="h4 mb-0 text-muted">--</span>
+
+                                            <!-- Action Button Column -->
+                                            <div class="col-auto">
+                                                <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-chart-line me-1"></i> Analysis
+                                                </a>
+                                            </div>
                                         </div>
-
-                                        <hr />
-
-                                        <!-- Betting Lines -->
-                                        <div class="row text-center g-2 mb-3">
-                                            @if (game.Spread.HasValue)
-                                            {
-                                                <div class="col-4">
-                                                    <div class="small text-muted">Spread</div>
-                                                    <div class="fw-bold">@game.Spread.Value.ToString("+0.0;-0.0")</div>
-                                                </div>
-                                            }
-                                            @if (game.OverUnder.HasValue)
-                                            {
-                                                <div class="col-4">
-                                                    <div class="small text-muted">O/U</div>
-                                                    <div class="fw-bold">@game.OverUnder.Value</div>
-                                                </div>
-                                            }
-                                            @if (game.HomeMoneyline.HasValue)
-                                            {
-                                                <div class="col-4">
-                                                    <div class="small text-muted">ML</div>
-                                                    <div class="fw-bold">@game.HomeMoneyline.Value.ToString("+#;-#")</div>
-                                                </div>
-                                            }
-                                        </div>
-
-                                        <!-- Action Button -->
-                                        <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
-                                           class="btn btn-outline-primary w-100 btn-sm">
-                                            <i class="fas fa-chart-line me-2"></i> View Analysis
-                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -300,70 +314,131 @@
         transition: all 0.3s ease;
         border: 2px solid transparent;
     }
-    
-    .game-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .game-card.live-game {
-        border-color: #dc3545;
-        box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
-    }
-    
-    .game-card.tomorrow-game {
-        opacity: 0.95;
-    }
-    
+
+        .game-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .game-card.live-game {
+            border-color: #dc3545;
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+        }
+
+        .game-card.tomorrow-game {
+            opacity: 0.95;
+        }
+
     .team-logo {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
         object-fit: contain;
     }
-    
-    .team-name {
-        font-size: 1rem;
-    }
-    
-    .score {
-        min-width: 50px;
-        text-align: right;
-    }
-    
-    .score.winner {
-        color: #198754;
-        font-weight: 700;
-    }
-    
-    .team-row {
-        padding: 8px;
+
+    /* Blue Score Boxes - Right-aligned */
+    .score-box {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
         border-radius: 8px;
-        transition: background-color 0.2s;
+        padding: 8px 16px;
+        text-align: center;
+        width: 70px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        margin-left: 12px;
     }
-    
-    .team-row:hover {
-        background-color: #f8f9fa;
+
+        .score-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+        }
+
+        .score-box.winner-box {
+            background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+            animation: winner-pulse 2s infinite;
+        }
+
+        .score-box.scheduled-box {
+            background: linear-gradient(135deg, #6c757d 0%, #5c636a 100%);
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
+        }
+
+    .score-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: white;
+        line-height: 1;
     }
-    
+
+    @@keyframes winner-pulse {
+        0%, 100% {
+            box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+        }
+
+        50% {
+            box-shadow: 0 4px 16px rgba(25, 135, 84, 0.6);
+        }
+    }
+
+    .betting-lines {
+        min-width: 200px;
+    }
+
     .pulse {
         animation: pulse 2s infinite;
     }
-    
+
     @@keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
     }
-    
+
     .badge.pulse {
         animation: pulse-badge 1.5s infinite;
     }
-    
+
     @@keyframes pulse-badge {
-        0%, 100% { 
+        0%, 100% {
             box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
         }
-        50% { 
+
+        50% {
             box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+        }
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 768px) {
+        .row.align-items-center {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+
+        .col-auto {
+            width: 100%;
+            max-width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .score-box {
+            width: 100%;
+            margin-bottom: 0.5rem;
+            margin-left: 0;
+        }
+
+        .betting-lines {
+            justify-content: space-between;
+            width: 100%;
         }
     }
 </style>

@@ -72,21 +72,31 @@
                         {
                             <tr data-bet-types="spread overunder moneyline">
                                 <td>
-                                    <div class="text-muted small">@game.GameTimeDisplay</div>
+                                    <div class="text-muted small mb-2">@game.GameTimeDisplay</div>
+                                    <!-- Away Team Row -->
                                     <div class="d-flex align-items-center gap-2 mt-2">
                                         <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" style="width: 32px; height: 32px;" />
-                                        <span class="fw-semibold">@game.AwayTeamName</span>
+                                        <span class="fw-semibold flex-grow-1">@game.AwayTeamName</span>
                                         @if (game.AwayScore.HasValue)
                                         {
-                                            <span class="badge bg-primary ms-2">@game.AwayScore</span>
+                                            <span class="score-badge">@game.AwayScore</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="score-badge score-badge-empty">--</span>
                                         }
                                     </div>
+                                    <!-- Home Team Row -->
                                     <div class="d-flex align-items-center gap-2 mt-1">
                                         <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" style="width: 32px; height: 32px;" />
-                                        <span class="fw-semibold">@game.HomeTeamName</span>
+                                        <span class="fw-semibold flex-grow-1">@game.HomeTeamName</span>
                                         @if (game.HomeScore.HasValue)
                                         {
-                                            <span class="badge bg-primary ms-2">@game.HomeScore</span>
+                                            <span class="score-badge">@game.HomeScore</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="score-badge score-badge-empty">--</span>
                                         }
                                     </div>
                                 </td>
@@ -197,16 +207,16 @@
             filterLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     // Remove active class from all links
                     filterLinks.forEach(l => l.classList.remove('active'));
-                    
+
                     // Add active class to clicked link
                     this.classList.add('active');
-                    
+
                     // Get the filter type
                     const filterType = this.getAttribute('data-filter');
-                    
+
                     // Filter the table rows
                     tableRows.forEach(row => {
                         if (filterType === 'all') {
@@ -222,7 +232,7 @@
                             }
                         }
                     });
-                    
+
                     // Update the count of visible games
                     const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
                     console.log(`Showing ${visibleRows.length} games for filter: ${filterType}`);
@@ -244,15 +254,35 @@
         color: #212529;
     }
 
-    .table thead th {
-        background-color: #0066cc;
-        color: #ffffff;
-        font-weight: 600;
-        border: none;
+        .table thead th {
+            background-color: #0066cc;
+            color: #ffffff;
+            font-weight: 600;
+            border: none;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f0f8ff;
+        }
+
+    /* Score Badge Styling - Right Aligned */
+    .score-badge {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        color: white;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        min-width: 50px;
+        text-align: center;
+        display: inline-block;
+        box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
+        flex-shrink: 0;
     }
 
-    .table tbody tr:hover {
-        background-color: #f0f8ff;
+    .score-badge-empty {
+        background: linear-gradient(135deg, #6c757d 0%, #5c636a 100%);
+        box-shadow: 0 2px 6px rgba(108, 117, 125, 0.2);
     }
 
     .btn-primary {
@@ -261,10 +291,10 @@
         font-weight: 600;
     }
 
-    .btn-primary:hover {
-        background-color: #0052a3;
-        border-color: #0052a3;
-    }
+        .btn-primary:hover {
+            background-color: #0052a3;
+            border-color: #0052a3;
+        }
 
     .btn-outline-primary {
         color: #0066cc;
@@ -272,11 +302,11 @@
         font-weight: 600;
     }
 
-    .btn-outline-primary:hover {
-        background-color: #0066cc;
-        border-color: #0066cc;
-        color: #ffffff;
-    }
+        .btn-outline-primary:hover {
+            background-color: #0066cc;
+            border-color: #0066cc;
+            color: #ffffff;
+        }
 
     .btn-outline-secondary {
         color: #6c757d;
@@ -284,11 +314,11 @@
         font-weight: 500;
     }
 
-    .btn-outline-secondary:hover {
-        background-color: #6c757d;
-        border-color: #6c757d;
-        color: #ffffff;
-    }
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #ffffff;
+        }
 
     .nav-pills .nav-link {
         color: #495057;
@@ -297,15 +327,15 @@
         transition: all 0.3s ease;
     }
 
-    .nav-pills .nav-link:hover {
-        background-color: #e9ecef;
-        color: #0066cc;
-    }
+        .nav-pills .nav-link:hover {
+            background-color: #e9ecef;
+            color: #0066cc;
+        }
 
-    .nav-pills .nav-link.active {
-        background-color: #0066cc;
-        font-weight: 600;
-    }
+        .nav-pills .nav-link.active {
+            background-color: #0066cc;
+            font-weight: 600;
+        }
 
     .card {
         border: 1px solid #dee2e6;
@@ -313,10 +343,10 @@
         transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
 
     .card-body {
         color: #212529;
@@ -345,5 +375,3 @@
         font-weight: 700;
     }
 </style>
-
-
