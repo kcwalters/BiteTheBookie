@@ -6,12 +6,12 @@ using BiteTheBookie.Services.Interfaces;
 
 namespace BiteTheBookie.Services
 {
-    public class MlbService : IMlbService
+    public class MLBGamesService : IMLBGamesService
     {
         private readonly HttpClient _http;
         private const string BaseUrl = "https://statsapi.mlb.com/api/v1/";
 
-        public MlbService(HttpClient http) => _http = http;
+        public MLBGamesService(HttpClient http) => _http = http;
 
         public async Task<List<Game>> GetTodayGamesAsync()
         {

@@ -61,7 +61,7 @@ builder.Services.AddScoped<IOddsService>(sp => sp.GetRequiredService<OddsService
 
 builder.Services.AddScoped<IBetSlipService, BetSlipService>();
 
-builder.Services.AddHttpClient<IMlbService, MlbService>(c =>
+builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
 {
     c.BaseAddress = new Uri("https://statsapi.mlb.com/api/v1/");
 });

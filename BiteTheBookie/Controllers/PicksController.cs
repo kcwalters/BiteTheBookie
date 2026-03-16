@@ -17,6 +17,7 @@ namespace BiteTheBookie.Controllers
         private readonly ISpreadAnalysisService _spreadAnalysisService;
         private readonly IInjuryReportService _injuryReportService;
         private readonly ILogger<PicksController> _logger;
+        private readonly IMLBGamesService _mlbService;
 
         public PicksController(
             IGameSimulationService simulationService, 
@@ -26,6 +27,7 @@ namespace BiteTheBookie.Controllers
             ICBBRosterService cbbRosterService,
             ISpreadAnalysisService spreadAnalysisService,
             IInjuryReportService injuryReportService,
+            IMLBGamesService mlbService,
             ILogger<PicksController> logger)
         {
             _simulationService = simulationService;
@@ -35,6 +37,7 @@ namespace BiteTheBookie.Controllers
             _cbbRosterService = cbbRosterService;
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService = injuryReportService;
+            _mlbService = mlbService;
             _logger = logger;
         }
 
@@ -144,9 +147,49 @@ namespace BiteTheBookie.Controllers
             return View(viewModel);
         }
 
-        public IActionResult MLB()
+        public async Task<IActionResult> MLB()
         {
-            return View();
+            try
+            {
+                // Get MLB games for today and tomorrow
+                var games = await _mlbService.GetTodayGamesAsync();
+
+                // Map MLB.Game to NBAGameMatchup for the view model
+                var mappedGames = games.Select(g => new NBAGameMatchup
+                {
+                    GameId = $"{g.AwayTeam}-{g.HomeTeam}-{g.GameTime:yyyyMMdd}",
+                    AwayTeamCode = g.AwayTeam,
+                    AwayTeamName = g.AwayTeam,
+                    AwayTeamLogo = g.AwayTeamLogoUrl ?? string.Empty,
+                    HomeTeamCode = g.HomeTeam,
+                    HomeTeamName = g.HomeTeam,
+                    HomeTeamLogo = g.HomeTeamLogoUrl ?? string.Empty,
+                    GameTime = g.GameTime,
+                    Status = g.Status,
+                    AwayScore = g.AwayScore,
+                    HomeScore = g.HomeScore
+                    // Spread, OverUnder, Moneyline fields can be mapped if available in MLB.Game
+                }).ToList();
+
+                var viewModel = new PicksIndexViewModel
+                {
+                    League = "MLB",
+                    Games = mappedGames
+                };
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading MLB picks page");
+
+                return View(new PicksIndexViewModel
+                {
+                    League = "MLB",
+                    Games = new List<NBAGameMatchup>(),
+                    ErrorMessage = "Unable to load MLB games. Please try again later."
+                });
+            }
         }
 
         public async Task<IActionResult> Detail(string gameId, CancellationToken cancellationToken)

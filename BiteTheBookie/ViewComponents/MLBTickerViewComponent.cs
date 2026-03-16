@@ -5,9 +5,9 @@ namespace BiteTheBookie.ViewComponents
 {
     public class MLBTickerViewComponent : ViewComponent
     {
-        private readonly IMlbService _mlbService;
+        private readonly IMLBGamesService _mlbService;
 
-        public MLBTickerViewComponent(IMlbService mlbService)
+        public MLBTickerViewComponent(IMLBGamesService mlbService)
         {
             _mlbService = mlbService;
         }

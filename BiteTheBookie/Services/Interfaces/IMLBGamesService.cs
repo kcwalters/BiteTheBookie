@@ -2,7 +2,7 @@
 
 namespace BiteTheBookie.Services.Interfaces
 {
-    public interface IMlbService
+    public interface IMLBGamesService
     {
         Task<List<Game>> GetTodayGamesAsync();
     }

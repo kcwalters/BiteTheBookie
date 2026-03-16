@@ -13,12 +13,12 @@ namespace BiteTheBookie.Controllers
         private readonly IOddsService _odds;
         private readonly INewsService _news;
         private readonly IBetSlipService _betSlip;
-        private readonly IMlbService _mlbService;
+        private readonly IMLBGamesService _mlbService;
 
         public HomeController(IOddsService odds,
                               INewsService news,
                               IBetSlipService betSlip,
-                              IMlbService mlbService)
+                              IMLBGamesService mlbService)
         {
             _odds = odds;
             _news = news;
