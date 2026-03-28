@@ -1,0 +1,130 @@
+@{
+    ViewData["Title"] = "Join BiteTheBookie";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Join BiteTheBookie</h1>
+        <p class="lead text-muted">Get expert picks, simulations, and analysis to beat the bookies</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <!-- FREE TIER -->
+        <div class="col-12 col-md-4">
+            <div class="card h-100 pricing-card">
+                <div class="card-header text-center py-4">
+                    <h3 class="mb-0">Free</h3>
+                    <div class="display-5 fw-bold mt-2">$0</div>
+                    <div class="text-muted">Forever</div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>View game schedules</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Basic odds display</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Live score tickers</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>News & headlines</li>
+                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>Expert picks</li>
+                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>AI simulations</li>
+                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>Spread analysis</li>
+                    </ul>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="free" 
+                       class="btn btn-outline-primary btn-lg w-100">
+                        Sign Up Free
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- PREMIUM TIER -->
+        <div class="col-12 col-md-4">
+            <div class="card h-100 pricing-card pricing-card-featured">
+                <div class="card-header text-center py-4 bg-primary text-white">
+                    <span class="badge bg-warning text-dark mb-2">MOST POPULAR</span>
+                    <h3 class="mb-0 text-white">Premium</h3>
+                    <div class="display-5 fw-bold mt-2">$19.99</div>
+                    <div class="opacity-75">per month</div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Everything in Free</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Expert picks (all sports)</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>AI game simulations</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Spread analysis tools</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Injury impact reports</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Against the spread picks</li>
+                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>VIP Discord access</li>
+                    </ul>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="premium" 
+                       class="btn btn-primary btn-lg w-100">
+                        Get Premium
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIP TIER -->
+        <div class="col-12 col-md-4">
+            <div class="card h-100 pricing-card">
+                <div class="card-header text-center py-4">
+                    <h3 class="mb-0">VIP</h3>
+                    <div class="display-5 fw-bold mt-2">$49.99</div>
+                    <div class="text-muted">per month</div>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Everything in Premium</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>VIP Discord community</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Early access to picks</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Custom bet builder</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>1-on-1 expert chat</strong></li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Priority support</li>
+                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Bankroll tracker</li>
+                    </ul>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="vip" 
+                       class="btn btn-dark btn-lg w-100">
+                        Go VIP
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .pricing-card {
+        border-radius: 16px;
+        border: 2px solid #dee2e6;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+
+    .pricing-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .pricing-card-featured {
+        border-color: #0d6efd;
+        transform: scale(1.05);
+        box-shadow: 0 8px 30px rgba(13, 110, 253, 0.2);
+    }
+
+    .pricing-card-featured:hover {
+        transform: scale(1.05) translateY(-8px);
+    }
+
+    .pricing-card .card-header {
+        border-bottom: none;
+    }
+
+    .pricing-card .card-footer {
+        background: transparent;
+        border-top: none;
+    }
+</style>

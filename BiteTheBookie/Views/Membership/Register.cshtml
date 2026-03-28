@@ -1,0 +1,83 @@
+@model BiteTheBookie.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Create Account";
+    var planName = Model.SelectedPlan?.ToLower() switch
+    {
+        "premium" => "Premium",
+        "vip" => "VIP",
+        _ => "Free"
+    };
+    var planColor = Model.SelectedPlan?.ToLower() switch
+    {
+        "premium" => "primary",
+        "vip" => "dark",
+        _ => "secondary"
+    };
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Create Your Account</h2>
+                        <span class="badge bg-@planColor fs-6 mt-2">@planName Plan</span>
+                    </div>
+
+                    <form asp-action="Register" method="post">
+                        <input type="hidden" asp-for="SelectedPlan" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label asp-for="FirstName" class="form-label"></label>
+                                <input asp-for="FirstName" class="form-control" placeholder="John" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-6">
+                                <label asp-for="LastName" class="form-label"></label>
+                                <input asp-for="LastName" class="form-control" placeholder="Doe" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" placeholder="you@@example.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" class="form-control" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            <div class="form-text">Min 8 chars, uppercase, lowercase, and a digit</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="ConfirmPassword" class="form-label"></label>
+                            <input asp-for="ConfirmPassword" class="form-control" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-user-plus me-2"></i>Create Account
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted">Already have an account?</span>
+                            <a asp-area="Identity" asp-page="/Account/Login">Log In</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

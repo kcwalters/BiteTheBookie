@@ -1,7 +1,18 @@
 @model BiteTheBookie.ViewModels.PicksIndexViewModel
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "NBA Picks - Expert Predictions";
+
+    var isPremiumOrVip = false;
+    if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+        isPremiumOrVip = currentUser?.IsPremium == true;
+    }
 }
 
 <div class="container">
@@ -119,7 +130,16 @@
                                     }
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                                    @if (isPremiumOrVip)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning" title="Upgrade to view picks">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </a>
+                                    }
                                 </td>
                                 <td>
                                     <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })" class="btn btn-sm btn-outline-secondary">Simulation</a>
