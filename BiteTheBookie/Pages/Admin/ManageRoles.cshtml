@@ -1,0 +1,20 @@
+@page
+@model ManageRolesModel
+<h2>Manage Roles</h2>
+<p class="text-success">@Model.Message</p>
+<form method="post">
+    <div class="mb-3">
+        <label>User Email</label>
+        <input asp-for="Email" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label>Role</label>
+        <select asp-for="Role" class="form-select">
+            <option>Admin</option>
+            <option>Premium</option>
+            <option>VIP</option>
+            <option>Free</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Assign Role</button>
+</form>

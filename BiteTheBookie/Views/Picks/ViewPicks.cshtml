@@ -1,0 +1,136 @@
+@model BiteTheBookie.ViewModels.GamePicksViewModel
+
+@{
+    ViewData["Title"] = $"Expert Picks — {Model.AwayTeamName} @ {Model.HomeTeamName}";
+}
+
+@functions {
+    string PickTypeBadgeClass(string pickType) => pickType switch
+    {
+        "Spread" => "bg-primary",
+        "Moneyline" => "bg-success",
+        "OverUnder" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    string PickTypeBorderClass(string pickType) => pickType switch
+    {
+        "Spread" => "border-primary",
+        "Moneyline" => "border-success",
+        "OverUnder" => "border-warning",
+        _ => "border-secondary"
+    };
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a asp-controller="Picks" asp-action="Index">Picks</a>
+            </li>
+            <li class="breadcrumb-item active">Expert Picks</li>
+        </ol>
+    </nav>
+
+    <!-- Game Header -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center text-center">
+                <div class="col-5">
+                    <h3 class="h4 mb-1">@Model.AwayTeamName</h3>
+                    <span class="text-muted small">Away</span>
+                </div>
+                <div class="col-2">
+                    <span class="badge bg-dark fs-6">VS</span>
+                    <div class="text-muted small mt-1">@Model.GameTimeDisplay</div>
+                </div>
+                <div class="col-5">
+                    <h3 class="h4 mb-1">@Model.HomeTeamName</h3>
+                    <span class="text-muted small">Home</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Picks.Any())
+    {
+        <h2 class="h4 mb-3">
+            <i class="fas fa-star text-warning me-2"></i>Expert Picks
+            <span class="badge bg-primary ms-2">@Model.Picks.Count</span>
+        </h2>
+
+        <div class="row g-4">
+            @foreach (var pick in Model.Picks)
+            {
+                <div class="col-12">
+                    <div class="card shadow-sm border-start border-4 @PickTypeBorderClass(pick.PickType)">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between mb-3">
+                                <div>
+                                    <span class="badge @PickTypeBadgeClass(pick.PickType) me-2">@pick.PickType</span>
+                                    <span class="fw-bold fs-5">@pick.PickSelection</span>
+                                </div>
+                                <div>
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= pick.Confidence)
+                                        {
+                                            <i class="fas fa-star text-warning"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-star text-muted opacity-25"></i>
+                                        }
+                                    }
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(pick.Analysis))
+                            {
+                                <div class="bg-light rounded p-3 mb-3">
+                                    <h6 class="text-muted mb-2"><i class="fas fa-chart-line me-1"></i>Analysis</h6>
+                                    <p class="mb-0" style="white-space: pre-line;">@pick.Analysis</p>
+                                </div>
+                            }
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-user me-1"></i>@pick.EnteredBy
+                                </small>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>@pick.CreatedAt.ToLocalTime().ToString("MMM dd, h:mm tt")
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No Expert Picks Yet</h4>
+            <p class="text-muted">Our experts haven't posted picks for this game yet. Check back closer to game time!</p>
+            <a asp-controller="Picks" asp-action="Index" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Games
+            </a>
+        </div>
+    }
+</div>
+
+<style>
+    .card {
+        color: #212529;
+    }
+
+    .card-body p {
+        color: #333;
+        line-height: 1.6;
+    }
+
+    h3, h4, h6 {
+        color: #212529;
+    }
+</style>

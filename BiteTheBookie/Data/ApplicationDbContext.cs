@@ -11,6 +11,8 @@ namespace BiteTheBookie.Data
         {
         }
 
+        public DbSet<ExpertPick> ExpertPicks { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -22,6 +24,14 @@ namespace BiteTheBookie.Data
                 entity.Property(e => e.SubscriptionTier)
                       .HasConversion<int>()
                       .HasDefaultValue(SubscriptionTier.Free);
+                entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            builder.Entity<ExpertPick>(entity =>
+            {
+                entity.HasIndex(e => e.GameId);
+                entity.HasIndex(e => e.League);
                 entity.Property(e => e.CreatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
             });

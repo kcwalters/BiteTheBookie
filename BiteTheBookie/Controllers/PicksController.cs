@@ -1,8 +1,11 @@
+using BiteTheBookie.Data;
 using BiteTheBookie.Models;
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace BiteTheBookie.Controllers
@@ -18,6 +21,7 @@ namespace BiteTheBookie.Controllers
         private readonly IInjuryReportService _injuryReportService;
         private readonly ILogger<PicksController> _logger;
         private readonly IMLBGamesService _mlbService;
+        private readonly ApplicationDbContext _db;
 
         public PicksController(
             IGameSimulationService simulationService, 
@@ -28,6 +32,7 @@ namespace BiteTheBookie.Controllers
             ISpreadAnalysisService spreadAnalysisService,
             IInjuryReportService injuryReportService,
             IMLBGamesService mlbService,
+            ApplicationDbContext db,
             ILogger<PicksController> logger)
         {
             _simulationService = simulationService;
@@ -38,7 +43,40 @@ namespace BiteTheBookie.Controllers
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService = injuryReportService;
             _mlbService = mlbService;
+            _db = db;
             _logger = logger;
+        }
+
+        [Authorize(Policy = "PremiumOnly")]
+        public async Task<IActionResult> ViewPicks(string gameId, string league = "NBA")
+        {
+            var picks = await _db.ExpertPicks
+                .Where(p => p.GameId == gameId)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            // Try to find the game info from the first pick, or default
+            var firstPick = picks.FirstOrDefault();
+
+            var vm = new GamePicksViewModel
+            {
+                GameId = gameId,
+                League = league,
+                AwayTeamName = firstPick?.AwayTeamName ?? "Away",
+                HomeTeamName = firstPick?.HomeTeamName ?? "Home",
+                GameTime = firstPick?.GameTime ?? DateTime.UtcNow,
+                Picks = picks.Select(p => new PickDetail
+                {
+                    PickType = p.PickType,
+                    PickSelection = p.PickSelection,
+                    Confidence = p.Confidence,
+                    Analysis = p.Analysis,
+                    EnteredBy = p.EnteredBy,
+                    CreatedAt = p.CreatedAt
+                }).ToList()
+            };
+
+            return View(vm);
         }
 
         public async Task<IActionResult> Index(CancellationToken cancellationToken)

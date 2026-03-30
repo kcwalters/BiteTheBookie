@@ -134,13 +134,40 @@ var app = builder.Build();
 // Seed roles on startup
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var services = scope.ServiceProvider;
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+    var configuration = services.GetRequiredService<IConfiguration>();
+
     string[] roles = { "Admin", "Premium", "VIP", "Free" };
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
         {
             await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
+
+    var adminEmail = configuration["SeedAdmin:Email"];
+    if (!string.IsNullOrWhiteSpace(adminEmail))
+    {
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        var adminPassword = configuration["SeedAdmin:Password"];
+
+        if (adminUser is null && !string.IsNullOrWhiteSpace(adminPassword))
+        {
+            adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+            await userManager.CreateAsync(adminUser, adminPassword);
+        }
+
+        if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
         }
     }
 }

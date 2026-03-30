@@ -1,0 +1,34 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace BiteTheBookie.ViewModels
+{
+    public class AdminPickViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Game ID is required")]
+        public string GameId { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "League is required")]
+        public string League { get; set; } = "NBA";
+
+        [Required(ErrorMessage = "Away team is required")]
+        public string AwayTeamName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Home team is required")]
+        public string HomeTeamName { get; set; } = string.Empty;
+
+        public DateTime GameTime { get; set; } = DateTime.UtcNow;
+
+        [Required(ErrorMessage = "Pick type is required")]
+        public string PickType { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Pick selection is required")]
+        public string PickSelection { get; set; } = string.Empty;
+
+        [Range(1, 10, ErrorMessage = "Confidence must be between 1 and 10")]
+        public int Confidence { get; set; } = 5;
+
+        public string? Analysis { get; set; }
+    }
+}

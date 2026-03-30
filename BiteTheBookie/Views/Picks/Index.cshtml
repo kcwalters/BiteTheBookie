@@ -132,7 +132,9 @@
                                 <td>
                                     @if (isPremiumOrVip)
                                     {
-                                        <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                                        <a asp-controller="Picks" asp-action="ViewPicks"
+                                           asp-route-gameId="@game.GameId" asp-route-league="NBA"
+                                           class="btn btn-sm btn-outline-primary">View Picks</a>
                                     }
                                     else
                                     {
@@ -240,10 +242,8 @@
                     // Filter the table rows
                     tableRows.forEach(row => {
                         if (filterType === 'all') {
-                            // Show all rows
                             row.style.display = '';
                         } else {
-                            // Check if row has the filter type in its data-bet-types attribute
                             const betTypes = row.getAttribute('data-bet-types');
                             if (betTypes && betTypes.includes(filterType)) {
                                 row.style.display = '';
@@ -253,7 +253,6 @@
                         }
                     });
 
-                    // Update the count of visible games
                     const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
                     console.log(`Showing ${visibleRows.length} games for filter: ${filterType}`);
                 });

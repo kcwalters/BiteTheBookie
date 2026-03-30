@@ -1,0 +1,133 @@
+﻿@model BiteTheBookie.ViewModels.AdminPickViewModel
+
+@{
+    ViewData["Title"] = "Enter Expert Pick";
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-league="@Model.League">Admin Picks</a></li>
+            <li class="breadcrumb-item active">New Pick</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h5 mb-0"><i class="fas fa-plus-circle me-2"></i>Enter Expert Pick</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <!-- League -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">League</label>
+                            <select asp-for="League" class="form-select">
+                                <option value="NBA">NBA</option>
+                                <option value="MLB">MLB</option>
+                            </select>
+                            <span asp-validation-for="League" class="text-danger"></span>
+                        </div>
+
+                        <!-- Game ID -->
+                        <div class="mb-3">
+                            <label asp-for="GameId" class="form-label fw-semibold">Game ID</label>
+                            <input asp-for="GameId" class="form-control" placeholder="e.g. bos-mil-20260328" />
+                            <div class="form-text">Format: awaycode-homecode-YYYYMMDD</div>
+                            <span asp-validation-for="GameId" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="AwayTeamName" class="form-label fw-semibold">Away Team</label>
+                                <input asp-for="AwayTeamName" class="form-control" placeholder="e.g. Boston Celtics" />
+                                <span asp-validation-for="AwayTeamName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="HomeTeamName" class="form-label fw-semibold">Home Team</label>
+                                <input asp-for="HomeTeamName" class="form-control" placeholder="e.g. Milwaukee Bucks" />
+                                <span asp-validation-for="HomeTeamName" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Game Time -->
+                        <div class="mb-3">
+                            <label asp-for="GameTime" class="form-label fw-semibold">Game Time (UTC)</label>
+                            <input asp-for="GameTime" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="GameTime" class="text-danger"></span>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <!-- Pick Type -->
+                        <div class="mb-3">
+                            <label asp-for="PickType" class="form-label fw-semibold">Pick Type</label>
+                            <select asp-for="PickType" class="form-select">
+                                <option value="">-- Select --</option>
+                                <option value="Spread">Spread</option>
+                                <option value="Moneyline">Moneyline</option>
+                                <option value="OverUnder">Over/Under</option>
+                            </select>
+                            <span asp-validation-for="PickType" class="text-danger"></span>
+                        </div>
+
+                        <!-- Pick Selection -->
+                        <div class="mb-3">
+                            <label asp-for="PickSelection" class="form-label fw-semibold">Pick Selection</label>
+                            <input asp-for="PickSelection" class="form-control"
+                                   placeholder="e.g. Lakers -3.5, Over 215.5, Red Sox ML" />
+                            <span asp-validation-for="PickSelection" class="text-danger"></span>
+                        </div>
+
+                        <!-- Confidence -->
+                        <div class="mb-3">
+                            <label asp-for="Confidence" class="form-label fw-semibold">
+                                Confidence <span id="confidenceDisplay" class="text-warning"></span>
+                            </label>
+                            <input asp-for="Confidence" type="range" class="form-range" min="1" max="5" step="1"
+                                   oninput="updateStars(this.value)" />
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Low</span>
+                                <span>Medium</span>
+                                <span>High</span>
+                            </div>
+                            <span asp-validation-for="Confidence" class="text-danger"></span>
+                        </div>
+
+                        <!-- Analysis -->
+                        <div class="mb-4">
+                            <label asp-for="Analysis" class="form-label fw-semibold">Analysis / Reasoning</label>
+                            <textarea asp-for="Analysis" class="form-control" rows="5"
+                                      placeholder="Write your expert analysis for this pick..."></textarea>
+                            <span asp-validation-for="Analysis" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Pick
+                            </button>
+                            <a asp-action="Index" asp-route-league="@Model.League" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function updateStars(val) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += i <= val ? '★' : '☆';
+            }
+            document.getElementById('confidenceDisplay').textContent = stars;
+        }
+        updateStars(document.querySelector('[name="Confidence"]').value);
+    </script>
+}
