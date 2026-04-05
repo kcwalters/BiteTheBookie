@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace BiteTheBookie.ViewModels
 {
@@ -30,5 +31,15 @@ namespace BiteTheBookie.ViewModels
         public int Confidence { get; set; } = 5;
 
         public string? Analysis { get; set; }
+
+        /// <summary>
+        /// Available NBA games for the Game ID dropdown.
+        /// </summary>
+        public List<SelectListItem> AvailableNbaGames { get; set; } = new();
+
+        /// <summary>
+        /// Available MLB games for the Game ID dropdown.
+        /// </summary>
+        public List<SelectListItem> AvailableMlbGames { get; set; } = new();
     }
 }

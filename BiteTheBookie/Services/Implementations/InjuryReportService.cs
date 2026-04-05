@@ -14,26 +14,17 @@ namespace BiteTheBookie.Services.Implementations
         private readonly EspnApiClient _espnApiClient;
 
         public InjuryReportService(
-            IConfiguration configuration, 
+            ChatClient? chatClient,
             ILogger<InjuryReportService> logger,
             EspnApiClient espnApiClient)
         {
             _logger = logger;
             _espnApiClient = espnApiClient;
+            _chatClient = chatClient;
 
-            var endpoint = configuration["AzureOpenAI:Endpoint"];
-            var apiKey = configuration["AzureOpenAI:ApiKey"];
-            var deploymentName = configuration["AzureOpenAI:DeploymentName"];
-
-            if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(deploymentName))
+            if (_chatClient == null)
             {
-                _logger.LogWarning("Azure OpenAI configuration is missing. Will use mock injury data as final fallback.");
-                _chatClient = null;
-            }
-            else
-            {
-                var azureClient = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
-                _chatClient = azureClient.GetChatClient(deploymentName);
+                _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use mock injury data as final fallback.");
             }
         }
 

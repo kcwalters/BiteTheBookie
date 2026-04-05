@@ -1,3 +1,5 @@
+using Azure;
+using Azure.AI.OpenAI;
 using Azure.Identity;
 using BiteTheBookie;
 using BiteTheBookie.Data;
@@ -8,6 +10,7 @@ using BiteTheBookie.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OpenAI.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +70,23 @@ builder.Services.AddAuthorization(options =>
 
 // MVC
 builder.Services.AddControllersWithViews();
+
+// Azure OpenAI ChatClient — register once for all services
+var aoaiEndpoint = builder.Configuration["AzureOpenAI:Endpoint"];
+var aoaiApiKey = builder.Configuration["AzureOpenAI:ApiKey"];
+var aoaiDeployment = builder.Configuration["AzureOpenAI:DeploymentName"];
+
+if (!string.IsNullOrEmpty(aoaiEndpoint) && !string.IsNullOrEmpty(aoaiApiKey) && !string.IsNullOrEmpty(aoaiDeployment))
+{
+    var azureOpenAIClient = new AzureOpenAIClient(new Uri(aoaiEndpoint), new AzureKeyCredential(aoaiApiKey));
+    var chatClient = azureOpenAIClient.GetChatClient(aoaiDeployment);
+    builder.Services.AddSingleton(chatClient);
+}
+else
+{
+    // Register a null instance so services can gracefully degrade
+    builder.Services.AddSingleton<ChatClient?>(sp => null);
+}
 
 // Odds API options + client
 builder.Services.Configure<OddsApiOptions>(builder.Configuration.GetSection("OddsApi"));

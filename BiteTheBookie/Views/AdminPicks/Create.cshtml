@@ -22,20 +22,64 @@
                     <form asp-action="Create" method="post">
                         @Html.AntiForgeryToken()
 
+                        <!-- Hidden GameId that always submits -->
+                        <input type="hidden" asp-for="GameId" id="gameIdInput" />
+
                         <!-- League -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold">League</label>
-                            <select asp-for="League" class="form-select">
+                            <select asp-for="League" class="form-select" id="leagueSelect">
                                 <option value="NBA">NBA</option>
                                 <option value="MLB">MLB</option>
                             </select>
                             <span asp-validation-for="League" class="text-danger"></span>
                         </div>
 
-                        <!-- Game ID -->
-                        <div class="mb-3">
-                            <label asp-for="GameId" class="form-label fw-semibold">Game ID</label>
-                            <input asp-for="GameId" class="form-control" placeholder="e.g. bos-mil-20260328" />
+                        <!-- Game ID — NBA Dropdown -->
+                        <div class="mb-3" id="nbaGameDropdownContainer" style="display: none;">
+                            <label class="form-label fw-semibold">Select Game</label>
+                            <select id="nbaGameDropdown" class="form-select">
+                                <option value="">-- Select an NBA Game --</option>
+                                @foreach (var game in Model.AvailableNbaGames)
+                                {
+                                    var selected = game.Value == Model.GameId ? "selected" : "";
+                                    <option value="@game.Value" selected="@selected">@game.Text</option>
+                                }
+                            </select>
+                            @if (!Model.AvailableNbaGames.Any())
+                            {
+                                <div class="form-text text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>No upcoming NBA games found. You can type a Game ID manually below.
+                                </div>
+                            }
+                            <span asp-validation-for="GameId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Game ID — MLB Dropdown -->
+                        <div class="mb-3" id="mlbGameDropdownContainer" style="display: none;">
+                            <label class="form-label fw-semibold">Select Game</label>
+                            <select id="mlbGameDropdown" class="form-select">
+                                <option value="">-- Select an MLB Game --</option>
+                                @foreach (var game in Model.AvailableMlbGames)
+                                {
+                                    var selected = game.Value == Model.GameId ? "selected" : "";
+                                    <option value="@game.Value" selected="@selected">@game.Text</option>
+                                }
+                            </select>
+                            @if (!Model.AvailableMlbGames.Any())
+                            {
+                                <div class="form-text text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>No MLB games found for today. You can type a Game ID manually below.
+                                </div>
+                            }
+                            <span asp-validation-for="GameId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Game ID — Text input fallback -->
+                        <div class="mb-3" id="gameIdTextContainer">
+                            <label class="form-label fw-semibold">Game ID</label>
+                            <input type="text" class="form-control" id="gameIdTextInput"
+                                   value="@Model.GameId" placeholder="e.g. bos-mil-20260328" />
                             <div class="form-text">Format: awaycode-homecode-YYYYMMDD</div>
                             <span asp-validation-for="GameId" class="text-danger"></span>
                         </div>
@@ -43,12 +87,12 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="AwayTeamName" class="form-label fw-semibold">Away Team</label>
-                                <input asp-for="AwayTeamName" class="form-control" placeholder="e.g. Boston Celtics" />
+                                <input asp-for="AwayTeamName" class="form-control" id="awayTeamInput" placeholder="e.g. Boston Celtics" />
                                 <span asp-validation-for="AwayTeamName" class="text-danger"></span>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label asp-for="HomeTeamName" class="form-label fw-semibold">Home Team</label>
-                                <input asp-for="HomeTeamName" class="form-control" placeholder="e.g. Milwaukee Bucks" />
+                                <input asp-for="HomeTeamName" class="form-control" id="homeTeamInput" placeholder="e.g. Milwaukee Bucks" />
                                 <span asp-validation-for="HomeTeamName" class="text-danger"></span>
                             </div>
                         </div>
@@ -56,7 +100,7 @@
                         <!-- Game Time -->
                         <div class="mb-3">
                             <label asp-for="GameTime" class="form-label fw-semibold">Game Time (UTC)</label>
-                            <input asp-for="GameTime" type="datetime-local" class="form-control" />
+                            <input asp-for="GameTime" type="datetime-local" class="form-control" id="gameTimeInput" />
                             <span asp-validation-for="GameTime" class="text-danger"></span>
                         </div>
 
@@ -99,8 +143,14 @@
 
                         <!-- Analysis -->
                         <div class="mb-4">
-                            <label asp-for="Analysis" class="form-label fw-semibold">Analysis / Reasoning</label>
-                            <textarea asp-for="Analysis" class="form-control" rows="5"
+                            <label asp-for="Analysis" class="form-label fw-semibold">
+                                Analysis / Reasoning
+                                <span id="summarySpinner" class="ms-2" style="display: none;">
+                                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                    <small class="text-muted">Generating pregame summary...</small>
+                                </span>
+                            </label>
+                            <textarea asp-for="Analysis" class="form-control" rows="5" id="analysisInput"
                                       placeholder="Write your expert analysis for this pick..."></textarea>
                             <span asp-validation-for="Analysis" class="text-danger"></span>
                         </div>
@@ -129,5 +179,126 @@
             document.getElementById('confidenceDisplay').textContent = stars;
         }
         updateStars(document.querySelector('[name="Confidence"]').value);
+
+        var leagueSelect = document.getElementById('leagueSelect');
+        var nbaDropdownContainer = document.getElementById('nbaGameDropdownContainer');
+        var mlbDropdownContainer = document.getElementById('mlbGameDropdownContainer');
+        var gameIdTextContainer = document.getElementById('gameIdTextContainer');
+        var nbaGameDropdown = document.getElementById('nbaGameDropdown');
+        var mlbGameDropdown = document.getElementById('mlbGameDropdown');
+        var gameIdInput = document.getElementById('gameIdInput');
+        var gameIdTextInput = document.getElementById('gameIdTextInput');
+        var awayTeamInput = document.getElementById('awayTeamInput');
+        var homeTeamInput = document.getElementById('homeTeamInput');
+        var gameTimeInput = document.getElementById('gameTimeInput');
+        var analysisInput = document.getElementById('analysisInput');
+        var summarySpinner = document.getElementById('summarySpinner');
+
+        function toggleGameIdField() {
+            var league = leagueSelect.value;
+            var nbaHasGames = nbaGameDropdown.options.length > 1;
+            var mlbHasGames = mlbGameDropdown.options.length > 1;
+
+            // Hide everything first
+            nbaDropdownContainer.style.display = 'none';
+            mlbDropdownContainer.style.display = 'none';
+            gameIdTextContainer.style.display = 'none';
+
+            if (league === 'NBA' && nbaHasGames) {
+                nbaDropdownContainer.style.display = 'block';
+            } else if (league === 'MLB' && mlbHasGames) {
+                mlbDropdownContainer.style.display = 'block';
+            } else {
+                // No games available for the selected league — show manual text input
+                gameIdTextContainer.style.display = 'block';
+            }
+        }
+
+        // Sync visible text input → hidden field
+        gameIdTextInput.addEventListener('input', function () {
+            gameIdInput.value = this.value;
+        });
+
+        // Initialize on page load
+        toggleGameIdField();
+
+        leagueSelect.addEventListener('change', function () {
+            toggleGameIdField();
+            // Clear all fields when switching leagues
+            gameIdInput.value = '';
+            gameIdTextInput.value = '';
+            nbaGameDropdown.value = '';
+            mlbGameDropdown.value = '';
+            awayTeamInput.value = '';
+            homeTeamInput.value = '';
+            gameTimeInput.value = '';
+            analysisInput.value = '';
+        });
+
+        // Shared handler: fetch game details and auto-fill the form
+        function onGameSelected(league, selectedGameId) {
+            gameIdInput.value = selectedGameId;
+
+            if (!selectedGameId) {
+                awayTeamInput.value = '';
+                homeTeamInput.value = '';
+                gameTimeInput.value = '';
+                return;
+            }
+
+            var url = '@Url.Action("GetGameDetails", "AdminPicks")'
+                + '?league=' + encodeURIComponent(league)
+                + '&gameId=' + encodeURIComponent(selectedGameId);
+
+            fetch(url)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Game not found');
+                    return response.json();
+                })
+                .then(function (data) {
+                    awayTeamInput.value = data.awayTeamName;
+                    homeTeamInput.value = data.homeTeamName;
+                    gameTimeInput.value = data.gameTime;
+                })
+                .catch(function (err) {
+                    console.warn('Could not load game details:', err);
+                });
+        }
+
+        // Fetch MLB pregame summary and populate the Analysis textarea
+        function loadMlbPregameSummary(gameId) {
+            if (!gameId) return;
+
+            summarySpinner.style.display = 'inline';
+            analysisInput.value = '';
+
+            var url = '@Url.Action("GetMlbPregameSummary", "AdminPicks")'
+                + '?gameId=' + encodeURIComponent(gameId);
+
+            fetch(url)
+                .then(function (response) {
+                    if (!response.ok) throw new Error('Summary unavailable');
+                    return response.json();
+                })
+                .then(function (data) {
+                    analysisInput.value = data.summary;
+                })
+                .catch(function (err) {
+                    console.warn('Could not load pregame summary:', err);
+                    analysisInput.value = '';
+                })
+                .finally(function () {
+                    summarySpinner.style.display = 'none';
+                });
+        }
+
+        nbaGameDropdown.addEventListener('change', function () {
+            onGameSelected('NBA', this.value);
+        });
+
+        mlbGameDropdown.addEventListener('change', function () {
+            onGameSelected('MLB', this.value);
+            loadMlbPregameSummary(this.value);
+        });
     </script>
 }

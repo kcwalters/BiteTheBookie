@@ -4,13 +4,9 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# 👇 Add your required environment variables here
-# These can be overridden at runtime (recommended)
-ENV OddsApi__ApiKey="4e7e049b298c50d9b16021b5112f67dd"
-ENV AzureOpenAI__Endpoint=""
-ENV AzureOpenAI__ApiKey=""
-ENV AzureOpenAI__Deployment=""
-ENV AzureOpenAI__Model="gpt-4o-mini"
+# Non-secret defaults only. Secrets (API keys, endpoints) should be
+# injected at runtime via docker run -e, docker-compose, or Azure App Settings.
+# Do NOT set them here as empty strings — they override appsettings.json.
 
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build

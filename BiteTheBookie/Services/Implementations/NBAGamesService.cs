@@ -16,31 +16,20 @@ namespace BiteTheBookie.Services.Implementations
         private readonly Dictionary<string, (string Name, string Logo, string Code)> _teamInfo;
 
         public NBAGamesService(
-            IConfiguration configuration, 
+            ChatClient? chatClient,
             ILogger<NBAGamesService> logger,
             TheOddsApiClient oddsApiClient,
-            INBAScoresService scoresService) // ADD THIS PARAMETER
+            INBAScoresService scoresService)
         {
             _logger = logger;
             _oddsApiClient = oddsApiClient;
-            _scoresService = scoresService; // ADD THIS
-            
-            // Initialize team information
+            _scoresService = scoresService;
+            _chatClient = chatClient;
             _teamInfo = InitializeTeamInfo();
 
-            var endpoint = configuration["AzureOpenAI:Endpoint"];
-            var apiKey = configuration["AzureOpenAI:ApiKey"];
-            var deploymentName = configuration["AzureOpenAI:DeploymentName"];
-
-            if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(deploymentName))
+            if (_chatClient == null)
             {
-                _logger.LogWarning("Azure OpenAI configuration is missing. Will use fallback game data if The Odds API fails.");
-                _chatClient = null;
-            }
-            else
-            {
-                var azureClient = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
-                _chatClient = azureClient.GetChatClient(deploymentName);
+                _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use fallback game data if The Odds API fails.");
             }
         }
 

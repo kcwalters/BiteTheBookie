@@ -13,23 +13,14 @@ namespace BiteTheBookie.Services.Implementations
         private readonly ILogger<SpreadAnalysisService> _logger;
         private readonly ChatClient? _chatClient;
 
-        public SpreadAnalysisService(IConfiguration configuration, ILogger<SpreadAnalysisService> logger)
+        public SpreadAnalysisService(ChatClient? chatClient, ILogger<SpreadAnalysisService> logger)
         {
             _logger = logger;
+            _chatClient = chatClient;
 
-            var endpoint = configuration["AzureOpenAI:Endpoint"];
-            var apiKey = configuration["AzureOpenAI:ApiKey"];
-            var deploymentName = configuration["AzureOpenAI:DeploymentName"];
-
-            if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(deploymentName))
+            if (_chatClient == null)
             {
-                _logger.LogWarning("Azure OpenAI configuration is missing. Will use basic analysis.");
-                _chatClient = null;
-            }
-            else
-            {
-                var azureClient = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
-                _chatClient = azureClient.GetChatClient(deploymentName);
+                _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use basic analysis.");
             }
         }
 
