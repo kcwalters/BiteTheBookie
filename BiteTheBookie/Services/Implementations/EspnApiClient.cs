@@ -1,4 +1,4 @@
-using BiteTheBookie.Models;
+﻿using BiteTheBookie.Models;
 using System.Text.Json;
 
 namespace BiteTheBookie.Services.Implementations
@@ -15,15 +15,86 @@ namespace BiteTheBookie.Services.Implementations
             _httpClient.BaseAddress = new Uri("https://site.api.espn.com/");
         }
 
+        /// <summary>
+        /// Fetches a live NBA team roster from the ESPN Site API.
+        /// Handles both the grouped (position-grouped items array) and flat athletes formats.
+        /// Returns null if the request fails.
+        /// </summary>
+        public async Task<NBATeamRoster?> GetTeamRosterAsync(string teamAbbreviation, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var espnCode = MapToEspnCode(teamAbbreviation);
+                var response = await _httpClient.GetAsync(
+                    $"apis/site/v2/sports/basketball/nba/teams/{espnCode}/roster",
+                    cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN roster API returned {Status} for {Team}", response.StatusCode, teamAbbreviation);
+                    return null;
+                }
+
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                var root = JsonDocument.Parse(content).RootElement;
+
+                var teamName = teamAbbreviation;
+                if (root.TryGetProperty("team", out var teamEl) &&
+                    teamEl.TryGetProperty("displayName", out var dn))
+                {
+                    teamName = dn.GetString() ?? teamAbbreviation;
+                }
+
+                var players = new List<NBAPlayer>();
+
+                if (root.TryGetProperty("athletes", out var athletesEl))
+                {
+                    foreach (var item in athletesEl.EnumerateArray())
+                    {
+                        // Grouped format: ESPN returns position groups, each with an "items" array
+                        if (item.TryGetProperty("items", out var groupItems))
+                        {
+                            foreach (var athlete in groupItems.EnumerateArray())
+                            {
+                                var player = ParsePlayer(athlete);
+                                if (player != null) players.Add(player);
+                            }
+                        }
+                        else
+                        {
+                            // Flat format: each array item is directly a player object
+                            var player = ParsePlayer(item);
+                            if (player != null) players.Add(player);
+                        }
+                    }
+                }
+
+                _logger.LogInformation("ESPN roster: fetched {Count} players for {Team}", players.Count, teamAbbreviation);
+
+                return new NBATeamRoster
+                {
+                    TeamCode = teamAbbreviation.ToUpper(),
+                    TeamName = teamName,
+                    Players = players
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch ESPN roster for {Team}", teamAbbreviation);
+                return null;
+            }
+        }
+
         public async Task<List<PlayerInjuryReport>> GetTeamInjuriesAsync(string teamAbbreviation, CancellationToken cancellationToken = default)
         {
             try
             {
                 var injuries = new List<PlayerInjuryReport>();
-                
-                // ESPN API endpoint for team injuries
-                var response = await _httpClient.GetAsync($"apis/site/v2/sports/basketball/nba/teams/{teamAbbreviation.ToLower()}/injuries", cancellationToken);
-                
+
+                var response = await _httpClient.GetAsync(
+                    $"apis/site/v2/sports/basketball/nba/teams/{teamAbbreviation.ToLower()}/injuries",
+                    cancellationToken);
+
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("ESPN API returned {StatusCode} for team {Team}", response.StatusCode, teamAbbreviation);
@@ -41,16 +112,14 @@ namespace BiteTheBookie.Services.Implementations
                         {
                             var playerName = injury.GetProperty("athlete").GetProperty("displayName").GetString() ?? "";
                             var status = injury.GetProperty("status").GetString() ?? "";
-                            var description = injury.TryGetProperty("details", out var details) 
+                            var description = injury.TryGetProperty("details", out var details)
                                 ? (details.TryGetProperty("type", out var type) ? type.GetString() ?? "Unknown injury" : "Unknown injury")
                                 : "Unknown injury";
 
                             var dateString = injury.TryGetProperty("date", out var date) ? date.GetString() : null;
                             var reportedTime = DateTime.UtcNow;
                             if (!string.IsNullOrEmpty(dateString) && DateTime.TryParse(dateString, out var parsedDate))
-                            {
                                 reportedTime = parsedDate.ToUniversalTime();
-                            }
 
                             injuries.Add(new PlayerInjuryReport
                             {
@@ -59,7 +128,7 @@ namespace BiteTheBookie.Services.Implementations
                                 InjuryStatus = MapEspnStatus(status),
                                 InjuryDescription = description,
                                 ReportedTime = reportedTime,
-                                EstimatedReturn = null // ESPN doesn't always provide this
+                                EstimatedReturn = null
                             });
                         }
                         catch (Exception ex)
@@ -79,18 +148,49 @@ namespace BiteTheBookie.Services.Implementations
             }
         }
 
-        private string MapEspnStatus(string espnStatus)
+        // ── Helpers ──────────────────────────────────────────────────────────────
+
+        private static NBAPlayer? ParsePlayer(JsonElement athlete)
         {
-            // Map ESPN status to our status format
-            return espnStatus.ToLower() switch
+            if (!athlete.TryGetProperty("displayName", out var nameProp)) return null;
+            var name = nameProp.GetString();
+            if (string.IsNullOrEmpty(name)) return null;
+
+            // Skip inactive / two-way / non-roster players when ESPN flags them
+            if (athlete.TryGetProperty("active", out var activeProp) && !activeProp.GetBoolean())
+                return null;
+
+            var position = string.Empty;
+            if (athlete.TryGetProperty("position", out var posProp) &&
+                posProp.TryGetProperty("abbreviation", out var abbr))
             {
-                "out" => "Out",
-                "questionable" => "Questionable",
-                "doubtful" => "Doubtful",
-                "day to day" => "Day-to-Day",
-                "day-to-day" => "Day-to-Day",
-                _ => espnStatus
-            };
+                position = abbr.GetString() ?? string.Empty;
+            }
+
+            return new NBAPlayer { Name = name, Position = position, IsStarter = false };
         }
+
+        /// <summary>
+        /// Maps internal app team codes to the abbreviations used by the ESPN Site API.
+        /// ESPN uses shorter codes for a handful of teams (e.g. "gs" instead of "gsw").
+        /// </summary>
+        private static string MapToEspnCode(string teamCode) => teamCode.ToUpper() switch
+        {
+            "GSW" => "gs",
+            "NOP" => "no",
+            "NYK" => "ny",
+            "SAS" => "sa",
+            _ => teamCode.ToLower()
+        };
+
+        private static string MapEspnStatus(string espnStatus) => espnStatus.ToLower() switch
+        {
+            "out"          => "Out",
+            "questionable" => "Questionable",
+            "doubtful"     => "Doubtful",
+            "day to day"   => "Day-to-Day",
+            "day-to-day"   => "Day-to-Day",
+            _              => espnStatus
+        };
     }
 }

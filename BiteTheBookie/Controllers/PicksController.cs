@@ -282,9 +282,9 @@ namespace BiteTheBookie.Controllers
             var awayTeamInfo = teamNames.GetValueOrDefault(awayTeamCode, ("Unknown", ""));
             var homeTeamInfo = teamNames.GetValueOrDefault(homeTeamCode, ("Unknown", ""));
 
-            // Get team rosters for actual players
-            var awayRoster = _rosterService.GetTeamRoster(awayTeamCode);
-            var homeRoster = _rosterService.GetTeamRoster(homeTeamCode);
+            // Get team rosters — live from ESPN (falls back to static if unavailable)
+            var awayRoster = await _rosterService.GetTeamRosterAsync(awayTeamCode, cancellationToken);
+            var homeRoster = await _rosterService.GetTeamRosterAsync(homeTeamCode, cancellationToken);
 
             // Get injury reports for both teams
             var gameTime = DateTime.UtcNow.AddHours(6); // Default game time (can be improved with actual game time from schedule)

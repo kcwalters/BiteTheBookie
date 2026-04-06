@@ -119,7 +119,7 @@ builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection
 
 // Game Simulation Service
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
-builder.Services.AddSingleton<INBARosterService, NBARosterService>();
+builder.Services.AddScoped<INBARosterService, NBARosterService>();   // was AddSingleton — EspnApiClient requires Scoped
 builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
 builder.Services.AddScoped<ISpreadAnalysisService, SpreadAnalysisService>();
 builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();

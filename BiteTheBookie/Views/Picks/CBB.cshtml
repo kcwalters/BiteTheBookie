@@ -132,7 +132,9 @@
                                     }
                                 </td>
                                 <td>
-                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })" class="btn btn-sm btn-outline-secondary">Simulation</a>
+                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       data-sim-trigger>Simulation</a>
                                 </td>
                             </tr>
                         }
