@@ -4,6 +4,7 @@ using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -22,9 +23,10 @@ namespace BiteTheBookie.Controllers
         private readonly ILogger<PicksController> _logger;
         private readonly IMLBGamesService _mlbService;
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public PicksController(
-            IGameSimulationService simulationService, 
+            IGameSimulationService simulationService,
             INBARosterService rosterService,
             INBAGamesService gamesService,
             ICBBGamesService cbbGamesService,
@@ -33,18 +35,20 @@ namespace BiteTheBookie.Controllers
             IInjuryReportService injuryReportService,
             IMLBGamesService mlbService,
             ApplicationDbContext db,
+            UserManager<ApplicationUser> userManager,
             ILogger<PicksController> logger)
         {
-            _simulationService = simulationService;
-            _rosterService = rosterService;
-            _gamesService = gamesService;
-            _cbbGamesService = cbbGamesService;
-            _cbbRosterService = cbbRosterService;
+            _simulationService   = simulationService;
+            _rosterService       = rosterService;
+            _gamesService        = gamesService;
+            _cbbGamesService     = cbbGamesService;
+            _cbbRosterService    = cbbRosterService;
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService = injuryReportService;
-            _mlbService = mlbService;
-            _db = db;
-            _logger = logger;
+            _mlbService          = mlbService;
+            _db                  = db;
+            _userManager         = userManager;
+            _logger              = logger;
         }
 
         [Authorize(Policy = "PremiumOnly")]
@@ -230,85 +234,75 @@ namespace BiteTheBookie.Controllers
             }
         }
 
+        [Authorize(Policy = "PremiumOnly")]
         public async Task<IActionResult> Detail(string gameId, CancellationToken cancellationToken)
         {
-            // Parse gameId to extract team information
-            // Format expected: "teamA-teamB-date" e.g., "bos-mil-20260303"
             var parts = gameId?.Split('-') ?? Array.Empty<string>();
-            
+
             if (parts.Length < 2)
-            {
                 return BadRequest("Invalid game ID format");
-            }
 
             var awayTeamCode = parts[0].ToUpper();
             var homeTeamCode = parts[1].ToUpper();
 
-            // Map team codes to full names and logo IDs
             var teamNames = new Dictionary<string, (string FullName, string LogoId)>
             {
-                { "ATL", ("Atlanta Hawks", "333") },
-                { "BOS", ("Boston Celtics", "334") },
-                { "BKN", ("Brooklyn Nets", "335") },
-                { "CHA", ("Charlotte Hornets", "336") },
-                { "CHI", ("Chicago Bulls", "337") },
-                { "CLE", ("Cleveland Cavaliers", "338") },
-                { "DAL", ("Dallas Mavericks", "338") },
-                { "DEN", ("Denver Nuggets", "339") },
-                { "DET", ("Detroit Pistons", "340") },
-                { "GSW", ("Golden State Warriors", "341") },
-                { "HOU", ("Houston Rockets", "342") },
-                { "IND", ("Indiana Pacers", "343") },
-                { "LAC", ("LA Clippers", "344") },
-                { "LAL", ("Los Angeles Lakers", "343") },
-                { "MEM", ("Memphis Grizzlies", "345") },
-                { "MIA", ("Miami Heat", "346") },
-                { "MIL", ("Milwaukee Bucks", "347") },
-                { "MIN", ("Minnesota Timberwolves", "348") },
-                { "NOP", ("New Orleans Pelicans", "349") },
-                { "NYK", ("New York Knicks", "350") },
-                { "OKC", ("Oklahoma City Thunder", "351") },
-                { "ORL", ("Orlando Magic", "352") },
-                { "PHI", ("Philadelphia 76ers", "352") },
-                { "PHX", ("Phoenix Suns", "353") },
-                { "POR", ("Portland Trail Blazers", "354") },
-                { "SAC", ("Sacramento Kings", "355") },
-                { "SAS", ("San Antonio Spurs", "356") },
-                { "TOR", ("Toronto Raptors", "357") },
-                { "UTA", ("Utah Jazz", "359") },
-                { "WAS", ("Washington Wizards", "361") }
+                { "ATL", ("Atlanta Hawks",           "333") },
+                { "BOS", ("Boston Celtics",           "334") },
+                { "BKN", ("Brooklyn Nets",            "335") },
+                { "CHA", ("Charlotte Hornets",        "336") },
+                { "CHI", ("Chicago Bulls",            "337") },
+                { "CLE", ("Cleveland Cavaliers",      "338") },
+                { "DAL", ("Dallas Mavericks",         "338") },
+                { "DEN", ("Denver Nuggets",           "339") },
+                { "DET", ("Detroit Pistons",          "340") },
+                { "GSW", ("Golden State Warriors",    "341") },
+                { "HOU", ("Houston Rockets",          "342") },
+                { "IND", ("Indiana Pacers",           "343") },
+                { "LAC", ("LA Clippers",              "344") },
+                { "LAL", ("Los Angeles Lakers",       "343") },
+                { "MEM", ("Memphis Grizzlies",        "345") },
+                { "MIA", ("Miami Heat",               "346") },
+                { "MIL", ("Milwaukee Bucks",          "347") },
+                { "MIN", ("Minnesota Timberwolves",   "348") },
+                { "NOP", ("New Orleans Pelicans",     "349") },
+                { "NYK", ("New York Knicks",          "350") },
+                { "OKC", ("Oklahoma City Thunder",    "351") },
+                { "ORL", ("Orlando Magic",            "352") },
+                { "PHI", ("Philadelphia 76ers",       "352") },
+                { "PHX", ("Phoenix Suns",             "353") },
+                { "POR", ("Portland Trail Blazers",   "354") },
+                { "SAC", ("Sacramento Kings",         "355") },
+                { "SAS", ("San Antonio Spurs",        "356") },
+                { "TOR", ("Toronto Raptors",          "357") },
+                { "UTA", ("Utah Jazz",                "359") },
+                { "WAS", ("Washington Wizards",       "361") }
             };
 
             var awayTeamInfo = teamNames.GetValueOrDefault(awayTeamCode, ("Unknown", ""));
             var homeTeamInfo = teamNames.GetValueOrDefault(homeTeamCode, ("Unknown", ""));
 
-            // Get team rosters — live from ESPN (falls back to static if unavailable)
             var awayRoster = await _rosterService.GetTeamRosterAsync(awayTeamCode, cancellationToken);
             var homeRoster = await _rosterService.GetTeamRosterAsync(homeTeamCode, cancellationToken);
 
-            // Get injury reports for both teams
-            var gameTime = DateTime.UtcNow.AddHours(6); // Default game time (can be improved with actual game time from schedule)
-            var injuries = await _injuryReportService.GetCurrentInjuriesForGameAsync(awayTeamCode, homeTeamCode, gameTime, cancellationToken);
+            var gameTime = DateTime.UtcNow.AddHours(6);
+            var injuries = await _injuryReportService.GetCurrentInjuriesForGameAsync(
+                awayTeamCode, homeTeamCode, gameTime, cancellationToken);
 
-            // Use roster team name if available, otherwise fall back to mapped name
-            var awayTeamName = string.IsNullOrEmpty(awayRoster.TeamName) 
-                || awayRoster.TeamName == "Unknown" 
-                || awayRoster.TeamName == "Unknown Team"
-                ? awayTeamInfo.Item1 
-                : awayRoster.TeamName;
-            
-            var homeTeamName = string.IsNullOrEmpty(homeRoster.TeamName) 
-                || homeRoster.TeamName == "Unknown" 
-                || homeRoster.TeamName == "Unknown Team"
-                ? homeTeamInfo.Item1 
-                : homeRoster.TeamName;
+            var awayTeamName = string.IsNullOrEmpty(awayRoster.TeamName)
+                || awayRoster.TeamName is "Unknown" or "Unknown Team"
+                ? awayTeamInfo.Item1 : awayRoster.TeamName;
+
+            var homeTeamName = string.IsNullOrEmpty(homeRoster.TeamName)
+                || homeRoster.TeamName is "Unknown" or "Unknown Team"
+                ? homeTeamInfo.Item1 : homeRoster.TeamName;
 
             var viewModel = new GameSimulationViewModel
             {
-                GameId = gameId ?? string.Empty,
-                AwayTeam = awayTeamName,
-                HomeTeam = homeTeamName,
-                League = "NBA",
+                GameId    = gameId ?? string.Empty,
+                AwayTeam  = awayTeamName,
+                HomeTeam  = homeTeamName,
+                League    = "NBA",
                 AwayTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{awayTeamInfo.Item2}.svg",
                 HomeTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{homeTeamInfo.Item2}.svg",
                 IsLoading = false
@@ -316,20 +310,67 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                // Generate simulation using AI with actual team rosters and injury info
-                viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
-                    viewModel.HomeTeam, 
-                    viewModel.AwayTeam, 
-                    viewModel.League,
-                    homeRoster,
-                    awayRoster,
-                    injuries,
-                    gameTime,
-                    cancellationToken);
+                // Return today's existing simulation unless the user explicitly requests a fresh one
+                bool forceRegenerate = Request.Query.ContainsKey("regenerate");
+                GameSimulation? existing = null;
+
+                if (!forceRegenerate)
+                {
+                    var todayStart = DateTime.UtcNow.Date;
+                    var todayEnd   = todayStart.AddDays(1);
+
+                    existing = await _db.GameSimulations
+                        .Where(s => s.GameId == gameId
+                                 && s.GeneratedAt >= todayStart
+                                 && s.GeneratedAt < todayEnd)
+                        .OrderByDescending(s => s.GeneratedAt)
+                        .FirstOrDefaultAsync(cancellationToken);
+                }
+
+                if (existing != null)
+                {
+                    viewModel.SimulationContent = existing.SimulationContent;
+                    viewModel.SimulationId      = existing.Id;
+                    viewModel.IsFromCache       = true;
+                    viewModel.CachedAt          = existing.GeneratedAt;
+                }
+                else
+                {
+                    viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
+                        viewModel.HomeTeam,
+                        viewModel.AwayTeam,
+                        viewModel.League,
+                        homeRoster,
+                        awayRoster,
+                        injuries,
+                        gameTime,
+                        cancellationToken);
+
+                    var simulation = new GameSimulation
+                    {
+                        GameId            = gameId ?? string.Empty,
+                        League            = "NBA",
+                        AwayTeamName      = awayTeamName,
+                        HomeTeamName      = homeTeamName,
+                        GameDate          = gameTime.Date,
+                        SimulationContent = viewModel.SimulationContent,
+                        GeneratedAt       = DateTime.UtcNow,
+                        GeneratedByUserId = User.Identity?.IsAuthenticated == true
+                                           ? _userManager.GetUserId(User)
+                                           : null
+                    };
+
+                    _db.GameSimulations.Add(simulation);
+                    await _db.SaveChangesAsync(cancellationToken);
+
+                    viewModel.SimulationId = simulation.Id;
+                    _logger.LogInformation(
+                        "Saved simulation #{Id} for {GameId}", simulation.Id, simulation.GameId);
+                }
             }
             catch (Exception ex)
             {
-                viewModel.ErrorMessage = "Unable to generate simulation at this time. Please try again later.";
+                viewModel.ErrorMessage  = "Unable to generate simulation at this time. Please try again later.";
                 viewModel.SimulationContent = $"Error: {ex.Message}";
             }
 

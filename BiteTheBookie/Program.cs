@@ -151,10 +151,15 @@ builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
 
 var app = builder.Build();
 
-// Seed roles on startup
+// Apply pending migrations and seed roles on startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+
+    // Auto-apply any pending EF Core migrations (safe in containers)
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var configuration = services.GetRequiredService<IConfiguration>();

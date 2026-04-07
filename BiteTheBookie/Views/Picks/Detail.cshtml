@@ -60,43 +60,31 @@
         </div>
     }
 
-    <!-- AI Generated Simulation Content -->
-    <div class="content-card">
-        @if (Model.IsLoading)
-        {
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-3 text-muted">Generating simulation with AI...</p>
-            </div>
-        }
-        else
-        {
-            <div class="simulation-content">
-                @if (!string.IsNullOrEmpty(Model.SimulationContent))
+    <!-- Cache notice -->
+    @if (Model.IsFromCache)
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2 mt-3" role="status">
+            <i class="bi bi-database-check fs-5"></i>
+            <span>
+                Simulation loaded from today&rsquo;s saved results
+                @if (Model.CachedAt.HasValue)
                 {
-                    <!-- Render AI-generated content as Markdown -->
-                    <div class="markdown-content">
-                        @Html.Raw(Markdig.Markdown.ToHtml(Model.SimulationContent))
-                    </div>
+                    <span class="text-muted ms-1">(generated @Model.CachedAt.Value.ToLocalTime().ToString("h:mm tt"))</span>
                 }
-                else
-                {
-                    <div class="alert alert-info">
-                        <p class="mb-0">No simulation content available. Please try again.</p>
-                    </div>
-                }
-            </div>
-        }
-    </div>
+                &mdash;
+                <a href="@Url.Action("Detail", "Picks", new { gameId = Model.GameId, regenerate = true })"
+                   class="alert-link" data-sim-trigger>regenerate a fresh simulation</a>.
+            </span>
+        </div>
+    }
 
     <!-- Action Buttons -->
     <div class="content-card mt-4">
         <div class="d-flex gap-2 justify-content-center">
-            <button type="button" class="btn btn-primary" data-sim-trigger onclick="location.reload()">
+            <a href="@Url.Action("Detail", "Picks", new { gameId = Model.GameId, regenerate = true })"
+               class="btn btn-primary" data-sim-trigger>
                 <i class="bi bi-arrow-clockwise"></i> Regenerate Simulation
-            </button>
+            </a>
             <a href="@Url.Action("Index", "Picks")" class="btn btn-outline-secondary">
                 View All Picks
             </a>

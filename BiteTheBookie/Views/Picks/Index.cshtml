@@ -144,9 +144,20 @@
                                     }
                                 </td>
                                 <td>
-                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
-                                       class="btn btn-sm btn-outline-secondary"
-                                       data-sim-trigger>Simulation</a>
+                                    @if (isPremiumOrVip)
+                                    {
+                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           data-sim-trigger>Simulation</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Membership" asp-action="Join"
+                                           class="btn btn-sm btn-warning"
+                                           title="Upgrade to view simulation">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </a>
+                                    }
                                 </td>
                             </tr>
                         }
