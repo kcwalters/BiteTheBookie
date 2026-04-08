@@ -1,4 +1,4 @@
-using BiteTheBookie.Data;
+﻿using BiteTheBookie.Data;
 using BiteTheBookie.Models;
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.Services.Implementations;
@@ -299,22 +299,24 @@ namespace BiteTheBookie.Controllers
 
             var viewModel = new GameSimulationViewModel
             {
-                GameId    = gameId ?? string.Empty,
-                AwayTeam  = awayTeamName,
-                HomeTeam  = homeTeamName,
-                League    = "NBA",
+                GameId       = gameId ?? string.Empty,
+                AwayTeam     = awayTeamName,
+                HomeTeam     = homeTeamName,
+                League       = "NBA",
                 AwayTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{awayTeamInfo.Item2}.svg",
                 HomeTeamLogo = $"https://sports.cbsimg.net/fly/images/nba/logos/team/{homeTeamInfo.Item2}.svg",
-                IsLoading = false
+                IsLoading    = false
             };
 
-            try
-            {
-                // Return today's existing simulation unless the user explicitly requests a fresh one
-                bool forceRegenerate = Request.Query.ContainsKey("regenerate");
-                GameSimulation? existing = null;
+            // ── Step 1: Try to load a cached simulation from the DB ───────────────
+            // Isolated in its own try/catch — a missing table or DB error must never
+            // prevent the AI simulation from running.
+            bool forceRegenerate = Request.Query.ContainsKey("regenerate");
+            GameSimulation? existing = null;
 
-                if (!forceRegenerate)
+            if (!forceRegenerate)
+            {
+                try
                 {
                     var todayStart = DateTime.UtcNow.Date;
                     var todayEnd   = todayStart.AddDays(1);
@@ -326,15 +328,29 @@ namespace BiteTheBookie.Controllers
                         .OrderByDescending(s => s.GeneratedAt)
                         .FirstOrDefaultAsync(cancellationToken);
                 }
-
-                if (existing != null)
+                catch (Exception dbEx)
                 {
-                    viewModel.SimulationContent = existing.SimulationContent;
-                    viewModel.SimulationId      = existing.Id;
-                    viewModel.IsFromCache       = true;
-                    viewModel.CachedAt          = existing.GeneratedAt;
+                    // Table may not exist yet (pending migration) — fall through to AI generation
+                    _logger.LogWarning(dbEx,
+                        "GameSimulations table unavailable — generating fresh simulation for {GameId}", gameId);
                 }
-                else
+            }
+
+            // ── Step 2a: Serve cached simulation ─────────────────────────────────
+            if (existing != null)
+            {
+                viewModel.SimulationContent = existing.SimulationContent;
+                viewModel.SimulationId      = existing.Id;
+                viewModel.IsFromCache       = true;
+                viewModel.CachedAt          = existing.GeneratedAt;
+
+                _logger.LogInformation(
+                    "Serving cached simulation #{Id} for {GameId}", existing.Id, gameId);
+            }
+            else
+            {
+                // ── Step 2b: Generate via AI ──────────────────────────────────────
+                try
                 {
                     viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
                         viewModel.HomeTeam,
@@ -345,7 +361,17 @@ namespace BiteTheBookie.Controllers
                         injuries,
                         gameTime,
                         cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    viewModel.ErrorMessage     = "Unable to generate simulation at this time. Please try again later.";
+                    viewModel.SimulationContent = $"Error: {ex.Message}";
+                    return View(viewModel);
+                }
 
+                // ── Step 2c: Persist to DB (non-fatal) ───────────────────────────
+                try
+                {
                     var simulation = new GameSimulation
                     {
                         GameId            = gameId ?? string.Empty,
@@ -362,16 +388,17 @@ namespace BiteTheBookie.Controllers
 
                     _db.GameSimulations.Add(simulation);
                     await _db.SaveChangesAsync(cancellationToken);
-
                     viewModel.SimulationId = simulation.Id;
+
                     _logger.LogInformation(
                         "Saved simulation #{Id} for {GameId}", simulation.Id, simulation.GameId);
                 }
-            }
-            catch (Exception ex)
-            {
-                viewModel.ErrorMessage  = "Unable to generate simulation at this time. Please try again later.";
-                viewModel.SimulationContent = $"Error: {ex.Message}";
+                catch (Exception dbEx)
+                {
+                    // Non-fatal — simulation still displays, just won't be cached
+                    _logger.LogWarning(dbEx,
+                        "Could not persist simulation for {GameId} — migration may be pending", gameId);
+                }
             }
 
             return View(viewModel);
