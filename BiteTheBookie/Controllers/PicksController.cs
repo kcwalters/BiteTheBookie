@@ -288,9 +288,35 @@ namespace BiteTheBookie.Controllers
 
             GameSimulationViewModel viewModel;
 
+            // For MLB, look up today's games to find scheduled starting pitchers
+            string? homeProbablePitcher = null;
+            string? awayProbablePitcher = null;
+
             if (isMlb)
             {
                 viewModel = BuildMlbViewModel(gameId!, awayTeamCode, homeTeamCode);
+
+                try
+                {
+                    var mlbGames = await _mlbService.GetTodayGamesAsync();
+                    var matchingGame = mlbGames.FirstOrDefault(g =>
+                        g.AwayTeam.Equals(awayTeamCode, StringComparison.OrdinalIgnoreCase)
+                        && g.HomeTeam.Equals(homeTeamCode, StringComparison.OrdinalIgnoreCase));
+
+                    if (matchingGame != null)
+                    {
+                        homeProbablePitcher = matchingGame.HomeProbablePitcher;
+                        awayProbablePitcher = matchingGame.AwayProbablePitcher;
+
+                        _logger.LogInformation(
+                            "MLB probable pitchers for {GameId}: {AwayPitcher} vs {HomePitcher}",
+                            gameId, awayProbablePitcher ?? "TBD", homeProbablePitcher ?? "TBD");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not fetch probable pitchers for {GameId}", gameId);
+                }
             }
             else
             {
@@ -348,7 +374,9 @@ namespace BiteTheBookie.Controllers
                             awayRoster: null,
                             injuries: null,
                             DateTime.UtcNow,
-                            cancellationToken);
+                            cancellationToken,
+                            homeProbablePitcher: homeProbablePitcher,
+                            awayProbablePitcher: awayProbablePitcher);
                     }
                     else
                     {

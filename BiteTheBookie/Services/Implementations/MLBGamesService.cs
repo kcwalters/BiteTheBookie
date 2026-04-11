@@ -16,7 +16,8 @@ namespace BiteTheBookie.Services
         public async Task<List<Game>> GetTodayGamesAsync()
         {
             var date = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
-            var url = $"schedule?sportId=1&date={date}";
+            // hydrate=probablePitcher tells the API to include scheduled starters
+            var url = $"schedule?sportId=1&date={date}&hydrate=probablePitcher";
             var schedule = await _http.GetFromJsonAsync<ScheduleResponse>(url);
             var teamUrl = "https://statsapi.mlb.com/api/v1/teams?sportIds=1";
             var teams = await _http.GetFromJsonAsync<TeamsResponse>(teamUrl);
@@ -36,33 +37,30 @@ namespace BiteTheBookie.Services
                     var homeTeamInfo = teams?.Teams?.FirstOrDefault(s => s.Id == homeTeam?.Id);
                     var awayTeamInfo = teams?.Teams?.FirstOrDefault(s => s.Id == awayTeam?.Id);
 
-                    string? homeLogo = null;
-                    string? awayLogo = null;
+                    string? homeLogo = homeTeamInfo is not null
+                        ? $"https://www.mlbstatic.com/team-logos/{homeTeamInfo.Id}.svg"
+                        : null;
 
-                    if (homeTeamInfo is not null)
-                    {
-                        homeLogo = $"https://www.mlbstatic.com/team-logos/{homeTeamInfo.Id}.svg";
-                    }
-
-                    if (awayTeamInfo is not null)
-                    {
-                        awayLogo = $"https://www.mlbstatic.com/team-logos/{awayTeamInfo.Id}.svg";
-                    }
+                    string? awayLogo = awayTeamInfo is not null
+                        ? $"https://www.mlbstatic.com/team-logos/{awayTeamInfo.Id}.svg"
+                        : null;
 
                     var gameTime = g is not null ? g.GameDate.ToLocalTime() : DateTime.MinValue;
 
                     return new Game
                     {
-                        AwayTeam = awayTeam?.Name,
-                        AwayTeamId = awayTeam?.Id ?? 0,
-                        HomeTeam = homeTeam?.Name,
-                        HomeTeamId = homeTeam?.Id ?? 0,
-                        AwayScore = awayScore ?? 0,
-                        HomeScore = homeScore ?? 0,
-                        GameTime = gameTime,
-                        Status = status ?? string.Empty,
-                        HomeTeamLogoUrl = homeLogo,
-                        AwayTeamLogoUrl = awayLogo
+                        AwayTeam          = awayTeam?.Name ?? string.Empty,
+                        AwayTeamId        = awayTeam?.Id ?? 0,
+                        HomeTeam          = homeTeam?.Name ?? string.Empty,
+                        HomeTeamId        = homeTeam?.Id ?? 0,
+                        AwayScore         = awayScore ?? 0,
+                        HomeScore         = homeScore ?? 0,
+                        GameTime          = gameTime,
+                        Status            = status ?? string.Empty,
+                        HomeTeamLogoUrl   = homeLogo,
+                        AwayTeamLogoUrl   = awayLogo,
+                        HomeProbablePitcher = g?.Teams?.Home?.ProbablePitcher?.FullName,
+                        AwayProbablePitcher = g?.Teams?.Away?.ProbablePitcher?.FullName
                     };
                 })
                 .ToList();
@@ -70,5 +68,4 @@ namespace BiteTheBookie.Services
             return games;
         }
     }
-
 }

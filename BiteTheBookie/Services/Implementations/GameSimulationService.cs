@@ -29,7 +29,9 @@ namespace BiteTheBookie.Services.Implementations
             NBATeamRoster? awayRoster = null,
             List<PlayerInjuryReport>? injuries = null,
             DateTime? gameTime = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string? homeProbablePitcher = null,
+            string? awayProbablePitcher = null)
         {
             var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
             var simulationId = Guid.NewGuid().ToString("N")[..8];
@@ -42,7 +44,7 @@ namespace BiteTheBookie.Services.Implementations
                 _logger.LogWarning("_chatClient is NULL — returning mock simulation for {HomeTeam} vs {AwayTeam}", homeTeam, awayTeam);
 
                 if (league.Equals("MLB", StringComparison.OrdinalIgnoreCase))
-                    return GetMlbMockSimulation(homeTeam, awayTeam);
+                    return GetMlbMockSimulation(homeTeam, awayTeam, homeProbablePitcher, awayProbablePitcher);
 
                 var injuredPlayers = injuries?
                     .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
@@ -54,10 +56,11 @@ namespace BiteTheBookie.Services.Implementations
             // ── MLB simulation ────────────────────────────────────────────────
             if (league.Equals("MLB", StringComparison.OrdinalIgnoreCase))
             {
-                return await GenerateMlbSimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken);
+                return await GenerateMlbSimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime,
+                    cancellationToken, homeProbablePitcher, awayProbablePitcher);
             }
 
-            // ── NBA simulation ────────────────────────────────────────────────
+            // ── NBA simulation (unchanged from here down) ─────────────────────
             var injuredPlayersNba = injuries?
                 .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
                 .Select(i => i.PlayerName)
@@ -232,17 +235,34 @@ CRITICAL REQUIREMENTS:
         // ── MLB-specific AI generation ────────────────────────────────────────
         private async Task<string> GenerateMlbSimulationAsync(
             string homeTeam, string awayTeam, string simulationId,
-            string timestamp, DateTime? gameTime, CancellationToken cancellationToken)
+            string timestamp, DateTime? gameTime, CancellationToken cancellationToken,
+            string? homeProbablePitcher, string? awayProbablePitcher)
         {
             try
             {
-                _logger.LogInformation("Calling Azure OpenAI for MLB: {AwayTeam} @ {HomeTeam}...", awayTeam, homeTeam);
+                _logger.LogInformation("Calling Azure OpenAI for MLB: {AwayTeam} @ {HomeTeam} (SP: {AwayPitcher} vs {HomePitcher})",
+                    awayTeam, homeTeam, awayProbablePitcher ?? "TBD", homeProbablePitcher ?? "TBD");
+
+                var pitcherSection = "";
+                if (!string.IsNullOrEmpty(awayProbablePitcher) || !string.IsNullOrEmpty(homeProbablePitcher))
+                {
+                    pitcherSection = $@"
+**SCHEDULED STARTING PITCHERS (from official MLB schedule):**
+- {awayTeam} starter: **{awayProbablePitcher ?? "TBD"}**
+- {homeTeam} starter: **{homeProbablePitcher ?? "TBD"}**
+
+CRITICAL: You MUST use these exact pitchers as the starting pitchers in your simulation.
+- If a pitcher is listed as ""TBD"", choose a realistic current-rotation pitcher for that team.
+- The listed starters MUST appear in the Starting Pitchers section and the Pitching Summary.
+- Base their stat lines on their real 2024-2025 performance (ERA, K rate, WHIP, etc.).
+";
+                }
 
                 var prompt = $@"Generate a FRESH, UNIQUE MLB baseball game simulation between {awayTeam} (away) and {homeTeam} (home).
 
 SIMULATION ID: {simulationId}
 GENERATED AT: {timestamp}
-
+{pitcherSection}
 SIMULATION REQUIREMENTS:
 - This is simulation #{simulationId} - make it COMPLETELY DIFFERENT from any previous simulations
 - Use REAL current-roster players for both {awayTeam} and {homeTeam}
@@ -256,17 +276,19 @@ SIMULATION REQUIREMENTS:
 Include the following sections using Markdown formatting:
 
 1. **Final Score**: A realistic MLB score with line score (runs per inning). If extra innings were needed, include them.
-2. **Game Summary**: 2-3 sentences describing how the game unfolded, mentioning the starting pitchers and key moments
-3. **Starting Pitchers**: Name both starters with their line (IP, H, R, ER, BB, K)
+2. **Game Summary**: 2-3 sentences describing how the game unfolded, mentioning the starting pitchers BY NAME and key moments
+3. **Starting Pitchers**: Name both starters with their line (IP, H, R, ER, BB, K). Use the SCHEDULED STARTERS listed above.
 4. **Key Performers**: 4-6 players with realistic batting lines (AB, H, R, RBI, HR) or pitching lines
 5. **Inning-by-Inning Breakdown**: Describe key moments in select innings (not every inning needs detail - focus on scoring innings and dramatic moments)
 6. **Team Statistics**: Markdown table comparing hits, errors, LOB, team batting average, bullpen ERA for the game
-7. **Pitching Summary**: List all pitchers used by each team with their lines
+7. **Pitching Summary**: List all pitchers used by each team with their lines. The first pitcher for each team MUST be the scheduled starter.
 8. **Betting Analysis**: How the result affects the run line (spread), over/under, and moneyline
 
 CRITICAL REQUIREMENTS:
+- Use the EXACT scheduled starting pitchers provided above
 - Use REAL players currently on {awayTeam} and {homeTeam} rosters
 - Use realistic MLB statistics (batting averages, ERA, pitch counts, etc.)
+- Base each starter's performance on their REAL career/season stats
 - Include realistic baseball details: pitch counts, defensive plays, stolen bases, double plays
 - Mention the ballpark (home team's stadium) and how it affected play
 - The final score MUST NOT be a tie - one team must win
@@ -276,7 +298,7 @@ CRITICAL REQUIREMENTS:
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage($"You are an expert MLB baseball analyst who creates detailed, realistic game simulations. Use ONLY real current-roster players. Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. Use standard ASCII characters only. CRITICAL: Baseball games CANNOT end in a tie. There must always be a winner."),
+                    new SystemChatMessage($"You are an expert MLB baseball analyst who creates detailed, realistic game simulations. Use ONLY real current-roster players. You MUST use the scheduled starting pitchers provided in the prompt - do NOT substitute different starters. Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. Use standard ASCII characters only. CRITICAL: Baseball games CANNOT end in a tie. There must always be a winner."),
                     new UserChatMessage(prompt)
                 };
 
@@ -297,7 +319,7 @@ CRITICAL REQUIREMENTS:
             {
                 _logger.LogError(ex, "MLB AI simulation FAILED for {AwayTeam} @ {HomeTeam} - falling back to mock",
                     awayTeam, homeTeam);
-                return GetMlbMockSimulation(homeTeam, awayTeam);
+                return GetMlbMockSimulation(homeTeam, awayTeam, homeProbablePitcher, awayProbablePitcher);
             }
         }
 
@@ -419,7 +441,8 @@ CRITICAL REQUIREMENTS:
 
         // ── Mock simulations ──────────────────────────────────────────────────
 
-        private static string GetMlbMockSimulation(string homeTeam, string awayTeam)
+        private static string GetMlbMockSimulation(string homeTeam, string awayTeam,
+            string? homeProbablePitcher = null, string? awayProbablePitcher = null)
         {
             var seed = (homeTeam + awayTeam + DateTime.UtcNow.Ticks).GetHashCode();
             var rng  = new Random(seed);
@@ -427,7 +450,6 @@ CRITICAL REQUIREMENTS:
             int awayRuns = rng.Next(0, 10);
             int homeRuns = rng.Next(0, 10);
 
-            // Baseball cannot end in a tie — guarantee a winner
             while (awayRuns == homeRuns)
             {
                 homeRuns = rng.Next(0, 10);
@@ -440,7 +462,6 @@ CRITICAL REQUIREMENTS:
             int loseScore  = Math.Min(awayRuns, homeRuns);
             int margin     = winScore - loseScore;
 
-            // Build a simple line score (9 innings)
             int[] awayInnings = DistributeRuns(rng, awayRuns, 9);
             int[] homeInnings = DistributeRuns(rng, homeRuns, 9);
 
@@ -452,6 +473,9 @@ CRITICAL REQUIREMENTS:
             int homeHits = homeRuns + rng.Next(2, 6);
             int awayErrors = rng.Next(0, 3);
             int homeErrors = rng.Next(0, 3);
+
+            string awaySP = awayProbablePitcher ?? "TBD Starter";
+            string homeSP = homeProbablePitcher ?? "TBD Starter";
 
             return $@"# GAME SIMULATION: {awayTeam} @ {homeTeam}
 
@@ -467,14 +491,14 @@ CRITICAL REQUIREMENTS:
 | {homeTeam} | {homeLine} | **{homeRuns}** | {homeHits} | {homeErrors} |
 
 ## Game Summary
-In a {(margin <= 2 ? "tightly contested" : "decisive")} matchup, **{winner}** {(margin <= 2 ? "edges out a win" : "cruises to victory")} {winScore}-{loseScore} over **{loser}**. The game featured strong pitching from both sides and timely hitting from the winning club.
+In a {(margin <= 2 ? "tightly contested" : "decisive")} matchup, **{winner}** {(margin <= 2 ? "edges out a win" : "cruises to victory")} {winScore}-{loseScore} over **{loser}**. **{awaySP}** took the mound for {awayTeam} opposite **{homeSP}** for {homeTeam} in a game that featured timely hitting from the winning club.
 
 ## Starting Pitchers
 
 | Pitcher | Team | IP | H | R | ER | BB | K |
 |---------|------|----|---|---|----|----|---|
-| Starter A | {awayTeam} | {rng.Next(5, 8)}.0 | {rng.Next(3, 8)} | {rng.Next(1, 5)} | {rng.Next(1, 4)} | {rng.Next(0, 4)} | {rng.Next(3, 9)} |
-| Starter B | {homeTeam} | {rng.Next(5, 8)}.0 | {rng.Next(3, 8)} | {rng.Next(1, 5)} | {rng.Next(1, 4)} | {rng.Next(0, 4)} | {rng.Next(3, 9)} |
+| {awaySP} | {awayTeam} | {rng.Next(5, 8)}.0 | {rng.Next(3, 8)} | {rng.Next(1, 5)} | {rng.Next(1, 4)} | {rng.Next(0, 4)} | {rng.Next(3, 9)} |
+| {homeSP} | {homeTeam} | {rng.Next(5, 8)}.0 | {rng.Next(3, 8)} | {rng.Next(1, 5)} | {rng.Next(1, 4)} | {rng.Next(0, 4)} | {rng.Next(3, 9)} |
 
 ## Team Statistics
 
