@@ -1,0 +1,150 @@
+﻿/* =========================================================
+   BiteTheBookie – Unified Site Theme
+   Loaded after style.css to override the dark game-template
+   defaults with the actual light-theme brand styles.
+   ========================================================= */
+
+:root {
+    --btb-primary:       #0066cc;
+    --btb-primary-dark:  #0052a3;
+    --btb-body:          #212529;
+    --btb-muted:         #6c757d;
+    --btb-bg:            #ffffff;
+    --btb-success:       #28a745;
+    --btb-border:        #dee2e6;
+    --btb-hover-bg:      #f0f8ff;
+    --btb-card-shadow:   0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* ── Global text resets (override dark template) ────────── */
+body                       { color: var(--btb-body); }
+h1,h2,h3,h4,h5,h6         { color: var(--btb-body); }
+p                          { color: var(--btb-body); font-size: inherit; line-height: 1.6; }
+a                          { color: var(--btb-primary); }
+
+/* ── Content card ───────────────────────────────────────── */
+.content-card {
+    background-color: var(--btb-bg);
+    color: var(--btb-body);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--btb-card-shadow);
+    margin-bottom: 0;
+}
+
+/* ── Tables ─────────────────────────────────────────────── */
+.table               { color: var(--btb-body); }
+.table thead th       { background-color: var(--btb-primary); color: #fff; font-weight: 600; border: none; }
+.table tbody tr:hover { background-color: var(--btb-hover-bg); }
+
+/* ── Buttons ────────────────────────────────────────────── */
+.btn-primary             { background-color: var(--btb-primary); border-color: var(--btb-primary); font-weight: 600; }
+.btn-primary:hover       { background-color: var(--btb-primary-dark); border-color: var(--btb-primary-dark); }
+.btn-outline-primary     { color: var(--btb-primary); border-color: var(--btb-primary); font-weight: 600; }
+.btn-outline-primary:hover { background-color: var(--btb-primary); border-color: var(--btb-primary); color: #fff; }
+.btn-outline-secondary       { color: var(--btb-muted); border-color: var(--btb-muted); font-weight: 500; }
+.btn-outline-secondary:hover { background-color: var(--btb-muted); border-color: var(--btb-muted); color: #fff; }
+
+/* ── Nav pills ──────────────────────────────────────────── */
+.nav-pills .nav-link        { color: #495057; font-weight: 500; cursor: pointer; transition: all .3s ease; }
+.nav-pills .nav-link:hover  { background-color: #e9ecef; color: var(--btb-primary); }
+.nav-pills .nav-link.active { background-color: var(--btb-primary); font-weight: 600; }
+
+/* ── Cards ──────────────────────────────────────────────── */
+.card {
+    border: 1px solid var(--btb-border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    transition: transform .2s, box-shadow .2s;
+    color: var(--btb-body);
+}
+.card:hover             { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.card-body              { color: var(--btb-body); }
+.card-body p            { color: #333; line-height: 1.6; }
+
+/* ── Score badges (Picks tables) ────────────────────────── */
+.score-badge {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    color: #fff;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-weight: 700;
+    font-size: .95rem;
+    min-width: 50px;
+    text-align: center;
+    display: inline-block;
+    box-shadow: 0 2px 6px rgba(13,110,253,.3);
+    flex-shrink: 0;
+}
+.score-badge-empty {
+    background: linear-gradient(135deg, #6c757d 0%, #5c636a 100%);
+    box-shadow: 0 2px 6px rgba(108,117,125,.2);
+}
+
+/* ── Alerts ─────────────────────────────────────────────── */
+.alert              { border-width: 2px; font-weight: 500; }
+.alert-danger       { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+.alert-info         { background-color: #d1ecf1; border-color: #17a2b8; color: #0c5460; }
+.alert-warning      { background-color: #fff3cd; border-color: #ffc107; color: #856404; }
+
+/* ── Section header bar ─────────────────────────────────── */
+.section-header {
+    background-color: var(--btb-primary);
+    color: #fff;
+    padding: 10px 14px;
+    font-weight: 700;
+    border-radius: 8px 8px 0 0;
+}
+
+/* ── Utility overrides ──────────────────────────────────── */
+.text-success  { color: var(--btb-success) !important; font-weight: 600; }
+.text-muted    { color: var(--btb-muted) !important; }
+.fw-semibold   { color: var(--btb-body); font-weight: 600; }
+.h3            { color: var(--btb-primary); font-weight: 700; }
+
+/* ── Breadcrumbs ────────────────────────────────────────── */
+.breadcrumb-item a     { color: var(--btb-primary); }
+.breadcrumb-item.active { color: var(--btb-muted); }
+
+/* ── Markdown / simulation content ──────────────────────── */
+.simulation-content {
+    line-height: 1.8;
+    color: var(--btb-body);
+    background-color: var(--btb-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+.markdown-content         { color: var(--btb-body); }
+.markdown-content h1      { font-size: 2rem; margin-top: 2rem; margin-bottom: 1rem; color: var(--btb-primary); font-weight: 700; }
+.markdown-content h2      { font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: .75rem; border-bottom: 3px solid var(--btb-primary); padding-bottom: .5rem; color: var(--btb-primary); font-weight: 600; }
+.markdown-content h3      { font-size: 1.25rem; margin-top: 1rem; margin-bottom: .5rem; color: #0088ff; font-weight: 600; }
+.markdown-content p       { margin-bottom: 1rem; font-size: 1.05rem; }
+.markdown-content strong  { color: var(--btb-primary); font-weight: 700; }
+.markdown-content ul,
+.markdown-content ol      { margin-left: 1.5rem; margin-bottom: 1rem; }
+.markdown-content li      { margin-bottom: .75rem; line-height: 1.6; }
+.markdown-content table         { width: 100%; margin: 1rem 0; border-collapse: collapse; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+.markdown-content table th,
+.markdown-content table td      { padding: .75rem; border: 1px solid var(--btb-border); color: var(--btb-body); }
+.markdown-content table th      { background-color: var(--btb-primary); color: #fff; font-weight: 600; }
+.markdown-content table tr:nth-child(even) { background-color: #f8f9fa; }
+.markdown-content table tr:hover           { background-color: #e9ecef; }
+
+/* ── Pricing cards (Membership) ─────────────────────────── */
+.pricing-card {
+    border-radius: 16px;
+    border: 2px solid var(--btb-border);
+    transition: transform .3s ease, box-shadow .3s ease;
+    overflow: hidden;
+}
+.pricing-card:hover                  { transform: translateY(-8px); box-shadow: 0 12px 40px rgba(0,0,0,.15); }
+.pricing-card-featured               { border-color: #0d6efd; transform: scale(1.05); box-shadow: 0 8px 30px rgba(13,110,253,.2); }
+.pricing-card-featured:hover         { transform: scale(1.05) translateY(-8px); }
+.pricing-card .card-header           { border-bottom: none; }
+.pricing-card .card-footer           { background: transparent; border-top: none; }
+
+/* ── Admin tables ───────────────────────────────────────── */
+.table thead th {
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}

@@ -3,34 +3,13 @@
 @{
     ViewData["Title"] = "MLB Expert Picks & Predictions";
     
-    // Group games by date
     var today = DateTime.UtcNow.Date;
     var tomorrow = today.AddDays(1);
     var todayGames = Model.Games.Where(g => g.GameTime.Date == today).ToList();
     var tomorrowGames = Model.Games.Where(g => g.GameTime.Date == tomorrow).ToList();
 }
 
-<div class="container">
-    <div class="tickers-row">
-        <div id="nfl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NFLTicker")
-        </div>
-        <div id="nba-ticker" style="display: none;">
-            @await Component.InvokeAsync("NBATicker")
-        </div>
-        <div id="nhl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NHLTicker")
-        </div>
-        <div id="ncaa-ticker" style="display: none;">
-            @await Component.InvokeAsync("NCAATicker")
-        </div>
-        <div id="mlb-ticker">
-            @await Component.InvokeAsync("MLBTicker")
-        </div>
-    </div>
-</div>
-
-<nav aria-label="breadcrumb" class="mb-4">
+<nav aria-label="breadcrumb" class="container mb-4">
     <ol class="breadcrumb">
         <li class="breadcrumb-item">
             <a class="nav-link" asp-controller="Picks" asp-action="Index">Picks</a>
@@ -441,9 +420,7 @@
 </style>
 
 @section Scripts {
-    <script src="~/js/tickers.js" asp-append-version="true"></script>
     <script>
-        // Auto-refresh page every 30 seconds if there are live games
         (function() {
             const hasLiveGames = document.querySelector('.badge.bg-danger.pulse');
             if (hasLiveGames) {

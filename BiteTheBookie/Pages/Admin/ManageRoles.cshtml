@@ -1,20 +1,45 @@
 @page
 @model ManageRolesModel
-<h2>Manage Roles</h2>
-<p class="text-success">@Model.Message</p>
-<form method="post">
-    <div class="mb-3">
-        <label>User Email</label>
-        <input asp-for="Email" class="form-control" />
+
+@{
+    ViewData["Title"] = "Manage Roles";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <h1 class="h2 mb-0"><i class="fas fa-user-shield me-2"></i>Manage Roles</h1>
     </div>
-    <div class="mb-3">
-        <label>Role</label>
-        <select asp-for="Role" class="form-select">
-            <option>Admin</option>
-            <option>Premium</option>
-            <option>VIP</option>
-            <option>Free</option>
-        </select>
+
+    @if (!string.IsNullOrEmpty(Model.Message))
+    {
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle me-1"></i>@Model.Message
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="content-card">
+                <div class="section-header mb-4">Assign Role</div>
+                <form method="post">
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold">User Email</label>
+                        <input asp-for="Email" class="form-control" placeholder="user@example.com" />
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Role" class="form-label fw-semibold">Role</label>
+                        <select asp-for="Role" class="form-select">
+                            <option>Admin</option>
+                            <option>Premium</option>
+                            <option>VIP</option>
+                            <option>Free</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check me-1"></i>Assign Role
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Assign Role</button>
-</form>
+</div>

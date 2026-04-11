@@ -15,26 +15,6 @@
     }
 }
 
-<div class="container">
-    <div class="tickers-row">
-        <div id="nfl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NFLTicker")
-        </div>
-        <div id="nba-ticker">
-            @await Component.InvokeAsync("NBATicker")
-        </div>
-        <div id="nhl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NHLTicker")
-        </div>
-        <div id="ncaa-ticker" style="display: none;">
-            @await Component.InvokeAsync("NCAATicker")
-        </div>
-        <div id="mlb-ticker" style="display: none;">
-            @await Component.InvokeAsync("MLBTicker")
-        </div>
-    </div>
-</div>
-
 <div class="container py-4">
     <div class="content-card">
         <div class="d-flex align-items-center justify-content-between mb-4">
@@ -48,7 +28,6 @@
             </div>
         </div>
 
-        <!-- Filter tabs -->
         <ul class="nav nav-pills mb-4" id="picksTabs">
             <li class="nav-item">
                 <a class="nav-link active" href="#" data-filter="all">All</a>
@@ -64,7 +43,6 @@
             </li>
         </ul>
 
-        <!-- Picks table -->
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -84,7 +62,6 @@
                             <tr data-bet-types="spread overunder moneyline">
                                 <td>
                                     <div class="text-muted small mb-2">@game.GameTimeDisplay</div>
-                                    <!-- Away Team Row -->
                                     <div class="d-flex align-items-center gap-2 mt-2">
                                         <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" style="width: 32px; height: 32px;" />
                                         <span class="fw-semibold flex-grow-1">@game.AwayTeamName</span>
@@ -97,7 +74,6 @@
                                             <span class="score-badge score-badge-empty">--</span>
                                         }
                                     </div>
-                                    <!-- Home Team Row -->
                                     <div class="d-flex align-items-center gap-2 mt-1">
                                         <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" style="width: 32px; height: 32px;" />
                                         <span class="fw-semibold flex-grow-1">@game.HomeTeamName</span>
@@ -175,7 +151,6 @@
         </div>
     </div>
 
-    <!-- Hottest NBA Experts Section -->
     <div class="content-card mt-4">
         <h2 class="h3 mb-4">Hottest NBA Experts</h2>
         <div class="row g-3">
@@ -233,177 +208,26 @@
 }
 
 @section Scripts {
-    <script src="~/js/tickers.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const filterLinks = document.querySelectorAll('#picksTabs .nav-link');
             const tableRows = document.querySelectorAll('#picksTableBody tr');
-
             filterLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-
-                    // Remove active class from all links
                     filterLinks.forEach(l => l.classList.remove('active'));
-
-                    // Add active class to clicked link
                     this.classList.add('active');
-
-                    // Get the filter type
                     const filterType = this.getAttribute('data-filter');
-
-                    // Filter the table rows
                     tableRows.forEach(row => {
                         if (filterType === 'all') {
                             row.style.display = '';
                         } else {
                             const betTypes = row.getAttribute('data-bet-types');
-                            if (betTypes && betTypes.includes(filterType)) {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
+                            row.style.display = (betTypes && betTypes.includes(filterType)) ? '' : 'none';
                         }
                     });
-
-                    const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
-                    console.log(`Showing ${visibleRows.length} games for filter: ${filterType}`);
                 });
             });
         });
     </script>
 }
-
-<style>
-    /* Improved visibility and styling for Picks page */
-    .content-card {
-        background-color: #ffffff;
-        color: #212529;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .table {
-        color: #212529;
-    }
-
-        .table thead th {
-            background-color: #0066cc;
-            color: #ffffff;
-            font-weight: 600;
-            border: none;
-        }
-
-        .table tbody tr:hover {
-            background-color: #f0f8ff;
-        }
-
-    /* Score Badge Styling - Right Aligned */
-    .score-badge {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        color: white;
-        border-radius: 6px;
-        padding: 4px 12px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        min-width: 50px;
-        text-align: center;
-        display: inline-block;
-        box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
-        flex-shrink: 0;
-    }
-
-    .score-badge-empty {
-        background: linear-gradient(135deg, #6c757d 0%, #5c636a 100%);
-        box-shadow: 0 2px 6px rgba(108, 117, 125, 0.2);
-    }
-
-    .btn-primary {
-        background-color: #0066cc;
-        border-color: #0066cc;
-        font-weight: 600;
-    }
-
-        .btn-primary:hover {
-            background-color: #0052a3;
-            border-color: #0052a3;
-        }
-
-    .btn-outline-primary {
-        color: #0066cc;
-        border-color: #0066cc;
-        font-weight: 600;
-    }
-
-        .btn-outline-primary:hover {
-            background-color: #0066cc;
-            border-color: #0066cc;
-            color: #ffffff;
-        }
-
-    .btn-outline-secondary {
-        color: #6c757d;
-        border-color: #6c757d;
-        font-weight: 500;
-    }
-
-        .btn-outline-secondary:hover {
-            background-color: #6c757d;
-            border-color: #6c757d;
-            color: #ffffff;
-        }
-
-    .nav-pills .nav-link {
-        color: #495057;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-        .nav-pills .nav-link:hover {
-            background-color: #e9ecef;
-            color: #0066cc;
-        }
-
-        .nav-pills .nav-link.active {
-            background-color: #0066cc;
-            font-weight: 600;
-        }
-
-    .card {
-        border: 1px solid #dee2e6;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-    .card-body {
-        color: #212529;
-    }
-
-    .text-success {
-        color: #28a745 !important;
-        font-weight: 600;
-    }
-
-    .text-muted {
-        color: #6c757d !important;
-    }
-
-    .fw-semibold {
-        color: #212529;
-        font-weight: 600;
-    }
-
-    h1, h2, h3, h4, h5 {
-        color: #212529;
-    }
-
-    .h3 {
-        color: #0066cc;
-        font-weight: 700;
-    }
-</style>

@@ -14,155 +14,144 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="h5 mb-0"><i class="fas fa-plus-circle me-2"></i>Enter Expert Pick</h2>
+            <div class="content-card">
+                <div class="section-header mb-4">
+                    <i class="fas fa-plus-circle me-2"></i>Enter Expert Pick
                 </div>
-                <div class="card-body p-4">
-                    <form asp-action="Create" method="post">
-                        @Html.AntiForgeryToken()
 
-                        <!-- Hidden GameId that always submits -->
-                        <input type="hidden" asp-for="GameId" id="gameIdInput" />
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
 
-                        <!-- League -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">League</label>
-                            <select asp-for="League" class="form-select" id="leagueSelect">
-                                <option value="NBA">NBA</option>
-                                <option value="MLB">MLB</option>
-                            </select>
-                            <span asp-validation-for="League" class="text-danger"></span>
-                        </div>
+                    <input type="hidden" asp-for="GameId" id="gameIdInput" />
 
-                        <!-- Game ID — NBA Dropdown -->
-                        <div class="mb-3" id="nbaGameDropdownContainer" style="display: none;">
-                            <label class="form-label fw-semibold">Select Game</label>
-                            <select id="nbaGameDropdown" class="form-select">
-                                <option value="">-- Select an NBA Game --</option>
-                                @foreach (var game in Model.AvailableNbaGames)
-                                {
-                                    var selected = game.Value == Model.GameId ? "selected" : "";
-                                    <option value="@game.Value" selected="@selected">@game.Text</option>
-                                }
-                            </select>
-                            @if (!Model.AvailableNbaGames.Any())
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">League</label>
+                        <select asp-for="League" class="form-select" id="leagueSelect">
+                            <option value="NBA">NBA</option>
+                            <option value="MLB">MLB</option>
+                        </select>
+                        <span asp-validation-for="League" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3" id="nbaGameDropdownContainer" style="display: none;">
+                        <label class="form-label fw-semibold">Select Game</label>
+                        <select id="nbaGameDropdown" class="form-select">
+                            <option value="">-- Select an NBA Game --</option>
+                            @foreach (var game in Model.AvailableNbaGames)
                             {
-                                <div class="form-text text-warning">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>No upcoming NBA games found. You can type a Game ID manually below.
-                                </div>
+                                var selected = game.Value == Model.GameId ? "selected" : "";
+                                <option value="@game.Value" selected="@selected">@game.Text</option>
                             }
-                            <span asp-validation-for="GameId" class="text-danger"></span>
-                        </div>
+                        </select>
+                        @if (!Model.AvailableNbaGames.Any())
+                        {
+                            <div class="form-text text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>No upcoming NBA games found. You can type a Game ID manually below.
+                            </div>
+                        }
+                        <span asp-validation-for="GameId" class="text-danger"></span>
+                    </div>
 
-                        <!-- Game ID — MLB Dropdown -->
-                        <div class="mb-3" id="mlbGameDropdownContainer" style="display: none;">
-                            <label class="form-label fw-semibold">Select Game</label>
-                            <select id="mlbGameDropdown" class="form-select">
-                                <option value="">-- Select an MLB Game --</option>
-                                @foreach (var game in Model.AvailableMlbGames)
-                                {
-                                    var selected = game.Value == Model.GameId ? "selected" : "";
-                                    <option value="@game.Value" selected="@selected">@game.Text</option>
-                                }
-                            </select>
-                            @if (!Model.AvailableMlbGames.Any())
+                    <div class="mb-3" id="mlbGameDropdownContainer" style="display: none;">
+                        <label class="form-label fw-semibold">Select Game</label>
+                        <select id="mlbGameDropdown" class="form-select">
+                            <option value="">-- Select an MLB Game --</option>
+                            @foreach (var game in Model.AvailableMlbGames)
                             {
-                                <div class="form-text text-warning">
-                                    <i class="fas fa-exclamation-triangle me-1"></i>No MLB games found for today. You can type a Game ID manually below.
-                                </div>
+                                var selected = game.Value == Model.GameId ? "selected" : "";
+                                <option value="@game.Value" selected="@selected">@game.Text</option>
                             }
-                            <span asp-validation-for="GameId" class="text-danger"></span>
-                        </div>
-
-                        <!-- Game ID — Text input fallback -->
-                        <div class="mb-3" id="gameIdTextContainer">
-                            <label class="form-label fw-semibold">Game ID</label>
-                            <input type="text" class="form-control" id="gameIdTextInput"
-                                   value="@Model.GameId" placeholder="e.g. bos-mil-20260328" />
-                            <div class="form-text">Format: awaycode-homecode-YYYYMMDD</div>
-                            <span asp-validation-for="GameId" class="text-danger"></span>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="AwayTeamName" class="form-label fw-semibold">Away Team</label>
-                                <input asp-for="AwayTeamName" class="form-control" id="awayTeamInput" placeholder="e.g. Boston Celtics" />
-                                <span asp-validation-for="AwayTeamName" class="text-danger"></span>
+                        </select>
+                        @if (!Model.AvailableMlbGames.Any())
+                        {
+                            <div class="form-text text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>No MLB games found for today. You can type a Game ID manually below.
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label asp-for="HomeTeamName" class="form-label fw-semibold">Home Team</label>
-                                <input asp-for="HomeTeamName" class="form-control" id="homeTeamInput" placeholder="e.g. Milwaukee Bucks" />
-                                <span asp-validation-for="HomeTeamName" class="text-danger"></span>
-                            </div>
-                        </div>
+                        }
+                        <span asp-validation-for="GameId" class="text-danger"></span>
+                    </div>
 
-                        <!-- Game Time -->
-                        <div class="mb-3">
-                            <label asp-for="GameTime" class="form-label fw-semibold">Game Time (UTC)</label>
-                            <input asp-for="GameTime" type="datetime-local" class="form-control" id="gameTimeInput" />
-                            <span asp-validation-for="GameTime" class="text-danger"></span>
-                        </div>
+                    <div class="mb-3" id="gameIdTextContainer">
+                        <label class="form-label fw-semibold">Game ID</label>
+                        <input type="text" class="form-control" id="gameIdTextInput"
+                               value="@Model.GameId" placeholder="e.g. bos-mil-20260328" />
+                        <div class="form-text">Format: awaycode-homecode-YYYYMMDD</div>
+                        <span asp-validation-for="GameId" class="text-danger"></span>
+                    </div>
 
-                        <hr class="my-4" />
-
-                        <!-- Pick Type -->
-                        <div class="mb-3">
-                            <label asp-for="PickType" class="form-label fw-semibold">Pick Type</label>
-                            <select asp-for="PickType" class="form-select">
-                                <option value="">-- Select --</option>
-                                <option value="Spread">Spread</option>
-                                <option value="Moneyline">Moneyline</option>
-                                <option value="OverUnder">Over/Under</option>
-                            </select>
-                            <span asp-validation-for="PickType" class="text-danger"></span>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AwayTeamName" class="form-label fw-semibold">Away Team</label>
+                            <input asp-for="AwayTeamName" class="form-control" id="awayTeamInput" placeholder="e.g. Boston Celtics" />
+                            <span asp-validation-for="AwayTeamName" class="text-danger"></span>
                         </div>
-
-                        <!-- Pick Selection -->
-                        <div class="mb-3">
-                            <label asp-for="PickSelection" class="form-label fw-semibold">Pick Selection</label>
-                            <input asp-for="PickSelection" class="form-control"
-                                   placeholder="e.g. Lakers -3.5, Over 215.5, Red Sox ML" />
-                            <span asp-validation-for="PickSelection" class="text-danger"></span>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="HomeTeamName" class="form-label fw-semibold">Home Team</label>
+                            <input asp-for="HomeTeamName" class="form-control" id="homeTeamInput" placeholder="e.g. Milwaukee Bucks" />
+                            <span asp-validation-for="HomeTeamName" class="text-danger"></span>
                         </div>
+                    </div>
 
-                        <!-- Confidence -->
-                        <div class="mb-3">
-                            <label asp-for="Confidence" class="form-label fw-semibold">
-                                Confidence <span id="confidenceDisplay" class="text-warning"></span>
-                            </label>
-                            <input asp-for="Confidence" type="range" class="form-range" min="1" max="5" step="1"
-                                   oninput="updateStars(this.value)" />
-                            <div class="d-flex justify-content-between small text-muted">
-                                <span>Low</span>
-                                <span>Medium</span>
-                                <span>High</span>
-                            </div>
-                            <span asp-validation-for="Confidence" class="text-danger"></span>
-                        </div>
+                    <div class="mb-3">
+                        <label asp-for="GameTime" class="form-label fw-semibold">Game Time (UTC)</label>
+                        <input asp-for="GameTime" type="datetime-local" class="form-control" id="gameTimeInput" />
+                        <span asp-validation-for="GameTime" class="text-danger"></span>
+                    </div>
 
-                        <!-- Analysis -->
-                        <div class="mb-4">
-                            <label asp-for="Analysis" class="form-label fw-semibold">
-                                Analysis / Reasoning
-                                <span id="summarySpinner" class="ms-2" style="display: none;">
-                                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
-                                    <small class="text-muted">Generating pregame summary...</small>
-                                </span>
-                            </label>
-                            <textarea asp-for="Analysis" class="form-control" rows="5" id="analysisInput"
-                                      placeholder="Write your expert analysis for this pick..."></textarea>
-                            <span asp-validation-for="Analysis" class="text-danger"></span>
-                        </div>
+                    <hr class="my-4" />
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-1"></i>Save Pick
-                            </button>
-                            <a asp-action="Index" asp-route-league="@Model.League" class="btn btn-outline-secondary">Cancel</a>
+                    <div class="mb-3">
+                        <label asp-for="PickType" class="form-label fw-semibold">Pick Type</label>
+                        <select asp-for="PickType" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option value="Spread">Spread</option>
+                            <option value="Moneyline">Moneyline</option>
+                            <option value="OverUnder">Over/Under</option>
+                        </select>
+                        <span asp-validation-for="PickType" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PickSelection" class="form-label fw-semibold">Pick Selection</label>
+                        <input asp-for="PickSelection" class="form-control"
+                               placeholder="e.g. Lakers -3.5, Over 215.5, Red Sox ML" />
+                        <span asp-validation-for="PickSelection" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Confidence" class="form-label fw-semibold">
+                            Confidence <span id="confidenceDisplay" class="text-warning"></span>
+                        </label>
+                        <input asp-for="Confidence" type="range" class="form-range" min="1" max="5" step="1"
+                               oninput="updateStars(this.value)" />
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>Low</span>
+                            <span>Medium</span>
+                            <span>High</span>
                         </div>
-                    </form>
-                </div>
+                        <span asp-validation-for="Confidence" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Analysis" class="form-label fw-semibold">
+                            Analysis / Reasoning
+                            <span id="summarySpinner" class="ms-2" style="display: none;">
+                                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                <small class="text-muted">Generating pregame summary...</small>
+                            </span>
+                        </label>
+                        <textarea asp-for="Analysis" class="form-control" rows="5" id="analysisInput"
+                                  placeholder="Write your expert analysis for this pick..."></textarea>
+                        <span asp-validation-for="Analysis" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Pick
+                        </button>
+                        <a asp-action="Index" asp-route-league="@Model.League" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -199,7 +188,6 @@
             var nbaHasGames = nbaGameDropdown.options.length > 1;
             var mlbHasGames = mlbGameDropdown.options.length > 1;
 
-            // Hide everything first
             nbaDropdownContainer.style.display = 'none';
             mlbDropdownContainer.style.display = 'none';
             gameIdTextContainer.style.display = 'none';
@@ -209,22 +197,18 @@
             } else if (league === 'MLB' && mlbHasGames) {
                 mlbDropdownContainer.style.display = 'block';
             } else {
-                // No games available for the selected league — show manual text input
                 gameIdTextContainer.style.display = 'block';
             }
         }
 
-        // Sync visible text input → hidden field
         gameIdTextInput.addEventListener('input', function () {
             gameIdInput.value = this.value;
         });
 
-        // Initialize on page load
         toggleGameIdField();
 
         leagueSelect.addEventListener('change', function () {
             toggleGameIdField();
-            // Clear all fields when switching leagues
             gameIdInput.value = '';
             gameIdTextInput.value = '';
             nbaGameDropdown.value = '';
@@ -235,21 +219,17 @@
             analysisInput.value = '';
         });
 
-        // Shared handler: fetch game details and auto-fill the form
         function onGameSelected(league, selectedGameId) {
             gameIdInput.value = selectedGameId;
-
             if (!selectedGameId) {
                 awayTeamInput.value = '';
                 homeTeamInput.value = '';
                 gameTimeInput.value = '';
                 return;
             }
-
             var url = '@Url.Action("GetGameDetails", "AdminPicks")'
                 + '?league=' + encodeURIComponent(league)
                 + '&gameId=' + encodeURIComponent(selectedGameId);
-
             fetch(url)
                 .then(function (response) {
                     if (!response.ok) throw new Error('Game not found');
@@ -265,16 +245,12 @@
                 });
         }
 
-        // Fetch MLB pregame summary and populate the Analysis textarea
         function loadMlbPregameSummary(gameId) {
             if (!gameId) return;
-
             summarySpinner.style.display = 'inline';
             analysisInput.value = '';
-
             var url = '@Url.Action("GetMlbPregameSummary", "AdminPicks")'
                 + '?gameId=' + encodeURIComponent(gameId);
-
             fetch(url)
                 .then(function (response) {
                     if (!response.ok) throw new Error('Summary unavailable');

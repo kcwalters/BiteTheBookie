@@ -13,13 +13,15 @@
 }
 
 <div class="container py-4">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <h1 class="h2 mb-0">
-            <i class="fas fa-shield-alt me-2"></i>Manage Expert Picks
-        </h1>
-        <a asp-action="Create" asp-route-league="@Model.SelectedLeague" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i>New Pick
-        </a>
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-shield-alt me-2"></i>Manage Expert Picks
+            </h1>
+            <a asp-action="Create" asp-route-league="@Model.SelectedLeague" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>New Pick
+            </a>
+        </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
@@ -30,89 +32,90 @@
         </div>
     }
 
-    <!-- League Tabs -->
-    <ul class="nav nav-pills mb-4">
-        <li class="nav-item">
-            <a class="nav-link @(Model.SelectedLeague == "NBA" ? "active" : "")"
-               asp-action="Index" asp-route-league="NBA">NBA</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link @(Model.SelectedLeague == "MLB" ? "active" : "")"
-               asp-action="Index" asp-route-league="MLB">MLB</a>
-        </li>
-    </ul>
+    <div class="content-card">
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "NBA" ? "active" : "")"
+                   asp-action="Index" asp-route-league="NBA">NBA</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "MLB" ? "active" : "")"
+                   asp-action="Index" asp-route-league="MLB">MLB</a>
+            </li>
+        </ul>
 
-    @if (Model.Picks.Any())
-    {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Game</th>
-                        <th>Game Time</th>
-                        <th>Pick Type</th>
-                        <th>Selection</th>
-                        <th class="text-center">Confidence</th>
-                        <th>Entered By</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var pick in Model.Picks)
-                    {
+        @if (Model.Picks.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
                         <tr>
-                            <td>
-                                <span class="fw-semibold">@pick.AwayTeamName</span>
-                                <span class="text-muted mx-1">@@</span>
-                                <span class="fw-semibold">@pick.HomeTeamName</span>
-                            </td>
-                            <td class="text-muted">@pick.GameTime.ToLocalTime().ToString("MMM dd, h:mm tt")</td>
-                            <td>
-                                <span class="badge @PickTypeBadgeClass(pick.PickType)">@pick.PickType</span>
-                            </td>
-                            <td class="fw-bold">@pick.PickSelection</td>
-                            <td class="text-center">
-                                @for (int i = 1; i <= 5; i++)
-                                {
-                                    if (i <= pick.Confidence)
-                                    {
-                                        <i class="fas fa-star text-warning" style="font-size: 0.8rem;"></i>
-                                    }
-                                    else
-                                    {
-                                        <i class="fas fa-star text-muted opacity-25" style="font-size: 0.8rem;"></i>
-                                    }
-                                }
-                            </td>
-                            <td class="text-muted small">@pick.EnteredBy</td>
-                            <td class="text-end">
-                                <a asp-action="Edit" asp-route-id="@pick.Id" class="btn btn-sm btn-outline-primary me-1">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form asp-action="Delete" asp-route-id="@pick.Id" method="post" class="d-inline"
-                                      onsubmit="return confirm('Delete this pick?');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </td>
+                            <th>Game</th>
+                            <th>Game Time</th>
+                            <th>Pick Type</th>
+                            <th>Selection</th>
+                            <th class="text-center">Confidence</th>
+                            <th>Entered By</th>
+                            <th class="text-end">Actions</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-    else
-    {
-        <div class="text-center py-5">
-            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-            <p class="text-muted">No picks entered for @Model.SelectedLeague yet.</p>
-            <a asp-action="Create" asp-route-league="@Model.SelectedLeague" class="btn btn-primary">
-                Enter First Pick
-            </a>
-        </div>
-    }
+                    </thead>
+                    <tbody>
+                        @foreach (var pick in Model.Picks)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold">@pick.AwayTeamName</span>
+                                    <span class="text-muted mx-1">@@</span>
+                                    <span class="fw-semibold">@pick.HomeTeamName</span>
+                                </td>
+                                <td class="text-muted">@pick.GameTime.ToLocalTime().ToString("MMM dd, h:mm tt")</td>
+                                <td>
+                                    <span class="badge @PickTypeBadgeClass(pick.PickType)">@pick.PickType</span>
+                                </td>
+                                <td class="fw-bold">@pick.PickSelection</td>
+                                <td class="text-center">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= pick.Confidence)
+                                        {
+                                            <i class="fas fa-star text-warning" style="font-size: 0.8rem;"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-star text-muted opacity-25" style="font-size: 0.8rem;"></i>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-muted small">@pick.EnteredBy</td>
+                                <td class="text-end">
+                                    <a asp-action="Edit" asp-route-id="@pick.Id" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@pick.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Delete this pick?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No picks entered for @Model.SelectedLeague yet.</p>
+                <a asp-action="Create" asp-route-league="@Model.SelectedLeague" class="btn btn-primary">
+                    Enter First Pick
+                </a>
+            </div>
+        }
+    </div>
 </div>
 
 <style>
