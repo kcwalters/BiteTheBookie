@@ -1,4 +1,4 @@
-using BiteTheBookie.Services.Interfaces;
+﻿using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.Models;
 using OpenAI.Chat;
 using System.Text.RegularExpressions;
@@ -34,18 +34,39 @@ namespace BiteTheBookie.Services.Implementations
             var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
             var simulationId = Guid.NewGuid().ToString("N")[..8];
 
-            _logger.LogInformation("Generating simulation #{SimulationId} for {HomeTeam} vs {AwayTeam} at {Timestamp}",
-                simulationId, homeTeam, awayTeam, timestamp);
+            _logger.LogInformation("Generating simulation #{SimulationId} for {HomeTeam} vs {AwayTeam} ({League}) at {Timestamp}",
+                simulationId, homeTeam, awayTeam, league, timestamp);
 
-            var injuredPlayers = injuries?
+            if (_chatClient == null)
+            {
+                _logger.LogWarning("_chatClient is NULL — returning mock simulation for {HomeTeam} vs {AwayTeam}", homeTeam, awayTeam);
+
+                if (league.Equals("MLB", StringComparison.OrdinalIgnoreCase))
+                    return GetMlbMockSimulation(homeTeam, awayTeam);
+
+                var injuredPlayers = injuries?
+                    .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
+                    .Select(i => i.PlayerName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
+                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayers);
+            }
+
+            // ── MLB simulation ────────────────────────────────────────────────
+            if (league.Equals("MLB", StringComparison.OrdinalIgnoreCase))
+            {
+                return await GenerateMlbSimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken);
+            }
+
+            // ── NBA simulation ────────────────────────────────────────────────
+            var injuredPlayersNba = injuries?
                 .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
                 .Select(i => i.PlayerName)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
 
-            if (injuredPlayers.Any())
+            if (injuredPlayersNba.Any())
             {
                 _logger.LogWarning("EXCLUDING {Count} injured players: {Players}",
-                    injuredPlayers.Count, string.Join(", ", injuredPlayers));
+                    injuredPlayersNba.Count, string.Join(", ", injuredPlayersNba));
 
                 foreach (var injury in injuries!.Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase)))
                 {
@@ -55,40 +76,34 @@ namespace BiteTheBookie.Services.Implementations
             }
 
             // Build the set of valid player names from both rosters (excluding injured)
-            var validPlayers = BuildValidPlayerSet(homeRoster, awayRoster, injuredPlayers);
-
-            if (_chatClient == null)
-            {
-                _logger.LogWarning("_chatClient is NULL � returning mock simulation for {HomeTeam} vs {AwayTeam}", homeTeam, awayTeam);
-                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayers);
-            }
+            var validPlayers = BuildValidPlayerSet(homeRoster, awayRoster, injuredPlayersNba);
 
             try
             {
                 _logger.LogInformation("Calling Azure OpenAI for {HomeTeam} vs {AwayTeam}...", homeTeam, awayTeam);
 
                 var awayStarters = awayRoster?.Players
-                    .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Where(p => p.IsStarter && !injuredPlayersNba.Contains(p.Name))
                     .Select(p => $"{p.Name} ({p.Position})")
                     .ToList() ?? new List<string>();
                 var homeStarters = homeRoster?.Players
-                    .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Where(p => p.IsStarter && !injuredPlayersNba.Contains(p.Name))
                     .Select(p => $"{p.Name} ({p.Position})")
                     .ToList() ?? new List<string>();
                 var awayBench = awayRoster?.Players
-                    .Where(p => !p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Where(p => !p.IsStarter && !injuredPlayersNba.Contains(p.Name))
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
                 var homeBench = homeRoster?.Players
-                    .Where(p => !p.IsStarter && !injuredPlayers.Contains(p.Name))
+                    .Where(p => !p.IsStarter && !injuredPlayersNba.Contains(p.Name))
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
 
                 var injuryInfo = "";
-                if (injuredPlayers.Any())
+                if (injuredPlayersNba.Any())
                 {
-                    var awayInjuries = injuries?.Where(i => i.TeamCode == awayRoster?.TeamCode && injuredPlayers.Contains(i.PlayerName)).ToList() ?? new();
-                    var homeInjuries = injuries?.Where(i => i.TeamCode == homeRoster?.TeamCode && injuredPlayers.Contains(i.PlayerName)).ToList() ?? new();
+                    var awayInjuries = injuries?.Where(i => i.TeamCode == awayRoster?.TeamCode && injuredPlayersNba.Contains(i.PlayerName)).ToList() ?? new();
+                    var homeInjuries = injuries?.Where(i => i.TeamCode == homeRoster?.TeamCode && injuredPlayersNba.Contains(i.PlayerName)).ToList() ?? new();
 
                     if (awayInjuries.Any() || homeInjuries.Any())
                     {
@@ -102,11 +117,11 @@ namespace BiteTheBookie.Services.Implementations
 
                 // Build a strict player list to embed in the prompt
                 var awayPlayerList = awayRoster?.Players
-                    .Where(p => !injuredPlayers.Contains(p.Name))
+                    .Where(p => !injuredPlayersNba.Contains(p.Name))
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
                 var homePlayerList = homeRoster?.Players
-                    .Where(p => !injuredPlayers.Contains(p.Name))
+                    .Where(p => !injuredPlayersNba.Contains(p.Name))
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
 
@@ -178,7 +193,7 @@ CRITICAL REQUIREMENTS:
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage($"You are an expert NBA analyst who creates detailed, realistic game simulations. CRITICAL RULES: 1) Start EVERY simulation with an '## Injury Report' section listing ALL injured players as 'OUT'. 2) NEVER include injured players in game action or statistics. 3) ONLY use player names from the provided roster lists � do NOT hallucinate or invent players. 4) Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. Use only standard ASCII characters."),
+                    new SystemChatMessage($"You are an expert NBA analyst who creates detailed, realistic game simulations. CRITICAL RULES: 1) Start EVERY simulation with an '## Injury Report' section listing ALL injured players as 'OUT'. 2) NEVER include injured players in game action or statistics. 3) ONLY use player names from the provided roster lists - do NOT hallucinate or invent players. 4) Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. Use only standard ASCII characters."),
                     new UserChatMessage(prompt)
                 };
 
@@ -198,7 +213,7 @@ CRITICAL REQUIREMENTS:
                         simulationId, invalidPlayers.Count, string.Join(", ", invalidPlayers));
 
                     // Append a correction notice and replace invalid names
-                    simulationText = SanitizePlayerNames(simulationText, invalidPlayers, validPlayers, homeRoster, awayRoster, injuredPlayers);
+                    simulationText = SanitizePlayerNames(simulationText, invalidPlayers, validPlayers, homeRoster, awayRoster, injuredPlayersNba);
                 }
 
                 _logger.LogInformation("AI simulation #{SimulationId} generated successfully for {HomeTeam} vs {AwayTeam}",
@@ -208,15 +223,86 @@ CRITICAL REQUIREMENTS:
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AI simulation FAILED for {HomeTeam} vs {AwayTeam}: {Type}: {Message} � falling back to mock",
+                _logger.LogError(ex, "AI simulation FAILED for {HomeTeam} vs {AwayTeam}: {Type}: {Message} - falling back to mock",
                     homeTeam, awayTeam, ex.GetType().FullName, ex.Message);
-                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayers);
+                return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayersNba);
             }
         }
 
-        /// <summary>
-        /// Builds a set of all valid (non-injured) player names from both rosters.
-        /// </summary>
+        // ── MLB-specific AI generation ────────────────────────────────────────
+        private async Task<string> GenerateMlbSimulationAsync(
+            string homeTeam, string awayTeam, string simulationId,
+            string timestamp, DateTime? gameTime, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation("Calling Azure OpenAI for MLB: {AwayTeam} @ {HomeTeam}...", awayTeam, homeTeam);
+
+                var prompt = $@"Generate a FRESH, UNIQUE MLB baseball game simulation between {awayTeam} (away) and {homeTeam} (home).
+
+SIMULATION ID: {simulationId}
+GENERATED AT: {timestamp}
+
+SIMULATION REQUIREMENTS:
+- This is simulation #{simulationId} - make it COMPLETELY DIFFERENT from any previous simulations
+- Use REAL current-roster players for both {awayTeam} and {homeTeam}
+- DO NOT invent or hallucinate player names - use only real MLB players on those teams
+- VARY the final score each time - sometimes high-scoring, sometimes pitchers' duels
+- CREATE DIFFERENT game narratives - sometimes close, sometimes blowouts, sometimes walk-offs
+- THE GAME MUST HAVE A WINNER - baseball games CANNOT end in a tie
+- If the score is tied after 9 innings, simulate extra innings until one team wins
+- The home team ALWAYS bats last - if the home team is ahead after the top of the 9th, the bottom of the 9th is not played
+
+Include the following sections using Markdown formatting:
+
+1. **Final Score**: A realistic MLB score with line score (runs per inning). If extra innings were needed, include them.
+2. **Game Summary**: 2-3 sentences describing how the game unfolded, mentioning the starting pitchers and key moments
+3. **Starting Pitchers**: Name both starters with their line (IP, H, R, ER, BB, K)
+4. **Key Performers**: 4-6 players with realistic batting lines (AB, H, R, RBI, HR) or pitching lines
+5. **Inning-by-Inning Breakdown**: Describe key moments in select innings (not every inning needs detail - focus on scoring innings and dramatic moments)
+6. **Team Statistics**: Markdown table comparing hits, errors, LOB, team batting average, bullpen ERA for the game
+7. **Pitching Summary**: List all pitchers used by each team with their lines
+8. **Betting Analysis**: How the result affects the run line (spread), over/under, and moneyline
+
+CRITICAL REQUIREMENTS:
+- Use REAL players currently on {awayTeam} and {homeTeam} rosters
+- Use realistic MLB statistics (batting averages, ERA, pitch counts, etc.)
+- Include realistic baseball details: pitch counts, defensive plays, stolen bases, double plays
+- Mention the ballpark (home team's stadium) and how it affected play
+- The final score MUST NOT be a tie - one team must win
+- Use standard ASCII characters only, NO emojis
+- Use Markdown tables for statistics
+- Make it feel like a real MLB game recap";
+
+                var messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage($"You are an expert MLB baseball analyst who creates detailed, realistic game simulations. Use ONLY real current-roster players. Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. Use standard ASCII characters only. CRITICAL: Baseball games CANNOT end in a tie. There must always be a winner."),
+                    new UserChatMessage(prompt)
+                };
+
+                var chatOptions = new ChatCompletionOptions
+                {
+                    Temperature = 0.9f
+                };
+
+                var response = await _chatClient!.CompleteChatAsync(messages, chatOptions, cancellationToken);
+                var simulationText = response.Value.Content[0].Text;
+
+                _logger.LogInformation("MLB simulation #{SimulationId} generated successfully for {AwayTeam} @ {HomeTeam}",
+                    simulationId, awayTeam, homeTeam);
+
+                return simulationText;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "MLB AI simulation FAILED for {AwayTeam} @ {HomeTeam} - falling back to mock",
+                    awayTeam, homeTeam);
+                return GetMlbMockSimulation(homeTeam, awayTeam);
+            }
+        }
+
+        // ── Helper methods ────────────────────────────────────────────────────
+
         private static HashSet<string> BuildValidPlayerSet(
             NBATeamRoster? homeRoster,
             NBATeamRoster? awayRoster,
@@ -238,10 +324,6 @@ CRITICAL REQUIREMENTS:
             return valid;
         }
 
-        /// <summary>
-        /// Scans the simulation text for bold player names (e.g. **Name**) that are not
-        /// in the valid roster and not a team/section name.
-        /// </summary>
         private static List<string> FindInvalidPlayerNames(
             string simulationText,
             HashSet<string> validPlayers,
@@ -250,7 +332,6 @@ CRITICAL REQUIREMENTS:
         {
             var invalid = new List<string>();
 
-            // Known non-player bold terms to skip
             var skipTerms = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 homeTeam, awayTeam,
@@ -261,29 +342,21 @@ CRITICAL REQUIREMENTS:
                 "Halftime", "Team Statistics Comparison"
             };
 
-            // Match **Name** patterns � the typical markdown bold used for player names
             var boldPattern = new Regex(@"\*\*([^*]+?)\*\*", RegexOptions.Compiled);
             foreach (Match match in boldPattern.Matches(simulationText))
             {
                 var name = match.Groups[1].Value.Trim();
 
-                // Skip short entries, numbers, section headers, team names
                 if (name.Length < 4) continue;
                 if (char.IsDigit(name[0])) continue;
                 if (skipTerms.Any(t => name.Contains(t, StringComparison.OrdinalIgnoreCase))) continue;
-
-                // Skip entries that look like stat lines or labels (contain colons, numbers, "pts", etc.)
                 if (name.Contains(':') || name.Contains("pts") || name.Contains("reb") || name.Contains("ast")) continue;
-
-                // Skip entries containing " - OUT" (injury report lines)
                 if (name.Contains(" - OUT", StringComparison.OrdinalIgnoreCase)) continue;
 
-                // Check if this looks like a player name (2+ words, starts with uppercase)
                 var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (words.Length < 2) continue;
                 if (!char.IsUpper(words[0][0])) continue;
 
-                // This looks like a player name � validate it
                 if (!validPlayers.Contains(name))
                 {
                     invalid.Add(name);
@@ -293,10 +366,6 @@ CRITICAL REQUIREMENTS:
             return invalid.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        /// <summary>
-        /// Replaces invalid player names in the simulation with valid roster players,
-        /// and appends a disclaimer if any replacements were made.
-        /// </summary>
         private static string SanitizePlayerNames(
             string simulationText,
             List<string> invalidPlayers,
@@ -305,7 +374,6 @@ CRITICAL REQUIREMENTS:
             NBATeamRoster? awayRoster,
             HashSet<string> injuredPlayers)
         {
-            // Build a pool of valid bench/role players to use as replacements
             var replacementPool = new List<string>();
             if (awayRoster != null)
                 replacementPool.AddRange(awayRoster.Players
@@ -316,7 +384,6 @@ CRITICAL REQUIREMENTS:
                     .Where(p => !p.IsStarter && !injuredPlayers.Contains(p.Name))
                     .Select(p => p.Name));
 
-            // Also add starters as fallback
             if (awayRoster != null)
                 replacementPool.AddRange(awayRoster.Players
                     .Where(p => p.IsStarter && !injuredPlayers.Contains(p.Name))
@@ -348,6 +415,98 @@ CRITICAL REQUIREMENTS:
             }
 
             return simulationText;
+        }
+
+        // ── Mock simulations ──────────────────────────────────────────────────
+
+        private static string GetMlbMockSimulation(string homeTeam, string awayTeam)
+        {
+            var seed = (homeTeam + awayTeam + DateTime.UtcNow.Ticks).GetHashCode();
+            var rng  = new Random(seed);
+
+            int awayRuns = rng.Next(0, 10);
+            int homeRuns = rng.Next(0, 10);
+
+            // Baseball cannot end in a tie — guarantee a winner
+            while (awayRuns == homeRuns)
+            {
+                homeRuns = rng.Next(0, 10);
+            }
+
+            bool awayWins = awayRuns > homeRuns;
+            string winner = awayWins ? awayTeam : homeTeam;
+            string loser  = awayWins ? homeTeam : awayTeam;
+            int winScore   = Math.Max(awayRuns, homeRuns);
+            int loseScore  = Math.Min(awayRuns, homeRuns);
+            int margin     = winScore - loseScore;
+
+            // Build a simple line score (9 innings)
+            int[] awayInnings = DistributeRuns(rng, awayRuns, 9);
+            int[] homeInnings = DistributeRuns(rng, homeRuns, 9);
+
+            string awayLine = string.Join(" | ", awayInnings);
+            string homeLine = string.Join(" | ", homeInnings);
+            string inningHeaders = string.Join(" | ", Enumerable.Range(1, 9));
+
+            int awayHits = awayRuns + rng.Next(2, 6);
+            int homeHits = homeRuns + rng.Next(2, 6);
+            int awayErrors = rng.Next(0, 3);
+            int homeErrors = rng.Next(0, 3);
+
+            return $@"# GAME SIMULATION: {awayTeam} @ {homeTeam}
+
+## Final Score
+**{awayTeam}**: {awayRuns}
+**{homeTeam}**: {homeRuns}
+
+## Line Score
+
+| Team | {inningHeaders} | R | H | E |
+|------|{string.Join("|", Enumerable.Repeat("---|", 9))}---|---|---|
+| {awayTeam} | {awayLine} | **{awayRuns}** | {awayHits} | {awayErrors} |
+| {homeTeam} | {homeLine} | **{homeRuns}** | {homeHits} | {homeErrors} |
+
+## Game Summary
+In a {(margin <= 2 ? "tightly contested" : "decisive")} matchup, **{winner}** {(margin <= 2 ? "edges out a win" : "cruises to victory")} {winScore}-{loseScore} over **{loser}**. The game featured strong pitching from both sides and timely hitting from the winning club.
+
+## Starting Pitchers
+
+| Pitcher | Team | IP | H | R | ER | BB | K |
+|---------|------|----|---|---|----|----|---|
+| Starter A | {awayTeam} | {rng.Next(5, 8)}.0 | {rng.Next(3, 8)} | {rng.Next(1, 5)} | {rng.Next(1, 4)} | {rng.Next(0, 4)} | {rng.Next(3, 9)} |
+| Starter B | {homeTeam} | {rng.Next(5, 8)}.0 | {rng.Next(3, 8)} | {rng.Next(1, 5)} | {rng.Next(1, 4)} | {rng.Next(0, 4)} | {rng.Next(3, 9)} |
+
+## Team Statistics
+
+| Statistic | {awayTeam} | {homeTeam} |
+|-----------|------------|------------|
+| Hits | {awayHits} | {homeHits} |
+| Errors | {awayErrors} | {homeErrors} |
+| LOB | {rng.Next(4, 10)} | {rng.Next(4, 10)} |
+| Team AVG | .{rng.Next(200, 320)} | .{rng.Next(200, 320)} |
+
+## Betting Analysis
+
+**Run Line**: {winner} covers the -1.5 run line{(margin >= 2 ? "" : " - PUSH territory")}
+**Over/Under**: Total of {awayRuns + homeRuns} runs
+**Moneyline**: {winner} wins outright
+
+---
+
+*This is a simulated game for entertainment purposes. Results and statistics are generated for demonstration.*";
+        }
+
+        /// <summary>
+        /// Distributes a total number of runs randomly across the given number of innings.
+        /// </summary>
+        private static int[] DistributeRuns(Random rng, int totalRuns, int innings)
+        {
+            var result = new int[innings];
+            for (int r = 0; r < totalRuns; r++)
+            {
+                result[rng.Next(innings)]++;
+            }
+            return result;
         }
 
         private static string GetMockSimulation(string homeTeam, string awayTeam, NBATeamRoster? homeRoster, NBATeamRoster? awayRoster, HashSet<string> injuredPlayers)

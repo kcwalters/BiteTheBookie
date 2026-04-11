@@ -148,11 +148,11 @@
 
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
-                                                @if (game.Status == "Scheduled")
+                                                @if (game.Status == "Scheduled" || game.Status == "Pre-Game")
                                                 {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
-                                                       class="btn btn-primary btn-sm">
-                                                        <i class="fas fa-chart-line me-1"></i> Analysis
+                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
+                                                       class="btn btn-primary btn-sm" data-sim-trigger>
+                                                        <i class="fas fa-baseball-ball me-1"></i> Game Simulation
                                                     </a>
                                                 }
                                                 else if (game.Status == "Live")
@@ -163,9 +163,10 @@
                                                 }
                                                 else
                                                 {
-                                                    <button class="btn btn-secondary btn-sm" disabled>
-                                                        <i class="fas fa-check me-1"></i> Final
-                                                    </button>
+                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
+                                                       class="btn btn-outline-secondary btn-sm" data-sim-trigger>
+                                                        <i class="fas fa-baseball-ball me-1"></i> Simulation
+                                                    </a>
                                                 }
                                             </div>
                                         </div>
@@ -265,8 +266,8 @@
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
                                                 <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
-                                                   class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-chart-line me-1"></i> Analysis
+                                                   class="btn btn-outline-primary btn-sm" data-sim-trigger>
+                                                    <i class="fas fa-baseball-ball me-1"></i> Game Simulation
                                                 </a>
                                             </div>
                                         </div>
