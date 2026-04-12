@@ -1,8 +1,19 @@
 @model BiteTheBookie.ViewModels.PicksIndexViewModel
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 @{
     ViewData["Title"] = "MLB Expert Picks & Predictions";
-    
+
+    var isPremiumOrVip = false;
+    if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+        isPremiumOrVip = currentUser?.IsPremium == true;
+    }
+
     var today = DateTime.UtcNow.Date;
     var tomorrow = today.AddDays(1);
     var todayGames = Model.Games.Where(g => g.GameTime.Date == today).ToList();
@@ -148,24 +159,26 @@
 
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
-                                                @if (game.Status == "Scheduled" || game.Status == "Pre-Game")
-                                                {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
-                                                       class="btn btn-primary btn-sm" data-sim-trigger>
-                                                        <i class="fas fa-baseball-ball me-1"></i> Game Simulation
-                                                    </a>
-                                                }
-                                                else if (game.Status == "Live")
+                                                @if (game.Status == "Live")
                                                 {
                                                     <button class="btn btn-danger btn-sm" disabled>
                                                         <i class="fas fa-circle pulse me-1" style="font-size: 8px;"></i> Live
                                                     </button>
                                                 }
-                                                else
+                                                else if (isPremiumOrVip)
                                                 {
                                                     <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
-                                                       class="btn btn-outline-secondary btn-sm" data-sim-trigger>
-                                                        <i class="fas fa-baseball-ball me-1"></i> Simulation
+                                                       class="btn btn-sm @(game.Status == "Final" ? "btn-outline-secondary" : "btn-primary")" data-sim-trigger>
+                                                        <i class="fas fa-baseball-ball me-1"></i> Game Simulation
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-controller="Membership" asp-action="Join"
+                                                       class="btn btn-sm btn-warning d-flex flex-column align-items-center gap-1"
+                                                       title="Upgrade to view simulation">
+                                                        <i class="fas fa-dollar-sign"></i>
+                                                        <span class="small fw-semibold">Game Simulation</span>
                                                     </a>
                                                 }
                                             </div>
@@ -265,10 +278,22 @@
 
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
-                                                <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" 
-                                                   class="btn btn-outline-primary btn-sm" data-sim-trigger>
-                                                    <i class="fas fa-baseball-ball me-1"></i> Game Simulation
-                                                </a>
+                                                @if (isPremiumOrVip)
+                                                {
+                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
+                                                       class="btn btn-outline-primary btn-sm" data-sim-trigger>
+                                                        <i class="fas fa-baseball-ball me-1"></i> Game Simulation
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-controller="Membership" asp-action="Join"
+                                                       class="btn btn-sm btn-warning d-flex flex-column align-items-center gap-1"
+                                                       title="Upgrade to view simulation">
+                                                        <i class="fas fa-dollar-sign"></i>
+                                                        <span class="small fw-semibold">Game Simulation</span>
+                                                    </a>
+                                                }
                                             </div>
                                         </div>
                                     </div>
