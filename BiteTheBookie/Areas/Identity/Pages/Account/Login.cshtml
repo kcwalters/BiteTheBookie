@@ -1,0 +1,62 @@
+@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Log In";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-sign-in-alt fa-2x mb-2" style="color: var(--btb-primary);"></i>
+                        <h2 class="fw-bold">Log In</h2>
+                        <p class="text-muted">Welcome back to BiteTheBookie</p>
+                    </div>
+
+                    <form id="account" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Email" class="form-label"></label>
+                            <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="you@@example.com" />
+                            <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Password" class="form-label"></label>
+                            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
+                            <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4 form-check">
+                            <input asp-for="Input.RememberMe" class="form-check-input" />
+                            <label asp-for="Input.RememberMe" class="form-check-label">Remember me</label>
+                        </div>
+
+                        <button id="login-submit" type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Log In
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <a asp-page="./ForgotPassword" class="small">Forgot your password?</a>
+                        </div>
+
+                        <hr />
+
+                        <div class="text-center">
+                            <span class="text-muted">Don't have an account?</span>
+                            <a asp-controller="Membership" asp-action="Join" class="fw-bold">Join Now</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
