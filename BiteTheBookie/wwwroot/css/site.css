@@ -593,7 +593,7 @@ img.team-logo {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     padding: 12px 0;
-    min-width: 250px;
+    min-width: max-content;
     margin-top: 0;
 }
 
@@ -611,6 +611,7 @@ img.team-logo {
     gap: 12px;
     transition: all 0.2s ease;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .picks-dropdown .dropdown-item:hover {

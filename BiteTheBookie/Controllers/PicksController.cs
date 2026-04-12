@@ -260,7 +260,7 @@ namespace BiteTheBookie.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading MLB picks page");
+                _logger.LogError(ex, "Error loading MLB Games page");
 
                 return View(new PicksIndexViewModel
                 {

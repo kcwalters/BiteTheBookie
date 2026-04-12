@@ -61,6 +61,14 @@ a                          { color: var(--btb-primary); }
 .card-body              { color: var(--btb-body); }
 .card-body p            { color: #333; line-height: 1.6; }
 
+/* ── Picks / Scores dropdown ────────────────────────────── */
+.picks-dropdown .dropdown-menu {
+    min-width: max-content;
+}
+.picks-dropdown .dropdown-item {
+    white-space: nowrap;
+}
+
 /* ── Score badges (Picks tables) ────────────────────────── */
 .score-badge {
     background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
