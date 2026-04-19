@@ -5,26 +5,6 @@
     ViewData["Title"] = "College Basketball Odds";
 }
 
-<div class="container">
-    <div class="tickers-row">
-        <div id="nfl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NFLTicker")
-        </div>
-        <div id="nba-ticker" style="display: none;">
-            @await Component.InvokeAsync("NBATicker")
-        </div>
-        <div id="nhl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NHLTicker")
-        </div>
-        <div id="ncaa-ticker">
-            @await Component.InvokeAsync("NCAATicker")
-        </div>
-        <div id="mlb-ticker" style="display: none;">
-            @await Component.InvokeAsync("MLBTicker")
-        </div>
-    </div>
-</div>
-
 <style>
     .odds-table th,
     .odds-table td {
