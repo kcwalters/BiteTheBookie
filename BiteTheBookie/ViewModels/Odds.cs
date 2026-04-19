@@ -59,6 +59,7 @@
         public string AwayTeam { get; set; } = "";
         public string HomeTeam { get; set; } = "";
         public DateTime CommenceTime { get; set; }
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
         public string AwayMoneyline { get; set; } = "";
         public string HomeMoneyline { get; set; } = "";
         public string AwaySpread { get; set; } = "";
@@ -79,6 +80,7 @@
         public string AwayTeam { get; set; } = "";
         public string HomeTeam { get; set; } = "";
         public DateTime CommenceTime { get; set; }
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
         public string AwayMoneyline { get; set; } = "";
         public string HomeMoneyline { get; set; } = "";
         public string AwaySpread { get; set; } = "";
@@ -99,6 +101,7 @@
         public string AwayTeam { get; set; } = "";
         public string HomeTeam { get; set; } = "";
         public DateTime CommenceTime { get; set; }
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
         public string AwayMoneyline { get; set; } = "";
         public string HomeMoneyline { get; set; } = "";
         public string AwaySpread { get; set; } = "";
@@ -119,6 +122,7 @@
         public string AwayTeam { get; set; } = "";
         public string HomeTeam { get; set; } = "";
         public DateTime CommenceTime { get; set; }
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
         public string AwayMoneyline { get; set; } = "";
         public string HomeMoneyline { get; set; } = "";
         public string AwaySpread { get; set; } = "";
@@ -139,6 +143,7 @@
         public string AwayTeam { get; set; } = "";
         public string HomeTeam { get; set; } = "";
         public DateTime CommenceTime { get; set; }
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
         public string AwayMoneyline { get; set; } = "";
         public string HomeMoneyline { get; set; } = "";
         public string AwaySpread { get; set; } = "";
@@ -152,6 +157,8 @@
         public string Bookmaker { get; set; } = "DraftKings";
     }
 }
+
+
 
 
 

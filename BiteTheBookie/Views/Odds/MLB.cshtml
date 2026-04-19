@@ -36,7 +36,15 @@
                                 <div class="text-muted">&#64; @game.HomeTeam</div>
                             </td>
                             <td>
-                                @game.CommenceTime.ToLocalTime().ToString("MMM dd, h:mm tt")
+                                @{
+                                    var tz = TimeZoneInfo.FindSystemTimeZoneById(game.VenueTimeZoneId);
+                                    var localTime = TimeZoneInfo.ConvertTimeFromUtc(
+                                        DateTime.SpecifyKind(game.CommenceTime, DateTimeKind.Utc), tz);
+                                    var tzAbbr = localTime.IsDaylightSavingTime()
+                                        ? tz.DaylightName.Replace(" Standard Time", "T").Replace(" Daylight Time", "T")
+                                        : tz.StandardName.Replace(" Standard Time", "T").Replace(" Daylight Time", "T");
+                                }
+                                @localTime.ToString("MMM dd, h:mm tt") <small class="text-muted">@tzAbbr</small>
                             </td>
                             <td class="odds-column">
                                 <div class="odds-row">

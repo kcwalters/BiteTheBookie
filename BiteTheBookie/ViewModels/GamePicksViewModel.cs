@@ -1,3 +1,5 @@
+using BiteTheBookie.Helpers;
+
 namespace BiteTheBookie.ViewModels
 {
     public class GamePicksViewModel
@@ -9,7 +11,9 @@ namespace BiteTheBookie.ViewModels
         public string AwayTeamLogo { get; set; } = string.Empty;
         public string HomeTeamLogo { get; set; } = string.Empty;
         public DateTime GameTime { get; set; }
-        public string GameTimeDisplay => GameTime.ToLocalTime().ToString("MMM dd, h:mm tt");
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
+        public string GameTimeDisplay =>
+            VenueTimeZoneHelper.FormatVenueTime(GameTime, VenueTimeZoneId);
         public decimal? Spread { get; set; }
         public decimal? OverUnder { get; set; }
         public int? HomeMoneyline { get; set; }

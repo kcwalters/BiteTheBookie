@@ -1,3 +1,4 @@
+using BiteTheBookie.Helpers;
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using System.Text.Json;
@@ -73,7 +74,8 @@ public class OddsService : IOddsService
                 GameId = gameId,
                 AwayTeam = awayTeam,
                 HomeTeam = homeTeam,
-                CommenceTime = commenceTime
+                CommenceTime = commenceTime,
+                VenueTimeZoneId = VenueTimeZoneHelper.GetTimeZoneId("NFL", homeTeam)
             };
 
             if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
@@ -231,7 +233,8 @@ public class OddsService : IOddsService
                 GameId = gameId,
                 AwayTeam = awayTeam,
                 HomeTeam = homeTeam,
-                CommenceTime = commenceTime
+                CommenceTime = commenceTime,
+                VenueTimeZoneId = VenueTimeZoneHelper.GetTimeZoneId("NBA", homeTeam)
             };
 
             if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
@@ -388,7 +391,8 @@ public class OddsService : IOddsService
                 GameId = gameId,
                 AwayTeam = awayTeam,
                 HomeTeam = homeTeam,
-                CommenceTime = commenceTime
+                CommenceTime = commenceTime,
+                VenueTimeZoneId = VenueTimeZoneHelper.GetTimeZoneId("CBB", homeTeam) // defaults to Eastern for unknown schools
             };
 
             if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
@@ -547,6 +551,44 @@ public class OddsService : IOddsService
         }
     }
 
+    private static readonly Dictionary<string, string> _mlbTeamTimeZones = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Eastern
+        { "Baltimore Orioles",      "Eastern Standard Time" },
+        { "Boston Red Sox",         "Eastern Standard Time" },
+        { "New York Yankees",       "Eastern Standard Time" },
+        { "New York Mets",          "Eastern Standard Time" },
+        { "Toronto Blue Jays",      "Eastern Standard Time" },
+        { "Tampa Bay Rays",         "Eastern Standard Time" },
+        { "Atlanta Braves",         "Eastern Standard Time" },
+        { "Miami Marlins",          "Eastern Standard Time" },
+        { "Philadelphia Phillies",  "Eastern Standard Time" },
+        { "Washington Nationals",   "Eastern Standard Time" },
+        { "Pittsburgh Pirates",     "Eastern Standard Time" },
+        { "Cincinnati Reds",        "Eastern Standard Time" },
+        { "Cleveland Guardians",    "Eastern Standard Time" },
+        { "Detroit Tigers",         "Eastern Standard Time" },
+        // Central
+        { "Chicago White Sox",      "Central Standard Time" },
+        { "Chicago Cubs",           "Central Standard Time" },
+        { "Kansas City Royals",     "Central Standard Time" },
+        { "Minnesota Twins",        "Central Standard Time" },
+        { "Milwaukee Brewers",      "Central Standard Time" },
+        { "St. Louis Cardinals",    "Central Standard Time" },
+        { "Houston Astros",         "Central Standard Time" },
+        { "Texas Rangers",          "Central Standard Time" },
+        // Mountain
+        { "Colorado Rockies",       "Mountain Standard Time" },
+        { "Arizona Diamondbacks",   "US Mountain Standard Time" }, // AZ doesn't observe DST
+        // Pacific
+        { "Los Angeles Dodgers",    "Pacific Standard Time" },
+        { "Los Angeles Angels",     "Pacific Standard Time" },
+        { "San Francisco Giants",   "Pacific Standard Time" },
+        { "Oakland Athletics",      "Pacific Standard Time" },
+        { "Seattle Mariners",       "Pacific Standard Time" },
+        { "San Diego Padres",       "Pacific Standard Time" },
+    };
+
     private MLBOddsViewModel? ParseMLBGame(JsonElement game)
     {
         try
@@ -561,7 +603,8 @@ public class OddsService : IOddsService
                 GameId = gameId,
                 AwayTeam = awayTeam,
                 HomeTeam = homeTeam,
-                CommenceTime = commenceTime
+                CommenceTime = commenceTime,
+                VenueTimeZoneId = VenueTimeZoneHelper.GetTimeZoneId("MLB", homeTeam)
             };
 
             if (game.TryGetProperty("bookmakers", out var bookmakers) && bookmakers.ValueKind == JsonValueKind.Array)
