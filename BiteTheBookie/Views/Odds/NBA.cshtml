@@ -1,28 +1,9 @@
+@using BiteTheBookie.Helpers
 @model IEnumerable<BiteTheBookie.ViewModels.NBAOddsViewModel>
 
 @{
     ViewData["Title"] = "NBA Odds";
 }
-
-<div class="container">
-    <div class="tickers-row">
-        <div id="nfl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NFLTicker")
-        </div>
-        <div id="nba-ticker">
-            @await Component.InvokeAsync("NBATicker")
-        </div>
-        <div id="nhl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NHLTicker")
-        </div>
-        <div id="ncaa-ticker" style="display: none;">
-            @await Component.InvokeAsync("NCAATicker")
-        </div>
-        <div id="mlb-ticker" style="display: none;">
-            @await Component.InvokeAsync("MLBTicker")
-        </div>
-    </div>
-</div>
 
 <style>
     .odds-table th,
@@ -109,7 +90,7 @@
                                 <div class="text-muted">&#64; @game.HomeTeam</div>
                             </td>
                             <td>
-                                @game.CommenceTime.ToLocalTime().ToString("MMM dd, h:mm tt")
+                                @VenueTimeZoneHelper.FormatVenueTime(game.CommenceTime, game.VenueTimeZoneId)
                             </td>
                             <td class="odds-column">
                                 <div class="odds-row">

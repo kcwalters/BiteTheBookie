@@ -1,3 +1,4 @@
+@using BiteTheBookie.Helpers
 @model IEnumerable<BiteTheBookie.ViewModels.NFLOddsViewModel>
 
 @{
@@ -36,7 +37,7 @@
                                 <div class="text-muted">&#64; @game.HomeTeam</div>
                             </td>
                             <td>
-                                @game.CommenceTime.ToLocalTime().ToString("MMM dd, h:mm tt")
+                                @VenueTimeZoneHelper.FormatVenueTime(game.CommenceTime, game.VenueTimeZoneId)
                             </td>
                             <td class="odds-column">
                                 <div class="odds-row">

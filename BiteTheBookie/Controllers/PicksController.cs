@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using BiteTheBookie.Helpers;
 
 namespace BiteTheBookie.Controllers
 {
@@ -119,6 +120,8 @@ namespace BiteTheBookie.Controllers
                 AwayTeamName = firstPick?.AwayTeamName ?? "Away",
                 HomeTeamName = firstPick?.HomeTeamName ?? "Home",
                 GameTime = firstPick?.GameTime ?? DateTime.UtcNow,
+                VenueTimeZoneId = VenueTimeZoneHelper.GetTimeZoneId(
+                    league, firstPick?.HomeTeamName ?? ""),
                 Picks = picks.Select(p => new PickDetail
                 {
                     PickType = p.PickType,
