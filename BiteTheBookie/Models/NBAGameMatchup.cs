@@ -1,5 +1,5 @@
 namespace BiteTheBookie.Models
-{
+{   
     public class NBAGameMatchup
     {
         public string GameId { get; set; } = string.Empty;
@@ -17,14 +17,6 @@ namespace BiteTheBookie.Models
         public int? HomeMoneyline { get; set; }
         public int? AwayScore { get; set; }
         public int? HomeScore { get; set; }
-        public string Status { get; set; } = "Scheduled"; // Scheduled, Live, Final
-
-        public bool IsGameInLocalTimeZone(DateTime localDateTime, string filterLogic)
-        {
-            var gameDateTimeInLocalZone = TimeZoneInfo.ConvertTimeFromUtc(GameTime, TimeZoneInfo.Local);
-            var isGameOnLocalDate = gameDateTimeInLocalZone.Date == localDateTime.Date;
-
-            return filterLogic == "Show games on " + localDateTime.ToString("MMM dd") + " UTC" ? isGameOnLocalDate : !isGameOnLocalDate;
-        }
+        public string Status { get; set; } = "Scheduled";
     }
 }

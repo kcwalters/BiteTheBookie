@@ -150,15 +150,32 @@ namespace BiteTheBookie.Services.Implementations
 
         // ── Helpers ──────────────────────────────────────────────────────────────
 
+        private static readonly HashSet<string> _nonRosterStatusTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "waived", "retired", "released", "suspended-indefinitely",
+            "non-roster-invitee", "did-not-report"
+        };
+
         private static NBAPlayer? ParsePlayer(JsonElement athlete)
         {
             if (!athlete.TryGetProperty("displayName", out var nameProp)) return null;
             var name = nameProp.GetString();
             if (string.IsNullOrEmpty(name)) return null;
 
-            // Skip inactive / two-way / non-roster players when ESPN flags them
+            // Exclude players ESPN explicitly marks as inactive (e.g., traded, waived)
             if (athlete.TryGetProperty("active", out var activeProp) && !activeProp.GetBoolean())
                 return null;
+
+            // Exclude non-roster status types (waived, retired, released, etc.)
+            if (athlete.TryGetProperty("status", out var statusEl) &&
+                statusEl.TryGetProperty("type", out var statusType))
+            {
+                var typeStr = statusType.GetString() ?? "";
+                if (_nonRosterStatusTypes.Contains(typeStr))
+                {
+                    return null;
+                }
+            }
 
             var position = string.Empty;
             if (athlete.TryGetProperty("position", out var posProp) &&

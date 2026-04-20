@@ -128,7 +128,15 @@ namespace BiteTheBookie.Services.Implementations
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
 
-                var rosterInfo = $@"
+                var rosterDataAvailable = (awayRoster?.Players.Count ?? 0) > 0 &&
+                                          (homeRoster?.Players.Count ?? 0) > 0;
+
+                string rosterInfo;
+                string rosterSystemRule;
+
+                if (rosterDataAvailable)
+                {
+                    rosterInfo = $@"
 **{awayTeam} Available Roster:**
 Starting 5: {string.Join(", ", awayStarters)}
 Key Bench: {string.Join(", ", awayBench)}
@@ -141,6 +149,25 @@ Key Bench: {string.Join(", ", homeBench)}
 **COMPLETE VALID PLAYER LIST (use ONLY these exact names):**
 {awayTeam}: {string.Join(", ", awayPlayerList)}
 {homeTeam}: {string.Join(", ", homePlayerList)}";
+
+                    rosterSystemRule =
+                        "ONLY use player names from the COMPLETE VALID PLAYER LIST provided. " +
+                        "Do NOT invent, hallucinate, or reference any player not in that list.";
+                }
+                else
+                {
+                    // No live roster — instruct AI to use verified current knowledge only
+                    rosterInfo = $@"
+**ROSTER DATA UNAVAILABLE** — Live roster feed could not be reached.
+Use ONLY players you are certain currently play for {awayTeam} and {homeTeam} as of today.
+Do NOT include any player who has been traded, waived, or retired.
+{injuryInfo}";
+
+                    rosterSystemRule =
+                        "Roster data is unavailable. Use ONLY players you are certain are on each team RIGHT NOW. " +
+                        "If you are not 100% certain a player is still on the team, do NOT mention them. " +
+                        "Do NOT include players who have been traded, released, or retired.";
+                }
 
                 var prompt = $@"Generate a FRESH, UNIQUE sports game simulation for an NBA game between {awayTeam} (away) and {homeTeam} (home). 
 
@@ -196,7 +223,14 @@ CRITICAL REQUIREMENTS:
 
                 var messages = new List<ChatMessage>
                 {
-                    new SystemChatMessage($"You are an expert NBA analyst who creates detailed, realistic game simulations. CRITICAL RULES: 1) Start EVERY simulation with an '## Injury Report' section listing ALL injured players as 'OUT'. 2) NEVER include injured players in game action or statistics. 3) ONLY use player names from the provided roster lists - do NOT hallucinate or invent players. 4) Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. Use only standard ASCII characters."),
+                    new SystemChatMessage(
+                        $"You are an expert NBA analyst who creates detailed, realistic game simulations. " +
+                        $"CRITICAL RULES: " +
+                        $"1) Start EVERY simulation with an '## Injury Report' section listing ALL injured players as 'OUT'. " +
+                        $"2) NEVER include injured players in game action or statistics. " +
+                        $"3) {rosterSystemRule} " +
+                        $"4) Each simulation must be UNIQUE. Generate simulation #{simulationId} with fresh content. " +
+                        $"Use only standard ASCII characters."),
                     new UserChatMessage(prompt)
                 };
 

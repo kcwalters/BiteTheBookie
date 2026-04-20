@@ -92,39 +92,38 @@ else
 builder.Services.Configure<OddsApiOptions>(builder.Configuration.GetSection("OddsApi"));
 builder.Services.AddHttpClient<TheOddsApiClient>();
 builder.Services.AddScoped<TheOddsApiClient>();
-
-builder.Services.AddScoped<IOddsService, OddsService>();
-builder.Services.AddScoped<INewsService, NewsService>();
-builder.Services.AddScoped<IBetSlipService, BetSlipService>();
-
-// ESPN news (RSS)
-builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
-builder.Services.AddHttpClient<EspnRssNewsService>();
-
-builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
-
-// Odds
 builder.Services.AddHttpClient<OddsService>();
 builder.Services.AddScoped<IOddsService>(sp => sp.GetRequiredService<OddsService>());
 
+// News (ESPN RSS overrides the stub — only register EspnRssNewsService)
+builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
+builder.Services.AddHttpClient<EspnRssNewsService>();
+builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
+
+// Bet slip
 builder.Services.AddScoped<IBetSlipService, BetSlipService>();
 
+// MLB
 builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
 {
     c.BaseAddress = new Uri("https://statsapi.mlb.com/api/v1/");
 });
 
-// Bind options from configuration
+// Tickers (NFL, NBA, NHL, NCAA via extension method)
 builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection("SportsTicker"));
+builder.Services.AddSportsTickers(builder.Configuration);
 
-// Game Simulation Service
+// Game services
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
-builder.Services.AddScoped<INBARosterService, NBARosterService>();   // was AddSingleton — EspnApiClient requires Scoped
+builder.Services.AddScoped<INBARosterService, NBARosterService>();
 builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
 builder.Services.AddScoped<ISpreadAnalysisService, SpreadAnalysisService>();
 builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();
+builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
+builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
+builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
 
-// ESPN API Client for real injury data
+// ESPN API Client
 builder.Services.AddHttpClient<EspnApiClient>();
 
 // Razor Pages
