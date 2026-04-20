@@ -29,10 +29,7 @@ namespace BiteTheBookie.Controllers
         // MLB team codes used to detect whether a gameId belongs to MLB
         private static readonly HashSet<string> MlbTeamCodes = new(StringComparer.OrdinalIgnoreCase)
         {
-            "ARI","ATL","BAL","BOS","CHC","CHW","CIN","CLE","COL","DET",
-            "HOU","KC","LAA","LAD","MIA","MIL","MIN","NYM","NYY","OAK",
-            "PHI","PIT","SD","SF","SEA","STL","TB","TEX","TOR","WSH",
-            // ESPN-style alternates
+            // Short codes — full team names only (no 2-3 letter codes that overlap with NBA)
             "Arizona Diamondbacks","Atlanta Braves","Baltimore Orioles","Boston Red Sox",
             "Chicago Cubs","Chicago White Sox","Cincinnati Reds","Cleveland Guardians",
             "Colorado Rockies","Detroit Tigers","Houston Astros","Kansas City Royals",
@@ -43,6 +40,14 @@ namespace BiteTheBookie.Controllers
             "Tampa Bay Rays","Texas Rangers","Toronto Blue Jays","Washington Nationals"
         };
 
+        // NBA 3-letter codes — checked before MLB to resolve overlaps (BOS, MIL, ATL, etc.)
+        private static readonly HashSet<string> NbaTeamCodes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "ATL","BOS","BKN","CHA","CHI","CLE","DAL","DEN","DET","GSW",
+            "HOU","IND","LAC","LAL","MEM","MIA","MIL","MIN","NOP","NYK",
+            "OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS"
+        };
+
         private static readonly Dictionary<string, (string FullName, string LogoId)> NbaTeamNames = new()
         {
             { "ATL", ("Atlanta Hawks",           "333") },
@@ -51,30 +56,30 @@ namespace BiteTheBookie.Controllers
             { "CHA", ("Charlotte Hornets",        "336") },
             { "CHI", ("Chicago Bulls",            "337") },
             { "CLE", ("Cleveland Cavaliers",      "338") },
-            { "DAL", ("Dallas Mavericks",         "338") },
-            { "DEN", ("Denver Nuggets",           "339") },
-            { "DET", ("Detroit Pistons",          "340") },
-            { "GSW", ("Golden State Warriors",    "341") },
-            { "HOU", ("Houston Rockets",          "342") },
-            { "IND", ("Indiana Pacers",           "343") },
-            { "LAC", ("LA Clippers",              "344") },
-            { "LAL", ("Los Angeles Lakers",       "343") },
-            { "MEM", ("Memphis Grizzlies",        "345") },
-            { "MIA", ("Miami Heat",               "346") },
-            { "MIL", ("Milwaukee Bucks",          "347") },
-            { "MIN", ("Minnesota Timberwolves",   "348") },
-            { "NOP", ("New Orleans Pelicans",     "349") },
-            { "NYK", ("New York Knicks",          "350") },
-            { "OKC", ("Oklahoma City Thunder",    "351") },
-            { "ORL", ("Orlando Magic",            "352") },
-            { "PHI", ("Philadelphia 76ers",       "352") },
-            { "PHX", ("Phoenix Suns",             "353") },
-            { "POR", ("Portland Trail Blazers",   "354") },
-            { "SAC", ("Sacramento Kings",         "355") },
-            { "SAS", ("San Antonio Spurs",        "356") },
-            { "TOR", ("Toronto Raptors",          "357") },
-            { "UTA", ("Utah Jazz",                "359") },
-            { "WAS", ("Washington Wizards",       "361") }
+            { "DAL", ("Dallas Mavericks",         "339") },
+            { "DEN", ("Denver Nuggets",           "340") },
+            { "DET", ("Detroit Pistons",          "341") },
+            { "GSW", ("Golden State Warriors",    "342") },
+            { "HOU", ("Houston Rockets",          "343") },
+            { "IND", ("Indiana Pacers",           "344") },
+            { "LAC", ("LA Clippers",              "345") },
+            { "LAL", ("Los Angeles Lakers",       "346") },
+            { "MEM", ("Memphis Grizzlies",        "347") },
+            { "MIA", ("Miami Heat",               "348") },
+            { "MIL", ("Milwaukee Bucks",          "349") },
+            { "MIN", ("Minnesota Timberwolves",   "350") },
+            { "NOP", ("New Orleans Pelicans",     "351") },
+            { "NYK", ("New York Knicks",          "352") },
+            { "OKC", ("Oklahoma City Thunder",    "353") },
+            { "ORL", ("Orlando Magic",            "354") },
+            { "PHI", ("Philadelphia 76ers",       "355") },
+            { "PHX", ("Phoenix Suns",             "356") },
+            { "POR", ("Portland Trail Blazers",   "357") },
+            { "SAC", ("Sacramento Kings",         "358") },
+            { "SAS", ("San Antonio Spurs",        "359") },
+            { "TOR", ("Toronto Raptors",          "360") },
+            { "UTA", ("Utah Jazz",                "361") },
+            { "WAS", ("Washington Wizards",       "362") },
         };
 
         public PicksController(
@@ -285,9 +290,11 @@ namespace BiteTheBookie.Controllers
             var awayTeamCode = parts[0];
             var homeTeamCode = parts[1];
 
-            // Detect league from the team codes in the gameId
-            bool isMlb = MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode);
-            string league = isMlb ? "MLB" : "NBA";
+            // NBA codes take priority — if both codes are recognised NBA codes the game
+            // is NBA regardless of any overlap with MLB short codes (BOS, MIL, ATL, etc.)
+            bool isNba = NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
+            bool isMlb = !isNba && (MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode));
+            string league = isNba ? "NBA" : (isMlb ? "MLB" : "NBA");
 
             GameSimulationViewModel viewModel;
 
