@@ -9,8 +9,13 @@ namespace BiteTheBookie.Models
 
     public class NBAPlayer
     {
-        public string Name { get; set; } = string.Empty;
-        public string Position { get; set; } = string.Empty;
-        public bool IsStarter { get; set; }
+        public string Name         { get; set; } = string.Empty;
+        public string Position     { get; set; } = string.Empty;
+        public bool   IsStarter    { get; set; }
+
+        /// <summary>Current-season averages from ESPN roster endpoint (0 if unavailable).</summary>
+        public double PointsPerGame   { get; set; }
+        public double ReboundsPerGame { get; set; }
+        public double AssistsPerGame  { get; set; }
     }
 }
