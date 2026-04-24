@@ -69,13 +69,18 @@ namespace BiteTheBookie.Services.Implementations
                 .Select(i => i.PlayerName)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
 
+            // ── Fetch rosters from OpenAI ─────────────────────────────────────
             _logger.LogInformation("Fetching NBA rosters from OpenAI for {AwayTeam} and {HomeTeam}", awayTeam, homeTeam);
 
-            var aiAwayRoster = await FetchOpenAIRosterAsync(awayTeam, awayRoster?.TeamCode ?? awayTeam, cancellationToken);
-            var aiHomeRoster = await FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken);
+            // Fetch both rosters concurrently for speed
+            var rosterTasks = await Task.WhenAll(
+                FetchOpenAIRosterAsync(awayTeam, awayRoster?.TeamCode ?? awayTeam, cancellationToken),
+                FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken));
 
-            awayRoster = aiAwayRoster ?? awayRoster;
-            homeRoster = aiHomeRoster ?? homeRoster;
+            // Do NOT fall back to ESPN — a null here intentionally triggers the hard-stop
+            // below so the simulation never runs with stale or incorrect player data.
+            awayRoster = rosterTasks[0];
+            homeRoster = rosterTasks[1];
 
             if (injuredPlayersNba.Any())
             {
@@ -280,9 +285,11 @@ Review every player name in your response. If ANY name does not appear in the AU
             {
                 _logger.LogInformation("Fetching OpenAI roster for {Team}", teamName);
 
-                var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var season = "2025-2026";
 
-                var prompt = $@"Return the 2025-2026 NBA roster for the {teamName} as of {today}.
+                // ── Pass 1: Get the raw roster ────────────────────────────────
+                var fetchPrompt = $@"Return the {season} NBA roster for the {teamName} as of {today} (April 2026).
 
 Respond with ONLY a valid JSON object — no markdown, no explanation, no code fences.
 Use this exact schema:
@@ -300,32 +307,28 @@ Use this exact schema:
 }}
 
 Rules:
-- Include 12-15 players currently on the ACTIVE roster as of the 2025-2026 NBA season.
-- Players who were traded, waived, or released before or during the 2025-2026 season must NOT appear.
-- List the 5 current starters first with isStarter: true, then bench players with isStarter: false.
-- Use real 2025-2026 season averages for all stats. If a player has not played, use 0.0.
+- Include 12-15 players on the ACTIVE roster as of April 2026.
+- Do NOT include players who have RETIRED from the NBA.
+- Do NOT include players traded, waived, or released before April 2026.
+- List the 5 current starters first (isStarter: true), then bench players (isStarter: false).
+- Use real {season} season averages. Use 0.0 if injured all season but still on roster.
 - Position must be one of: PG, SG, SF, PF, C.
-- Do NOT include players on two-way contracts.";
+- Do NOT include two-way contract players.";
 
-                var messages = new List<ChatMessage>
+                var fetchMessages = new List<ChatMessage>
                 {
                     new SystemChatMessage(
-                        $"You are an NBA roster database with knowledge of the 2025-2026 season. " +
-                        $"Today's date is {today}. " +
-                        $"Only include players who are CURRENTLY on the active roster this season. " +
-                        $"Do NOT include players who were traded, waived, or signed by another team. " +
-                        $"Respond ONLY with a valid JSON object matching the requested schema. " +
-                        $"No markdown, no code fences, no explanation — raw JSON only."),
-                    new UserChatMessage(prompt)
+                        $"You are an NBA roster database for the {season} season (April 2026). " +
+                        $"Return ONLY a valid JSON object. No markdown, no code fences, no explanation."),
+                    new UserChatMessage(fetchPrompt)
                 };
 
-                var chatOptions = new ChatCompletionOptions { Temperature = 0.1f };
+                var fetchResponse = await _chatClient.CompleteChatAsync(
+                    fetchMessages, new ChatCompletionOptions { Temperature = 0.0f }, cancellationToken);
+                var rawJson = StripCodeFences(fetchResponse.Value.Content[0].Text);
 
-                var response = await _chatClient.CompleteChatAsync(messages, chatOptions, cancellationToken);
-                var json = StripCodeFences(response.Value.Content[0].Text);
-
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
+                using var doc  = JsonDocument.Parse(rawJson);
+                var root        = doc.RootElement;
 
                 if (!root.TryGetProperty("players", out var playersEl))
                 {
@@ -333,42 +336,62 @@ Rules:
                     return null;
                 }
 
-                var players = new List<NBAPlayer>();
+                var candidates = new List<NBAPlayer>();
                 foreach (var p in playersEl.EnumerateArray())
                 {
-                    var name = p.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                    var pos = p.TryGetProperty("position", out var ps) ? ps.GetString() ?? "" : "";
-                    var isStarter = p.TryGetProperty("isStarter", out var s) && s.GetBoolean();
-                    var ppg = p.TryGetProperty("pointsPerGame", out var pg) ? pg.GetDouble() : 0;
-                    var rpg = p.TryGetProperty("reboundsPerGame", out var rg) ? rg.GetDouble() : 0;
-                    var apg = p.TryGetProperty("assistsPerGame", out var ag) ? ag.GetDouble() : 0;
+                    var name      = p.TryGetProperty("name",            out var n)  ? n.GetString()  ?? "" : "";
+                    var pos       = p.TryGetProperty("position",        out var ps) ? ps.GetString() ?? "" : "";
+                    var isStarter = p.TryGetProperty("isStarter",       out var s)  && s.GetBoolean();
+                    var ppg       = p.TryGetProperty("pointsPerGame",   out var pg) ? pg.GetDouble() : 0;
+                    var rpg       = p.TryGetProperty("reboundsPerGame", out var rg) ? rg.GetDouble() : 0;
+                    var apg       = p.TryGetProperty("assistsPerGame",  out var ag) ? ag.GetDouble() : 0;
 
                     if (string.IsNullOrWhiteSpace(name)) continue;
 
-                    players.Add(new NBAPlayer
+                    candidates.Add(new NBAPlayer
                     {
-                        Name = name,
-                        Position = pos,
-                        IsStarter = isStarter,
-                        PointsPerGame = ppg,
+                        Name            = name,
+                        Position        = pos,
+                        IsStarter       = isStarter,
+                        PointsPerGame   = ppg,
                         ReboundsPerGame = rpg,
-                        AssistsPerGame = apg
+                        AssistsPerGame  = apg
                     });
                 }
 
-                if (players.Count == 0)
+                if (candidates.Count == 0)
                 {
-                    _logger.LogWarning("OpenAI returned zero players for {Team}", teamName);
+                    _logger.LogWarning("OpenAI returned zero players for {Team} in pass 1", teamName);
                     return null;
                 }
 
-                _logger.LogInformation("OpenAI roster: fetched {Count} players for {Team}", players.Count, teamName);
+                // ── Pass 2: Validate — strip retired / inactive players ────────
+                var retired = await GetRetiredPlayersAsync(
+                    candidates.Select(p => p.Name).ToList(), teamName, today, cancellationToken);
+
+                var players = candidates
+                    .Where(p => !retired.Contains(p.Name))
+                    .ToList();
+
+                if (retired.Count > 0)
+                    _logger.LogWarning(
+                        "Roster validation removed {Count} inactive/retired player(s) from {Team}: {Names}",
+                        retired.Count, teamName, string.Join(", ", retired));
+
+                if (players.Count == 0)
+                {
+                    _logger.LogWarning("No active players remained for {Team} after validation", teamName);
+                    return null;
+                }
+
+                _logger.LogInformation(
+                    "OpenAI roster: {Count} active players confirmed for {Team}", players.Count, teamName);
 
                 return new NBATeamRoster
                 {
                     TeamCode = teamCode.ToUpper(),
                     TeamName = teamName,
-                    Players = players
+                    Players  = players
                 };
             }
             catch (JsonException jsonEx)
@@ -380,6 +403,67 @@ Rules:
             {
                 _logger.LogWarning(ex, "OpenAI roster fetch failed for {Team}", teamName);
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Second-pass validation: asks OpenAI which players in <paramref name="playerNames"/>
+        /// are retired, unsigned, or no longer active in the NBA as of April 2026.
+        /// Returns the names that should be removed from the roster.
+        /// </summary>
+        private async Task<HashSet<string>> GetRetiredPlayersAsync(
+            List<string> playerNames,
+            string teamName,
+            string today,
+            CancellationToken cancellationToken)
+        {
+            if (_chatClient == null) return new HashSet<string>();
+
+            try
+            {
+                var nameList = string.Join(", ", playerNames);
+
+                var validationPrompt =
+                    $"The following players were listed on the {teamName} 2025-2026 NBA roster: {nameList}.\n\n" +
+                    $"Today is {today} (April 2026).\n\n" +
+                    $"Identify ANY player from this list who:\n" +
+                    $"- Has retired from the NBA\n" +
+                    $"- Is no longer under an active NBA contract\n" +
+                    $"- Was traded away from {teamName} before April 2026\n" +
+                    $"- Was waived or released before April 2026\n\n" +
+                    $"Respond with ONLY a JSON array of the names to REMOVE, e.g. [\"Player One\", \"Player Two\"]. " +
+                    $"If all players are valid current {teamName} roster members, respond with an empty array: [].";
+
+                var validationMessages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an NBA roster validator for the 2025-2026 season as of April 2026. " +
+                        $"You have authoritative knowledge of which players are retired, traded, waived, or still active. " +
+                        $"Respond ONLY with a JSON array of player names to remove. No explanation, no markdown."),
+                    new UserChatMessage(validationPrompt)
+                };
+
+                var validationResponse = await _chatClient.CompleteChatAsync(
+                    validationMessages, new ChatCompletionOptions { Temperature = 0.0f }, cancellationToken);
+
+                var json    = StripCodeFences(validationResponse.Value.Content[0].Text).Trim();
+                using var doc = JsonDocument.Parse(json);
+
+                var removed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var name = el.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        removed.Add(name);
+                }
+
+                return removed;
+            }
+            catch (Exception ex)
+            {
+                // Validation is best-effort — a failure here should not block the simulation
+                _logger.LogWarning(ex, "Roster validation call failed for {Team} — skipping", teamName);
+                return new HashSet<string>();
             }
         }
 
