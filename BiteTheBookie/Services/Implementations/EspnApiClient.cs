@@ -162,29 +162,50 @@ namespace BiteTheBookie.Services.Implementations
             var name = nameProp.GetString();
             if (string.IsNullOrEmpty(name)) return null;
 
-            // Exclude players ESPN explicitly marks as inactive (e.g., traded, waived)
             if (athlete.TryGetProperty("active", out var activeProp) && !activeProp.GetBoolean())
                 return null;
 
-            // Exclude non-roster status types (waived, retired, released, etc.)
             if (athlete.TryGetProperty("status", out var statusEl) &&
                 statusEl.TryGetProperty("type", out var statusType))
             {
                 var typeStr = statusType.GetString() ?? "";
                 if (_nonRosterStatusTypes.Contains(typeStr))
-                {
                     return null;
-                }
             }
 
             var position = string.Empty;
             if (athlete.TryGetProperty("position", out var posProp) &&
                 posProp.TryGetProperty("abbreviation", out var abbr))
-            {
                 position = abbr.GetString() ?? string.Empty;
+
+            // ── Season averages (ESPN returns a "statistics" array on the athlete node) ──
+            double ppg = 0, rpg = 0, apg = 0;
+            if (athlete.TryGetProperty("statistics", out var stats))
+            {
+                // ESPN returns categories as an array; find by name
+                foreach (var cat in stats.EnumerateArray())
+                {
+                    if (!cat.TryGetProperty("name",  out var catName))  continue;
+                    if (!cat.TryGetProperty("value", out var catValue)) continue;
+
+                    switch (catName.GetString())
+                    {
+                        case "avgPoints":   ppg = catValue.GetDouble(); break;
+                        case "avgRebounds": rpg = catValue.GetDouble(); break;
+                        case "avgAssists":  apg = catValue.GetDouble(); break;
+                    }
+                }
             }
 
-            return new NBAPlayer { Name = name, Position = position, IsStarter = false };
+            return new NBAPlayer
+            {
+                Name           = name,
+                Position       = position,
+                IsStarter      = false,
+                PointsPerGame   = ppg,
+                ReboundsPerGame = rpg,
+                AssistsPerGame  = apg,
+            };
         }
 
         /// <summary>
