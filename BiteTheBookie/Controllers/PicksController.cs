@@ -390,18 +390,18 @@ namespace BiteTheBookie.Controllers
                     }
                     else
                     {
-                        var awayRoster = await _rosterService.GetTeamRosterAsync(awayTeamCode.ToUpper(), cancellationToken);
-                        var homeRoster = await _rosterService.GetTeamRosterAsync(homeTeamCode.ToUpper(), cancellationToken);
-                        var gameTime   = DateTime.UtcNow.AddHours(6);
-                        var injuries   = await _injuryReportService.GetCurrentInjuriesForGameAsync(
+                        // Rosters are now fetched internally by the simulation service via OpenAI.
+                        // Only injuries still come from the external source.
+                        var gameTime = DateTime.UtcNow.AddHours(6);
+                        var injuries = await _injuryReportService.GetCurrentInjuriesForGameAsync(
                             awayTeamCode.ToUpper(), homeTeamCode.ToUpper(), gameTime, cancellationToken);
 
                         viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
                             viewModel.HomeTeam,
                             viewModel.AwayTeam,
                             "NBA",
-                            homeRoster,
-                            awayRoster,
+                            homeRoster: null,
+                            awayRoster: null,
                             injuries,
                             gameTime,
                             cancellationToken);
