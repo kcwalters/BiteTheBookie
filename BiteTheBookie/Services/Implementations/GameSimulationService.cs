@@ -480,6 +480,37 @@ Rules:
                     "Calling Azure OpenAI for MLB: {AwayTeam} @ {HomeTeam} (SP: {AwayPitcher} vs {HomePitcher})",
                     awayTeam, homeTeam, awayProbablePitcher ?? "TBD", homeProbablePitcher ?? "TBD");
 
+                var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+                // ── Fetch and validate rosters concurrently ───────────────────
+                _logger.LogInformation("Fetching MLB rosters from OpenAI for {AwayTeam} and {HomeTeam}", awayTeam, homeTeam);
+
+                var mlbRosters = await Task.WhenAll(
+                    FetchOpenAIMLBRosterAsync(awayTeam, cancellationToken),
+                    FetchOpenAIMLBRosterAsync(homeTeam, cancellationToken));
+
+                var awayRosterPlayers = mlbRosters[0];
+                var homeRosterPlayers = mlbRosters[1];
+
+                var rosterDataAvailable = awayRosterPlayers.Count > 0 && homeRosterPlayers.Count > 0;
+
+                if (!rosterDataAvailable)
+                {
+                    _logger.LogWarning(
+                        "MLB simulation aborted for {AwayTeam} @ {HomeTeam} — roster unavailable.",
+                        awayTeam, homeTeam);
+
+                    return $@"<section class=""alert alert-warning"">
+  <h2>Simulation Unavailable</h2>
+  <p>The current roster could not be retrieved for
+    <strong>{awayTeam}</strong> and/or <strong>{homeTeam}</strong> at this time.</p>
+  <p>Please try again in a few minutes.</p>
+</section>";
+                }
+
+                var awayRosterBlock = string.Join("\n", awayRosterPlayers.Select(p => $"  • {p}"));
+                var homeRosterBlock = string.Join("\n", homeRosterPlayers.Select(p => $"  • {p}"));
+
                 var pitcherSection = "";
                 if (!string.IsNullOrEmpty(awayProbablePitcher) || !string.IsNullOrEmpty(homeProbablePitcher))
                 {
@@ -488,8 +519,7 @@ SCHEDULED STARTING PITCHERS (from official MLB schedule):
 - {awayTeam} starter: {awayProbablePitcher ?? "TBD"}
 - {homeTeam} starter: {homeProbablePitcher ?? "TBD"}
 
-You MUST use these exact pitchers. If listed as TBD choose a realistic current-rotation arm.
-Base stat lines on real 2024-2025 performance (ERA, K rate, WHIP, etc.).
+You MUST use these exact pitchers. Base stat lines on real 2025-2026 performance (ERA, K rate, WHIP, etc.).
 ";
                 }
 
@@ -497,7 +527,19 @@ Base stat lines on real 2024-2025 performance (ERA, K rate, WHIP, etc.).
 
 SIMULATION ID : {simulationId}
 GENERATED AT  : {timestamp}
+SEASON        : 2026 MLB season (April 2026)
 {pitcherSection}
+
+═══════════════════════════════════════════════════════════
+AUTHORITATIVE ROSTERS — {today}
+═══════════════════════════════════════════════════════════
+These are the ONLY players you may reference. Do NOT use any player not on this list.
+
+{awayTeam} ACTIVE ROSTER:
+{awayRosterBlock}
+
+{homeTeam} ACTIVE ROSTER:
+{homeRosterBlock}
 
 ═══════════════════════════════════════════════════════════
 OUTPUT FORMAT — NON-NEGOTIABLE
@@ -507,8 +549,11 @@ OUTPUT FORMAT — NON-NEGOTIABLE
 • Wrap every player name in <strong> tags each time it appears.
 • Do NOT include a preamble or code fences.
 
+ROSTER ENFORCEMENT — NON-NEGOTIABLE:
+• Use ONLY players listed in the AUTHORITATIVE ROSTERS provided — no others.
+• Do NOT invent players or use anyone not on the list.
+
 SIMULATION REQUIREMENTS:
-• Use REAL current-roster players for both teams — no invented names.
 • VARY the score — sometimes pitching duels, sometimes high-scoring, sometimes walk-offs.
 • THE GAME MUST HAVE A WINNER. No ties. Extra innings if needed.
 • The home team bats last. If they lead after the top of the 9th, skip the bottom.
@@ -522,25 +567,26 @@ Include these sections:
 5. <h2>Inning-by-Inning Breakdown</h2> — focus on scoring innings and dramatic moments
 6. <h2>Team Statistics</h2> — HTML table: Hits, Errors, LOB, Team AVG, Bullpen ERA
 7. <h2>Pitching Summary</h2> — all pitchers used; scheduled starter must be first for each team
-8. <h2>Betting Analysis</h2> — run line, over/under, moneyline";
+8. <h2>Betting Analysis</h2> — run line, over/under, moneyline
+
+FINAL CHECK: Review every player name in your response. Remove any name not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
                     new SystemChatMessage(
-                        $"You are an expert MLB game simulation engine. " +
+                        $"You are an expert MLB game simulation engine for the 2026 season (April 2026). " +
                         $"ABSOLUTE RULES: " +
                         $"(1) Output raw HTML only — zero Markdown. " +
-                        $"(2) Use ONLY real current-roster MLB players — no invented names. " +
+                        $"(2) Use ONLY players listed in the AUTHORITATIVE ROSTERS provided — no others. " +
                         $"(3) Use the scheduled starting pitchers provided — do NOT substitute. " +
                         $"(4) Every game must have a winner — no ties. " +
                         $"(5) Wrap every player name in <strong> tags. " +
-                        $"(6) Each simulation must be unique. This is #{simulationId}."),
+                        $"(6) Each simulation must be unique. This is #{simulationId}.",
+                        $""),
                     new UserChatMessage(prompt)
                 };
 
-                var chatOptions = new ChatCompletionOptions { Temperature = 0.9f };
-
-                var response = await _chatClient!.CompleteChatAsync(messages, chatOptions, cancellationToken);
+                var response       = await _chatClient!.CompleteChatAsync(messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
                 var simulationText = StripCodeFences(response.Value.Content[0].Text);
 
                 _logger.LogInformation("MLB simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
@@ -553,6 +599,141 @@ Include these sections:
                 _logger.LogError(ex, "MLB simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
                     awayTeam, homeTeam);
                 return GetMlbMockSimulation(homeTeam, awayTeam, homeProbablePitcher, awayProbablePitcher);
+            }
+        }
+
+        /// <summary>
+        /// Pass 1: Fetches the current 2026 MLB roster for <paramref name="teamName"/> from OpenAI.
+        /// Pass 2: Validates the list, removing any traded, released, or inactive players.
+        /// Returns a deduplicated list of active player name strings.
+        /// </summary>
+        private async Task<List<string>> FetchOpenAIMLBRosterAsync(
+            string teamName,
+            CancellationToken cancellationToken)
+        {
+            if (_chatClient == null) return new List<string>();
+
+            try
+            {
+                var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+                // ── Pass 1: Fetch ─────────────────────────────────────────────
+                var fetchPrompt =
+                    $"List the current 2026 MLB active roster (25-man roster) for the {teamName} as of {today} (April 2026).\n\n" +
+                    $"Respond with ONLY a JSON array of player full names, e.g. [\"First Last\", \"First Last\"].\n" +
+                    $"Rules:\n" +
+                    $"- Include pitchers and position players currently on the 26-man active roster.\n" +
+                    $"- Do NOT include players on the IL, traded away, released, or retired.\n" +
+                    $"- Do NOT include players who play for a different team in April 2026.\n" +
+                    $"- No explanation, no markdown — raw JSON array only.";
+
+                var fetchMessages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an MLB roster database for the 2026 season as of {today}. " +
+                        $"Return ONLY a JSON array of active player full names. No markdown, no explanation."),
+                    new UserChatMessage(fetchPrompt)
+                };
+
+                var fetchResponse = await _chatClient.CompleteChatAsync(
+                    fetchMessages, new ChatCompletionOptions { Temperature = 0.0f }, cancellationToken);
+
+                var json = StripCodeFences(fetchResponse.Value.Content[0].Text).Trim();
+                using var doc = JsonDocument.Parse(json);
+
+                var candidates = new List<string>();
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var name = el.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        candidates.Add(name);
+                }
+
+                if (candidates.Count == 0)
+                {
+                    _logger.LogWarning("OpenAI returned zero MLB players for {Team}", teamName);
+                    return new List<string>();
+                }
+
+                // ── Pass 2: Validate ──────────────────────────────────────────
+                var invalid = await GetInactiveMLBPlayersAsync(candidates, teamName, today, cancellationToken);
+
+                var validated = candidates
+                    .Where(p => !invalid.Contains(p))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (invalid.Count > 0)
+                    _logger.LogWarning(
+                        "MLB roster validation removed {Count} invalid player(s) from {Team}: {Names}",
+                        invalid.Count, teamName, string.Join(", ", invalid));
+
+                _logger.LogInformation("MLB roster: {Count} active players confirmed for {Team}", validated.Count, teamName);
+                return validated;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "MLB roster fetch failed for {Team}", teamName);
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// Pass 2 validation: identifies any players in <paramref name="playerNames"/> who are
+        /// traded, released, retired, or otherwise not on <paramref name="teamName"/> in April 2026.
+        /// </summary>
+        private async Task<HashSet<string>> GetInactiveMLBPlayersAsync(
+            List<string> playerNames,
+            string teamName,
+            string today,
+            CancellationToken cancellationToken)
+        {
+            if (_chatClient == null) return new HashSet<string>();
+
+            try
+            {
+                var nameList = string.Join(", ", playerNames);
+
+                var validationPrompt =
+                    $"The following players were listed on the {teamName} 2026 MLB roster: {nameList}.\n\n" +
+                    $"Today is {today} (April 2026).\n\n" +
+                    $"Identify ANY player from this list who:\n" +
+                    $"- Does NOT play for {teamName} in April 2026\n" +
+                    $"- Was traded to another team before April 2026\n" +
+                    $"- Was released, waived, or retired\n" +
+                    $"- Is currently on the IL and not on the active 26-man roster\n\n" +
+                    $"Respond with ONLY a JSON array of names to REMOVE, e.g. [\"Player One\"]. " +
+                    $"If all players are valid, respond with an empty array: [].";
+
+                var validationMessages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an MLB roster validator for the 2026 season as of {today}. " +
+                        $"You have authoritative knowledge of every player's current team status. " +
+                        $"Respond ONLY with a JSON array of names to remove. No markdown, no explanation."),
+                    new UserChatMessage(validationPrompt)
+                };
+
+                var validationResponse = await _chatClient.CompleteChatAsync(
+                    validationMessages, new ChatCompletionOptions { Temperature = 0.0f }, cancellationToken);
+
+                var json = StripCodeFences(validationResponse.Value.Content[0].Text).Trim();
+                using var doc = JsonDocument.Parse(json);
+
+                var removed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var name = el.GetString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                        removed.Add(name);
+                }
+
+                return removed;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "MLB roster validation failed for {Team} — skipping", teamName);
+                return new HashSet<string>();
             }
         }
 
