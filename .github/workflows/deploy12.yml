@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: bitethebookie20260216193956.azurecr.io
+  REGISTRY: bitethebookieregistry.azurecr.io
   IMAGE_NAME: bitethebookie
-  CONTAINER_APP_NAME: bitethebookie-app-20260216193509
+  CONTAINER_APP_NAME: bitethebookie-app-20260501
   RESOURCE_GROUP: BiteTheBookie
 
 jobs:
