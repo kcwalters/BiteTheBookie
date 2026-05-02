@@ -1,13 +1,17 @@
-name: Build and Deploy to Azure Container Apps
+name: Build and deploy to Azure Container Apps (Container Apps Environment)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
+
+concurrency:
+  group: containerapp-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   REGISTRY: bitethebookie20260216193956.azurecr.io
@@ -16,35 +20,40 @@ env:
   RESOURCE_GROUP: BiteTheBookie
 
 jobs:
-  build_and_deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
+      - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.BITETHEBOOKIEAPP20260216193644_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.BITETHEBOOKIEAPP20260216193644_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.BITETHEBOOKIEAPP20260216193644_AZURE_SUBSCRIPTION_ID }}
 
-      - name: ACR Login
-        run: az acr login --name "${{ secrets.ACR_NAME }}"
+      - name: Docker login to ACR
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ env.REGISTRY }}
+          username: ${{ secrets.BITETHEBOOKIEAPP20260216193644_REGISTRY_USERNAME }}
+          password: ${{ secrets.BITETHEBOOKIEAPP20260216193644_REGISTRY_PASSWORD }}
 
       - name: Build and push image
+        shell: bash
+        env:
+          DOCKER_BUILDKIT: "1"
         run: |
-          ACR="${{ secrets.ACR_LOGIN_SERVER }}"
-          TAG="${{ github.sha }}"
-          docker build -t "$ACR/${{ env.IMAGE_NAME }}:$TAG" .
-          docker push "$ACR/${{ env.IMAGE_NAME }}:$TAG"
+          set -euo pipefail
+          IMAGE_TAG=${{ github.sha }}
+          docker build -f BiteTheBookie/Dockerfile -t "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG" .
+          docker push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
 
       - name: Deploy to Azure Container Apps
-        run: |
-          ACR="${{ secrets.ACR_LOGIN_SERVER }}"
-          TAG="${{ github.sha }}"
-          az containerapp update \
-            --name "${{ secrets.ACA_APP_NAME }}" \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --image "$ACR/${{ env.IMAGE_NAME }}:$TAG"
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          resourceGroup: ${{ env.RESOURCE_GROUP }}
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
