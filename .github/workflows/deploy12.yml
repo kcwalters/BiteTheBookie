@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: bitethebookieregistry.azurecr.io
+  REGISTRY: bitethebookie20260216193956.azurecr.io
   IMAGE_NAME: bitethebookie
-  CONTAINER_APP_NAME: bitethebookie-app-20260501
+  CONTAINER_APP_NAME: bitethebookie-app-20260216193509
   RESOURCE_GROUP: BiteTheBookie
 
 jobs:
@@ -45,7 +45,7 @@ jobs:
         run: |
           IMAGE_TAG=${{ github.sha }}
           docker build \
-            --file Dockerfile \
+            --file BiteTheBookie/Dockerfile \
             --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}" \
             .
           docker push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
