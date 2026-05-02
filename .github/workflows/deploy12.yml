@@ -45,7 +45,7 @@ jobs:
         run: |
           IMAGE_TAG=${{ github.sha }}
           docker build \
-            --file BiteTheBookie/Dockerfile \
+            --file Dockerfile \
             --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}" \
             .
           docker push "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
