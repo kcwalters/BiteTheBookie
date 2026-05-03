@@ -2,6 +2,7 @@ using System.Xml.Linq;
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace BiteTheBookie.Services.Implementations;
@@ -13,12 +14,14 @@ public class EspnRssNewsService : INewsService
     private readonly HttpClient _http;
     private readonly IMemoryCache _cache;
     private readonly EspnNewsOptions _options;
+    private readonly ILogger<EspnRssNewsService> _logger;
 
-    public EspnRssNewsService(HttpClient http, IMemoryCache cache, IOptions<EspnNewsOptions> options)
+    public EspnRssNewsService(HttpClient http, IMemoryCache cache, IOptions<EspnNewsOptions> options, ILogger<EspnRssNewsService> logger)
     {
         _http = http;
         _cache = cache;
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<NewsItemViewModel>> GetLatestNewsAsync(int count = 5)
