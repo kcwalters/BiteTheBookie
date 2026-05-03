@@ -1,0 +1,158 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-aca-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACR_LOGIN_SERVER: bitethebookieregistry.azurecr.io
+  ACR_NAME: bitethebookieregistry
+  IMAGE_NAME: bitethebookie
+  CONTAINER_APP_NAME: BiteTheBookie
+  RESOURCE_GROUP: BiteTheBookie
+  LOCATION: centralus
+  CONTAINER_APP_ENV: bitethebookiecontainerapp
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Azure login (Service Principal with client secret) ─────────────────
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: >-
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+
+      # ── Ensure prerequisites (idempotent) ──────────────────────────────────
+      - name: Ensure resource group exists
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group create \
+              --name "${{ env.RESOURCE_GROUP }}" \
+              --location "${{ env.LOCATION }}" \
+              --output none
+
+      - name: Ensure Container Apps extension and providers
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az extension add --name containerapp --upgrade --yes 2>/dev/null || true
+            az provider register --namespace Microsoft.App --wait 2>/dev/null || true
+            az provider register --namespace Microsoft.OperationalInsights --wait 2>/dev/null || true
+
+      - name: Ensure Container Apps environment exists
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            if ! az containerapp env show \
+                  --name "${{ env.CONTAINER_APP_ENV }}" \
+                  --resource-group "${{ env.RESOURCE_GROUP }}" \
+                  --output none 2>/dev/null; then
+              az containerapp env create \
+                --name "${{ env.CONTAINER_APP_ENV }}" \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --location "${{ env.LOCATION }}" \
+                --output none
+            fi
+
+      # ── Build & push image ─────────────────────────────────────────────────
+      - name: Login to ACR
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az acr login --name "${{ env.ACR_NAME }}"
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          docker build \
+            -f BiteTheBookie/Dockerfile \
+            -t "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}" \
+            -t "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest" \
+            .
+          docker push "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+          docker push "${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest"
+
+      # ── Deploy Container App (create if missing, otherwise update) ─────────
+      - name: Create or update Azure Container App
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            IMAGE="${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+            if az containerapp show \
+                  --name "${{ env.CONTAINER_APP_NAME }}" \
+                  --resource-group "${{ env.RESOURCE_GROUP }}" \
+                  --output none 2>/dev/null; then
+              echo "Container App exists – updating image..."
+              az containerapp update \
+                --name "${{ env.CONTAINER_APP_NAME }}" \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --image "$IMAGE" \
+                --output none
+            else
+              echo "Container App not found – creating..."
+              az containerapp create \
+                --name "${{ env.CONTAINER_APP_NAME }}" \
+                --resource-group "${{ env.RESOURCE_GROUP }}" \
+                --environment "${{ env.CONTAINER_APP_ENV }}" \
+                --image "$IMAGE" \
+                --registry-server "${{ env.ACR_LOGIN_SERVER }}" \
+                --target-port 8080 \
+                --ingress external \
+                --min-replicas 1 \
+                --max-replicas 3 \
+                --output none
+            fi
+
+      # ── Ensure ingress is external on port 8080 ────────────────────────────
+      - name: Configure ingress (external, port 8080)
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az containerapp ingress enable \
+              --name "${{ env.CONTAINER_APP_NAME }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --type external \
+              --target-port 8080 \
+              --transport http \
+              --output none
+
+      # ── Output app URL ─────────────────────────────────────────────────────
+      - name: Get app URL
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            FQDN=$(az containerapp show \
+              --name "${{ env.CONTAINER_APP_NAME }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --query "properties.configuration.ingress.fqdn" \
+              --output tsv)
+            echo "✅ App deployed at: https://${FQDN}"
+            echo "APP_URL=https://${FQDN}" >> "$GITHUB_ENV"

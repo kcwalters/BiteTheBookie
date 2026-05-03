@@ -1,15 +1,18 @@
-﻿# Base runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+# Base runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
+
+# Bind to all interfaces on port 8080; no HTTPS redirect inside the container
+# (TLS termination is handled by the Azure Container Apps ingress).
+ENV ASPNETCORE_URLS=http://+:8080
 
 # Non-secret defaults only. Secrets (API keys, endpoints) should be
 # injected at runtime via docker run -e, docker-compose, or Azure App Settings.
 # Do NOT set them here as empty strings — they override appsettings.json.
 
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["BiteTheBookie/BiteTheBookie.csproj", "BiteTheBookie/"]
