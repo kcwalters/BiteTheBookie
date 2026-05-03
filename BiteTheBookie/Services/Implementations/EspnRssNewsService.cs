@@ -52,7 +52,8 @@ public class EspnRssNewsService : INewsService
         try
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
-            req.Headers.UserAgent.ParseAdd("BiteTheBookie/1.0");
+            req.Headers.UserAgent.ParseAdd("Mozilla/5.0 (compatible; BiteTheBookie/1.0)");
+            req.Headers.Accept.ParseAdd("application/rss+xml, application/xml, text/xml");
 
             using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
@@ -62,9 +63,16 @@ public class EspnRssNewsService : INewsService
                 return new List<NewsItemViewModel>();
             }
 
-            await using var stream = await resp.Content.ReadAsStreamAsync();
-            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+            var raw = await resp.Content.ReadAsStringAsync();
 
+            if (string.IsNullOrWhiteSpace(raw) || !raw.TrimStart().StartsWith('<'))
+            {
+                _logger.LogWarning("ESPN RSS feed returned non-XML or empty body from {Url}. Body preview: {Preview}",
+                    url, raw.Length > 200 ? raw[..200] : raw);
+                return new List<NewsItemViewModel>();
+            }
+
+            var doc = XDocument.Parse(raw);
             var channel = doc.Root?.Element("channel");
             var itemEls = channel?.Elements("item") ?? Enumerable.Empty<XElement>();
 
@@ -82,7 +90,6 @@ public class EspnRssNewsService : INewsService
                 if (DateTimeOffset.TryParse(pubDateRaw, out var dto))
                     publishedAt = dto.UtcDateTime;
 
-                // ESPN RSS does not always provide media:content. Leave blank; view can handle it.
                 results.Add(new NewsItemViewModel
                 {
                     Id = ++i,
