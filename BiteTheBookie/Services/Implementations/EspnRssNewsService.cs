@@ -46,44 +46,57 @@ public class EspnRssNewsService : INewsService
 
     private async Task<List<NewsItemViewModel>> FetchAsync(string url, int maxItems)
     {
-        using var req = new HttpRequestMessage(HttpMethod.Get, url);
-        req.Headers.UserAgent.ParseAdd("BiteTheBookie/1.0");
-
-        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
-        resp.EnsureSuccessStatusCode();
-
-        await using var stream = await resp.Content.ReadAsStreamAsync();
-        var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
-
-        var channel = doc.Root?.Element("channel");
-        var itemEls = channel?.Elements("item") ?? Enumerable.Empty<XElement>();
-
-        var results = new List<NewsItemViewModel>();
-        var i = 0;
-
-        foreach (var el in itemEls.Take(Math.Max(1, maxItems)))
+        try
         {
-            var title = el.Element("title")?.Value?.Trim() ?? string.Empty;
-            var link = el.Element("link")?.Value?.Trim() ?? string.Empty;
-            var desc = el.Element("description")?.Value?.Trim() ?? string.Empty;
-            var pubDateRaw = el.Element("pubDate")?.Value?.Trim() ?? string.Empty;
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            req.Headers.UserAgent.ParseAdd("BiteTheBookie/1.0");
 
-            var publishedAt = DateTime.UtcNow;
-            if (DateTimeOffset.TryParse(pubDateRaw, out var dto))
-                publishedAt = dto.UtcDateTime;
+            using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
 
-            // ESPN RSS does not always provide media:content. Leave blank; view can handle it.
-            results.Add(new NewsItemViewModel
+            if (!resp.IsSuccessStatusCode)
             {
-                Id = ++i,
-                Title = title,
-                Excerpt = desc,
-                ArticleUrl = link,
-                ImageUrl = string.Empty,
-                PublishedAt = publishedAt
-            });
-        }
+                _logger.LogWarning("ESPN RSS feed returned {StatusCode} for URL {Url}", resp.StatusCode, url);
+                return new List<NewsItemViewModel>();
+            }
 
-        return results;
+            await using var stream = await resp.Content.ReadAsStreamAsync();
+            var doc = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None);
+
+            var channel = doc.Root?.Element("channel");
+            var itemEls = channel?.Elements("item") ?? Enumerable.Empty<XElement>();
+
+            var results = new List<NewsItemViewModel>();
+            var i = 0;
+
+            foreach (var el in itemEls.Take(Math.Max(1, maxItems)))
+            {
+                var title = el.Element("title")?.Value?.Trim() ?? string.Empty;
+                var link = el.Element("link")?.Value?.Trim() ?? string.Empty;
+                var desc = el.Element("description")?.Value?.Trim() ?? string.Empty;
+                var pubDateRaw = el.Element("pubDate")?.Value?.Trim() ?? string.Empty;
+
+                var publishedAt = DateTime.UtcNow;
+                if (DateTimeOffset.TryParse(pubDateRaw, out var dto))
+                    publishedAt = dto.UtcDateTime;
+
+                // ESPN RSS does not always provide media:content. Leave blank; view can handle it.
+                results.Add(new NewsItemViewModel
+                {
+                    Id = ++i,
+                    Title = title,
+                    Excerpt = desc,
+                    ArticleUrl = link,
+                    ImageUrl = string.Empty,
+                    PublishedAt = publishedAt
+                });
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching or parsing ESPN RSS feed from URL {Url}", url);
+            return new List<NewsItemViewModel>();
+        }
     }
 }
