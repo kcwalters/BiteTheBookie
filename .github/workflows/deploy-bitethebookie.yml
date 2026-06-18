@@ -2,19 +2,20 @@ name: Build and Deploy BiteTheBookie
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
   workflow_dispatch:
 
 permissions:
-  id-token: write   # Required for OIDC login
+  id-token: write        # Required for OIDC
   contents: read
 
 env:
   ACR_NAME: btbregistry2026
   IMAGE_NAME: bitethebookie
-  IMAGE_TAG: latest
   RESOURCE_GROUP: BiteTheBookie
   CONTAINER_APP: bitethebookie-app
+  LOCATION: eastus
 
 jobs:
   build-and-deploy:
@@ -34,9 +35,12 @@ jobs:
       - name: Build and push image via ACR
         working-directory: BiteTheBookie
         run: |
+          IMAGE_TAG=${GITHUB_SHA::7}
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
           az acr build \
             --registry "${{ env.ACR_NAME }}" \
-            --image "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
+            --image "${{ env.IMAGE_NAME }}:$IMAGE_TAG" \
             .
 
       - name: Deploy to Azure Container Apps
@@ -48,8 +52,15 @@ jobs:
           az containerapp update \
             --name "${{ env.CONTAINER_APP }}" \
             --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
+            --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${IMAGE_TAG}" \
             --set-env-vars \
-              "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
-              "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
-              "OddsApi__ApiKey=$ODDS_API_KEY"
+              ConnectionStrings__DefaultConnection="$CONNECTION_STRING" \
+              AzureOpenAI__ApiKey="$OPENAI_API_KEY" \
+              OddsApi__ApiKey="$ODDS_API_KEY"
+
+      - name: Verify revision
+        run: |
+          az containerapp revision list \
+            --name "${{ env.CONTAINER_APP }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --query "[0].name"
