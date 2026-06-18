@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 env:
   AZURE_CONTAINERAPP_NAME: bitethebookie-app
