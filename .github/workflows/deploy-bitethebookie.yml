@@ -1,0 +1,65 @@
+﻿name: Build and Deploy BiteTheBookie to Azure Container Apps
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AZURE_CONTAINERAPP_NAME: bitethebookie-app
+  AZURE_RESOURCE_GROUP: BiteTheBookie
+  AZURE_CONTAINERAPP_ENV: btb-env
+  ACR_NAME: btbregistry2026
+  IMAGE_NAME: bitethebookie
+  IMAGE_TAG: latest
+  AZURE_REGION: eastus
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout source
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Login to Azure
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          # AZURE_CREDENTIALS is a JSON service principal in GitHub secrets
+
+      # Login to ACR
+      - name: ACR Login
+        run: |
+          az acr login --name $ACR_NAME
+
+      # Build and push image
+      - name: Build and Push Image
+        run: |
+          az acr build \
+            --registry $ACR_NAME \
+            --image $IMAGE_NAME:$IMAGE_TAG \
+            .
+
+      # Deploy to Azure Container Apps
+      - name: Deploy Container App
+        run: |
+          az containerapp update \
+            --name $AZURE_CONTAINERAPP_NAME \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG \
+            --set-env-vars \
+              ConnectionStrings__DefaultConnection="${{ secrets.DEFAULT_CONNECTION_STRING }}" \
+              AzureOpenAI__ApiKey="${{ secrets.AZURE_OPENAI_API_KEY }}" \
+              OddsApi__ApiKey="${{ secrets.ODDS_API_KEY }}" \
+              SeedAdmin__Email="${{ secrets.SEEDADMIN_EMAIL }}" \
+              SeedAdmin__Password="${{ secrets.SEEDADMIN_PASSWORD }}"
+
+      # Optional: verify deployment
+      - name: Show Container App Env
+        run: |
+          az containerapp show \
+            --name $AZURE_CONTAINERAPP_NAME \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --query "properties.template.containers[0].env"
