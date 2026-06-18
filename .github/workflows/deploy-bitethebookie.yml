@@ -1,45 +1,55 @@
-﻿# ============================================================
-# CONFIGURATION
-# ============================================================
-$subscriptionId = "e1d9ef80-dcea-41ea-b053-ea32d3530915"
-$resourceGroup = "BiteTheBookie"
-$containerApp = "bitethebookie-app"
-$acrName = "btbregistry2026"
-$imageName = "bitethebookie"
-$imageTag = "latest"
-$location = "eastus"
+name: Build and Deploy BiteTheBookie
 
-# ============================================================
-# LOGIN
-# ============================================================
-Write-Host "Logging into Azure..."
-az login
-az account set --subscription $subscriptionId
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-# ============================================================
-# ACR LOGIN
-# ============================================================
-Write-Host "Logging into ACR..."
-az acr login --name $acrName
+permissions:
+  id-token: write   # Required for OIDC login
+  contents: read
 
-# ============================================================
-# BUILD & PUSH IMAGE
-# ============================================================
-Write-Host "Building and pushing image to ACR..."
-az acr build `
-  --registry $acrName `
-  --image "$imageName:$imageTag" `
-  .
+env:
+  ACR_NAME: btbregistry2026
+  IMAGE_NAME: bitethebookie
+  IMAGE_TAG: latest
+  RESOURCE_GROUP: BiteTheBookie
+  CONTAINER_APP: bitethebookie-app
 
-# ============================================================
-# DEPLOY TO AZURE CONTAINER APPS
-# ============================================================
-Write-Host "Deploying to Azure Container Apps..."
-az containerapp update `
-  --name $containerApp `
-  --resource-group $resourceGroup `
-  --image "$acrName.azurecr.io/$imageName:$imageTag" `
-  --set-env-vars `
-    ConnectionStrings__DefaultConnection="Data Source=tcp:bitethebookiebettingodds.database.windows.net,1433;Initial Catalog=bitethebookiebettingodds;User ID=kwalters;Password=Spindletop$#110;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30;" `
-    AzureOpenAI__ApiKey="1Pdds29F6RibKu5W2PDOw2J2knH8MNWx6by3UvaIqtXx92d7HLtfJQQJ99CDACYeBjFXJ3w3AAABACOGKgjb" `
-    OddsApi__ApiKey="4e7e049b298c50d9b16021b5112
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push image via ACR
+        working-directory: BiteTheBookie
+        run: |
+          az acr build \
+            --registry "${{ env.ACR_NAME }}" \
+            --image "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
+            .
+
+      - name: Deploy to Azure Container Apps
+        env:
+          CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+          OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          az containerapp update \
+            --name "${{ env.CONTAINER_APP }}" \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
+            --set-env-vars \
+              "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
+              "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
+              "OddsApi__ApiKey=$ODDS_API_KEY"
