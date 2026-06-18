@@ -2,7 +2,7 @@ name: Build and Deploy BiteTheBookie
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
