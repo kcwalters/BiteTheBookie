@@ -1,65 +1,45 @@
-﻿name: Build and Deploy BiteTheBookie to Azure Container Apps
+﻿# ============================================================
+# CONFIGURATION
+# ============================================================
+$subscriptionId = "e1d9ef80-dcea-41ea-b053-ea32d3530915"
+$resourceGroup = "BiteTheBookie"
+$containerApp = "bitethebookie-app"
+$acrName = "btbregistry2026"
+$imageName = "bitethebookie"
+$imageTag = "latest"
+$location = "eastus"
 
-on:
-  push:
-    branches: [ main ]
+# ============================================================
+# LOGIN
+# ============================================================
+Write-Host "Logging into Azure..."
+az login
+az account set --subscription $subscriptionId
 
-env:
-  AZURE_CONTAINERAPP_NAME: bitethebookie-app
-  AZURE_RESOURCE_GROUP: BiteTheBookie
-  AZURE_CONTAINERAPP_ENV: btb-env
-  ACR_NAME: btbregistry2026
-  IMAGE_NAME: bitethebookie
-  IMAGE_TAG: latest
-  AZURE_REGION: eastus
+# ============================================================
+# ACR LOGIN
+# ============================================================
+Write-Host "Logging into ACR..."
+az acr login --name $acrName
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+# ============================================================
+# BUILD & PUSH IMAGE
+# ============================================================
+Write-Host "Building and pushing image to ACR..."
+az acr build `
+  --registry $acrName `
+  --image "$imageName:$imageTag" `
+  .
 
-    steps:
-      # Checkout source
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # Login to Azure
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          # AZURE_CREDENTIALS is a JSON service principal in GitHub secrets
-
-      # Login to ACR
-      - name: ACR Login
-        run: |
-          az acr login --name $ACR_NAME
-
-      # Build and push image
-      - name: Build and Push Image
-        run: |
-          az acr build \
-            --registry $ACR_NAME \
-            --image $IMAGE_NAME:$IMAGE_TAG \
-            .
-
-      # Deploy to Azure Container Apps
-      - name: Deploy Container App
-        run: |
-          az containerapp update \
-            --name $AZURE_CONTAINERAPP_NAME \
-            --resource-group $AZURE_RESOURCE_GROUP \
-            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG \
-            --set-env-vars \
-              ConnectionStrings__DefaultConnection="${{ secrets.DEFAULT_CONNECTION_STRING }}" \
-              AzureOpenAI__ApiKey="${{ secrets.AZURE_OPENAI_API_KEY }}" \
-              OddsApi__ApiKey="${{ secrets.ODDS_API_KEY }}" \
-              SeedAdmin__Email="${{ secrets.SEEDADMIN_EMAIL }}" \
-              SeedAdmin__Password="${{ secrets.SEEDADMIN_PASSWORD }}"
-
-      # Optional: verify deployment
-      - name: Show Container App Env
-        run: |
-          az containerapp show \
-            --name $AZURE_CONTAINERAPP_NAME \
-            --resource-group $AZURE_RESOURCE_GROUP \
-            --query "properties.template.containers[0].env"
+# ============================================================
+# DEPLOY TO AZURE CONTAINER APPS
+# ============================================================
+Write-Host "Deploying to Azure Container Apps..."
+az containerapp update `
+  --name $containerApp `
+  --resource-group $resourceGroup `
+  --image "$acrName.azurecr.io/$imageName:$imageTag" `
+  --set-env-vars `
+    ConnectionStrings__DefaultConnection="Data Source=tcp:bitethebookiebettingodds.database.windows.net,1433;Initial Catalog=bitethebookiebettingodds;User ID=kwalters;Password=Spindletop$#110;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30;" `
+    AzureOpenAI__ApiKey="1Pdds29F6RibKu5W2PDOw2J2knH8MNWx6by3UvaIqtXx92d7HLtfJQQJ99CDACYeBjFXJ3w3AAABACOGKgjb" `
+    OddsApi__ApiKey="4e7e049b298c50d9b16021b5112
