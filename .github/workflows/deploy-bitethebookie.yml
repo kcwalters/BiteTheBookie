@@ -1,55 +1,77 @@
-name: Build and Deploy BiteTheBookie
+﻿name: Build and Deploy to Azure Container Apps (OIDC)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 permissions:
-  id-token: write   # Required for OIDC login
+  id-token: write
   contents: read
 
 env:
-  ACR_NAME: btbregistry2026
+  REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
   IMAGE_NAME: bitethebookie
-  IMAGE_TAG: latest
-  RESOURCE_GROUP: BiteTheBookie
-  CONTAINER_APP: bitethebookie-app
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: "8.0.x"
 
-      - name: Build and push image via ACR
-        working-directory: BiteTheBookie
-        run: |
-          az acr build \
-            --registry "${{ env.ACR_NAME }}" \
-            --image "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
-            .
+    - name: Restore
+      run: dotnet restore
 
-      - name: Deploy to Azure Container Apps
-        env:
-          CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
-          OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-        run: |
-          az containerapp update \
-            --name "${{ env.CONTAINER_APP }}" \
-            --resource-group "${{ env.RESOURCE_GROUP }}" \
-            --image "${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" \
-            --set-env-vars \
-              "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
-              "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
-              "OddsApi__ApiKey=$ODDS_API_KEY"
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish -c Release -o ./publish
+
+    # -------------------------
+    # 🔐 Azure Login (OIDC)
+    # -------------------------
+    - name: Azure Login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    # -------------------------
+    # 🏗️ Build & Push Container
+    # -------------------------
+    - name: Azure Container Registry Login
+      run: az acr login --name $REGISTRY
+
+    - name: Build Docker Image
+      run: |
+        docker build \
+          -t $REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+          ./publish
+
+    - name: Push Docker Image
+      run: docker push $REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}
+
+    # -------------------------
+    # 🚀 Deploy to Azure Container Apps
+    # -------------------------
+    - name: Deploy to Azure Container Apps
+      run: |
+        az containerapp update \
+          --name bitethebookie \
+          --resource-group BiteTheBookie \
+          --image $REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+          --set-env-vars \
+            ConnectionStrings__DefaultConnection=${{ secrets.ConnectionStrings__DefaultConnection }} \
+            AzureOpenAI__ApiKey=${{ secrets.AzureOpenAI__ApiKey }} \
+            OddsApi__ApiKey=${{ secrets.OddsApi__ApiKey }} \
+            SeedAdmin__Email=${{ secrets.SeedAdmin__Email }} \
+            SeedAdmin__Password=${{ secrets.SeedAdmin__Password }}

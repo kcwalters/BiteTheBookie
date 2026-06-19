@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BiteTheBookie", "BiteTheBookie\BiteTheBookie.csproj", "{1294021C-9F92-4F70-9550-E487B9F79254}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{35C0EA04-64FB-4012-8259-7B126A13FEAB}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\deploy-bitethebookie.yml = .github\workflows\deploy-bitethebookie.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
