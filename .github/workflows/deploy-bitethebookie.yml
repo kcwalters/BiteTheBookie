@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  REGISTRY: btbregistry2026
   IMAGE_NAME: bitethebookie
 
 jobs:
@@ -20,20 +20,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: "8.0.x"
-
-    - name: Restore
-      run: dotnet restore
-
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-
-    - name: Publish
-      run: dotnet publish -c Release -o ./publish
 
     # -------------------------
     # 🔐 Azure Login (OIDC)
@@ -46,32 +32,33 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     # -------------------------
-    # 🏗️ Build & Push Container
+    # 🏗️ Build & Push via ACR (server-side build; uses ./BiteTheBookie/Dockerfile)
     # -------------------------
-    - name: Azure Container Registry Login
-      run: az acr login --name $REGISTRY
-
-    - name: Build Docker Image
+    - name: Build and push image via ACR
       run: |
-        docker build \
-          -t $REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
-          ./publish
-
-    - name: Push Docker Image
-      run: docker push $REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}
+        az acr build \
+          --registry "$REGISTRY" \
+          --image "$IMAGE_NAME:${{ github.sha }}" \
+          ./BiteTheBookie
 
     # -------------------------
     # 🚀 Deploy to Azure Container Apps
     # -------------------------
     - name: Deploy to Azure Container Apps
+      env:
+        CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+        OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+        ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        SEED_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
+        SEED_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
       run: |
         az containerapp update \
           --name bitethebookie \
           --resource-group BiteTheBookie \
-          --image $REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }} \
+          --image "$REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}" \
           --set-env-vars \
-            ConnectionStrings__DefaultConnection=${{ secrets.ConnectionStrings__DefaultConnection }} \
-            AzureOpenAI__ApiKey=${{ secrets.AzureOpenAI__ApiKey }} \
-            OddsApi__ApiKey=${{ secrets.OddsApi__ApiKey }} \
-            SeedAdmin__Email=${{ secrets.SeedAdmin__Email }} \
-            SeedAdmin__Password=${{ secrets.SeedAdmin__Password }}
+            "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
+            "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
+            "OddsApi__ApiKey=$ODDS_API_KEY" \
+            "SeedAdmin__Email=$SEED_EMAIL" \
+            "SeedAdmin__Password=$SEED_PASSWORD"
