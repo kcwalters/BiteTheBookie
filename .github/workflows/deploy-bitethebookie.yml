@@ -39,7 +39,8 @@ jobs:
         az acr build \
           --registry "$REGISTRY" \
           --image "$IMAGE_NAME:${{ github.sha }}" \
-          ./BiteTheBookie
+          --file BiteTheBookie/Dockerfile \
+          .
 
     # -------------------------
     # 🚀 Deploy to Azure Container Apps
