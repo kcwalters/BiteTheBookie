@@ -58,13 +58,15 @@ jobs:
         # Ensure the app runs a single active revision so traffic always
         # shifts to the newest deployment automatically.
         az containerapp revision set-mode \
-          --name bitethebookie \
+          --name bitethebookie-app \
           --resource-group BiteTheBookie \
           --mode single
 
         # Deploy the image built from this commit as a new revision.
+        # In single revision mode, Container Apps automatically routes
+        # 100% of traffic to this newest revision.
         az containerapp update \
-          --name bitethebookie \
+          --name bitethebookie-app \
           --resource-group BiteTheBookie \
           --image "$REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}" \
           --revision-suffix "sha-${GITHUB_SHA::7}" \
@@ -74,15 +76,3 @@ jobs:
             "OddsApi__ApiKey=$ODDS_API_KEY" \
             "SeedAdmin__Email=$SEED_EMAIL" \
             "SeedAdmin__Password=$SEED_PASSWORD"
-
-        # Route 100% of traffic to the newest (latest) revision.
-        LATEST_REVISION=$(az containerapp revision list \
-          --name bitethebookie \
-          --resource-group BiteTheBookie \
-          --query "sort_by([].{name:name, created:properties.createdTime}, &created)[-1].name" \
-          -o tsv)
-        echo "Activating latest revision: $LATEST_REVISION"
-        az containerapp ingress traffic set \
-          --name bitethebookie \
-          --resource-group BiteTheBookie \
-          --revision-weight "$LATEST_REVISION=100"
