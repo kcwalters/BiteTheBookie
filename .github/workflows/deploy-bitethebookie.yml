@@ -33,12 +33,14 @@ jobs:
 
     # -------------------------
     # 🏗️ Build & Push via ACR (server-side build; uses ./BiteTheBookie/Dockerfile)
+    # Tags each image with the commit SHA (immutable) and 'latest'.
     # -------------------------
     - name: Build and push image via ACR
       run: |
         az acr build \
           --registry "$REGISTRY" \
           --image "$IMAGE_NAME:${{ github.sha }}" \
+          --image "$IMAGE_NAME:latest" \
           --file BiteTheBookie/Dockerfile \
           .
 
@@ -53,13 +55,34 @@ jobs:
         SEED_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
         SEED_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
       run: |
+        # Ensure the app runs a single active revision so traffic always
+        # shifts to the newest deployment automatically.
+        az containerapp revision set-mode \
+          --name bitethebookie \
+          --resource-group BiteTheBookie \
+          --mode single
+
+        # Deploy the image built from this commit as a new revision.
         az containerapp update \
           --name bitethebookie \
           --resource-group BiteTheBookie \
           --image "$REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}" \
+          --revision-suffix "sha-${GITHUB_SHA::7}" \
           --set-env-vars \
             "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
             "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
             "OddsApi__ApiKey=$ODDS_API_KEY" \
             "SeedAdmin__Email=$SEED_EMAIL" \
             "SeedAdmin__Password=$SEED_PASSWORD"
+
+        # Route 100% of traffic to the newest (latest) revision.
+        LATEST_REVISION=$(az containerapp revision list \
+          --name bitethebookie \
+          --resource-group BiteTheBookie \
+          --query "sort_by([].{name:name, created:properties.createdTime}, &created)[-1].name" \
+          -o tsv)
+        echo "Activating latest revision: $LATEST_REVISION"
+        az containerapp ingress traffic set \
+          --name bitethebookie \
+          --resource-group BiteTheBookie \
+          --revision-weight "$LATEST_REVISION=100"
