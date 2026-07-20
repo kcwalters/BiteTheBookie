@@ -1,0 +1,167 @@
+@model BiteTheBookie.ViewModels.CFBPicksIndexViewModel
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    ViewData["Title"] = "NCAA Football Picks - Expert Predictions";
+
+    var isPremiumOrVip = false;
+    if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+        isPremiumOrVip = currentUser?.IsPremium == true;
+    }
+}
+
+<div class="container py-4">
+    <div class="content-card">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <img src="https://sports.cbsimg.net/fly/images/league-logos/56.svg" alt="NCAAF" style="width: 48px; height: 48px;" />
+                <h1 class="h2 mb-0">NCAA Football Expert Picks</h1>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="@Url.Action("Index", "Picks")" class="btn btn-primary">Pick Sheet</a>
+            </div>
+        </div>
+
+        <ul class="nav nav-pills mb-4" id="picksTabs">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-filter="all">All</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="@Url.Action("AgainstTheSpread", "Picks")">Against the Spread</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-filter="moneyline">Money Line</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-filter="overunder">Over / Under</a>
+            </li>
+        </ul>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Game Information</th>
+                        <th>Projected Score</th>
+                        <th>Odds</th>
+                        <th>Picks</th>
+                        <th>Simulation</th>
+                    </tr>
+                </thead>
+                <tbody id="picksTableBody">
+                    @if (Model.Games != null && Model.Games.Any())
+                    {
+                        @foreach (var game in Model.Games)
+                        {
+                            <tr data-bet-types="spread overunder moneyline">
+                                <td>
+                                    <div class="text-muted small">@game.GameTimeDisplay</div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" style="width: 32px; height: 32px;" />
+                                        <span class="fw-semibold">@game.AwayTeamName</span>
+                                        @if (game.AwayScore.HasValue)
+                                        {
+                                            <span class="score-badge ms-2">@game.AwayScore</span>
+                                        }
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" style="width: 32px; height: 32px;" />
+                                        <span class="fw-semibold">@game.HomeTeamName</span>
+                                        @if (game.HomeScore.HasValue)
+                                        {
+                                            <span class="score-badge ms-2">@game.HomeScore</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div>@(game.AwayScore?.ToString() ?? "--")</div>
+                                    <div>@(game.HomeScore?.ToString() ?? "--")</div>
+                                </td>
+                                <td>
+                                    @if (game.OverUnder.HasValue)
+                                    {
+                                        <div><strong>O/U:</strong> @game.OverUnder.Value</div>
+                                    }
+                                    @if (game.Spread.HasValue)
+                                    {
+                                        <div><strong>Spread:</strong> @(game.Spread > 0 ? "+" : "")@game.Spread</div>
+                                    }
+                                    @if (game.HomeMoneyline.HasValue)
+                                    {
+                                        <div class="small text-muted">ML: @(game.HomeMoneyline > 0 ? "+" : "")@game.HomeMoneyline</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isPremiumOrVip)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary">View Picks</button>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning" title="Upgrade to view picks">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </a>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isPremiumOrVip)
+                                    {
+                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           data-sim-trigger>Simulation</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Membership" asp-action="Join"
+                                           class="btn btn-sm btn-warning"
+                                           title="Upgrade to view simulation">
+                                            <i class="fas fa-dollar-sign"></i>
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <p class="text-muted mb-0">No games available at this time.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterLinks = document.querySelectorAll('#picksTabs .nav-link');
+            const tableRows = document.querySelectorAll('#picksTableBody tr');
+            filterLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    filterLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    const filterType = this.getAttribute('data-filter');
+                    tableRows.forEach(row => {
+                        if (filterType === 'all') {
+                            row.style.display = '';
+                        } else {
+                            const betTypes = row.getAttribute('data-bet-types');
+                            row.style.display = (betTypes && betTypes.includes(filterType)) ? '' : 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+}

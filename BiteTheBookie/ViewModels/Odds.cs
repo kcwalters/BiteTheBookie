@@ -115,6 +115,27 @@
         public string Bookmaker { get; set; } = "DraftKings";
     }
 
+    // CFBOddsViewModel.cs (College Football)
+    public class CFBOddsViewModel
+    {
+        public string GameId { get; set; } = "";
+        public string AwayTeam { get; set; } = "";
+        public string HomeTeam { get; set; } = "";
+        public DateTime CommenceTime { get; set; }
+        public string VenueTimeZoneId { get; set; } = "Eastern Standard Time";
+        public string AwayMoneyline { get; set; } = "";
+        public string HomeMoneyline { get; set; } = "";
+        public string AwaySpread { get; set; } = "";
+        public string AwaySpreadPrice { get; set; } = "";
+        public string HomeSpread { get; set; } = "";
+        public string HomeSpreadPrice { get; set; } = "";
+        public string OverPoint { get; set; } = "";
+        public string OverPrice { get; set; } = "";
+        public string UnderPoint { get; set; } = "";
+        public string UnderPrice { get; set; } = "";
+        public string Bookmaker { get; set; } = "DraftKings";
+    }
+
     // MLBOddsViewModel.cs (Major League Baseball)
     public class MLBOddsViewModel
     {

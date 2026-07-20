@@ -45,6 +45,12 @@ namespace BiteTheBookie.Controllers
             return View("CBB", cbbOdds);
         }
 
+        public async Task<IActionResult> CFB(CancellationToken cancellationToken)
+        {
+            var cfbOdds = await _service.GetCFBOddsAsync(cancellationToken);
+            return View(cfbOdds);
+        }
+
         public async Task<IActionResult> MLB(CancellationToken cancellationToken)
         {
             var mlbOdds = await _service.GetMLBOddsAsync(cancellationToken);

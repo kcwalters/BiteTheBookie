@@ -107,6 +107,7 @@ builder.Services.AddScoped<ISpreadAnalysisService, SpreadAnalysisService>();
 builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();
 builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
 builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
+builder.Services.AddScoped<ICFBGamesService, CFBGamesService>();
 builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
 
 // ESPN API Client

@@ -19,6 +19,7 @@ namespace BiteTheBookie.Controllers
         private readonly INBAGamesService _gamesService;
         private readonly ICBBGamesService _cbbGamesService;
         private readonly ICBBRosterService _cbbRosterService;
+        private readonly ICFBGamesService _cfbGamesService;
         private readonly ISpreadAnalysisService _spreadAnalysisService;
         private readonly IInjuryReportService _injuryReportService;
         private readonly ILogger<PicksController> _logger;
@@ -88,6 +89,7 @@ namespace BiteTheBookie.Controllers
             INBAGamesService gamesService,
             ICBBGamesService cbbGamesService,
             ICBBRosterService cbbRosterService,
+            ICFBGamesService cfbGamesService,
             ISpreadAnalysisService spreadAnalysisService,
             IInjuryReportService injuryReportService,
             IMLBGamesService mlbService,
@@ -100,6 +102,7 @@ namespace BiteTheBookie.Controllers
             _gamesService          = gamesService;
             _cbbGamesService       = cbbGamesService;
             _cbbRosterService      = cbbRosterService;
+            _cfbGamesService       = cfbGamesService;
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService   = injuryReportService;
             _mlbService            = mlbService;
@@ -231,6 +234,19 @@ namespace BiteTheBookie.Controllers
             var viewModel = new CBBPicksIndexViewModel
             {
                 League = "CBB",
+                Games = games
+            };
+
+            return View(viewModel);
+        }
+
+        public async Task<IActionResult> CFB(CancellationToken cancellationToken)
+        {
+            var games = await _cfbGamesService.GetUpcomingCFBGamesAsync(cancellationToken);
+
+            var viewModel = new CFBPicksIndexViewModel
+            {
+                League = "CFB",
                 Games = games
             };
 
