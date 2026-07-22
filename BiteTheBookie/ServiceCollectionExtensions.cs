@@ -56,6 +56,14 @@ namespace BiteTheBookie
             });
             services.AddScoped<INCAAScoresService, NCAAScoresService>();
 
+            services.AddHttpClient<CFBScoresService>((sp, client) =>
+            {
+                var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
+                if (!string.IsNullOrWhiteSpace(opts.NcaaFootballApiBaseUrl))
+                    client.BaseAddress = new Uri(opts.NcaaFootballApiBaseUrl);
+            });
+            services.AddScoped<ICFBScoresService, CFBScoresService>();
+
             return services;
         }
     }

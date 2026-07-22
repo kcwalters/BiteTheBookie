@@ -1,6 +1,6 @@
 (function () {
   var LEAGUE_KEY = 'btb-active-league';
-  var leagues = ['nfl', 'nba', 'nhl', 'ncaa', 'mlb'];
+  var leagues = ['nfl', 'nba', 'nhl', 'ncaa', 'ncaaf', 'mlb'];
 
   function showTicker(league) {
     leagues.forEach(function (l) {

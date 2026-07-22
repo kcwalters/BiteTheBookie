@@ -737,6 +737,142 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
             }
         }
 
+        // ── College Football (CFB) ─────────────────────────────────────────────
+
+        private async Task<string> GenerateCfbSimulationAsync(
+            string homeTeam, string awayTeam, string simulationId,
+            string timestamp, DateTime? gameTime, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation(
+                    "Calling Azure OpenAI for CFB: {AwayTeam} @ {HomeTeam}", awayTeam, homeTeam);
+
+                var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var season = "2025 college football season";
+
+                var prompt = $@"Generate a FRESH, UNIQUE college football (NCAA FBS) game simulation: {awayTeam} (away) at {homeTeam} (home).
+
+SIMULATION ID : {simulationId}
+GENERATED AT  : {timestamp}
+SEASON        : {season} (as of {today})
+
+OUTPUT FORMAT — NON-NEGOTIABLE:
+- Return ONLY raw HTML. Zero Markdown.
+- Use <h2> for sections, <h3> for sub-headings, <p> for prose, <ul>/<li> for lists, <table> for tables.
+- Wrap every player name in <strong> tags each and every time it appears.
+- Do NOT put anything outside the HTML (no preamble, no code fences).
+
+ROSTER GUIDANCE:
+- Reference realistic, plausible current players for each program (QB, RB, WR, key defenders).
+- Use only players who plausibly play for {awayTeam} or {homeTeam} in the {season}.
+- Do NOT invent absurd names or reference players from other programs.
+
+SIMULATION REQUIREMENTS:
+- This is FOOTBALL, not basketball. Scores MUST be realistic college football totals
+  (typically 10-45 points per team; blowouts can reach the 50s-60s).
+- THE GAME MUST HAVE A WINNER. No ties — use overtime if the score is level after regulation.
+- Reflect each team's realistic playing style, conference, and home-field environment
+  (name the home stadium and how the crowd/venue affected play).
+- Football stat lines only — passing yards, rushing yards, receiving yards, touchdowns,
+  tackles, sacks, interceptions. Do NOT use basketball stats (points, rebounds, assists).
+
+Include these sections in order:
+1. <h2>Final Score</h2> — include an HTML quarter-by-quarter line score table (Q1-Q4 + Final)
+2. <h2>Game Summary</h2> — 2-3 sentences naming key players
+3. <h2>Key Performers</h2> — HTML table: Player | Team | Pos | Statline (QB/RB/WR/defense)
+4. <h2>Scoring Summary</h2> — HTML table: Quarter | Team | Play | Score
+5. <h2>Team Statistics</h2> — HTML table: Total Yards, Passing, Rushing, Turnovers, Time of Possession, 3rd-Down %
+6. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
+
+FINAL CHECK BEFORE RESPONDING:
+Confirm every stat is a FOOTBALL stat and the final score is a realistic football score.";
+
+                var messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an expert college football (NCAA FBS) game simulation engine for the {season}. " +
+                        $"ABSOLUTE RULES — violating any of these produces an invalid simulation: " +
+                        $"(1) Output raw HTML only — zero Markdown. " +
+                        $"(2) This is FOOTBALL — use only football stats (yards, TDs, tackles, sacks, INTs). " +
+                        $"Never use basketball stats (points, rebounds, assists) and never produce basketball-style scores. " +
+                        $"(3) Final scores must be realistic college football totals and the game must have a winner. " +
+                        $"(4) Wrap every player name in <strong> tags wherever it appears. " +
+                        $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
+                    new UserChatMessage(prompt)
+                };
+
+                var response = await _chatClient!.CompleteChatAsync(
+                    messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
+                var simulationText = StripCodeFences(response.Value.Content[0].Text);
+
+                _logger.LogInformation("CFB simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
+                    simulationId, awayTeam, homeTeam);
+
+                return simulationText;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CFB simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
+                    awayTeam, homeTeam);
+                return GetCfbMockSimulation(homeTeam, awayTeam);
+            }
+        }
+
+        private static string GetCfbMockSimulation(string homeTeam, string awayTeam)
+        {
+            var seed = (homeTeam + awayTeam + DateTime.UtcNow.Ticks).GetHashCode();
+            var rng  = new Random(seed);
+
+            int[] awayQ = { rng.Next(0, 15), rng.Next(0, 15), rng.Next(0, 15), rng.Next(0, 15) };
+            int[] homeQ = { rng.Next(0, 15), rng.Next(0, 15), rng.Next(0, 15), rng.Next(0, 15) };
+            int awayScore = awayQ.Sum();
+            int homeScore = homeQ.Sum();
+            while (awayScore == homeScore) { homeQ[3] += rng.Next(3, 8); homeScore = homeQ.Sum(); }
+
+            bool awayWins = awayScore > homeScore;
+            string winner = awayWins ? awayTeam : homeTeam;
+            string loser  = awayWins ? homeTeam : awayTeam;
+            int margin    = Math.Abs(awayScore - homeScore);
+
+            int awayPassYds = rng.Next(150, 380), awayRushYds = rng.Next(80, 260);
+            int homePassYds = rng.Next(150, 380), homeRushYds = rng.Next(80, 260);
+
+            return $@"<h1>GAME SIMULATION: {awayTeam} @ {homeTeam}</h1>
+
+<h2>Final Score</h2>
+<table>
+  <thead><tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Final</th></tr></thead>
+  <tbody>
+    <tr><td><strong>{awayTeam}</strong></td><td>{awayQ[0]}</td><td>{awayQ[1]}</td><td>{awayQ[2]}</td><td>{awayQ[3]}</td><td><strong>{awayScore}</strong></td></tr>
+    <tr><td><strong>{homeTeam}</strong></td><td>{homeQ[0]}</td><td>{homeQ[1]}</td><td>{homeQ[2]}</td><td>{homeQ[3]}</td><td><strong>{homeScore}</strong></td></tr>
+  </tbody>
+</table>
+
+<h2>Game Summary</h2>
+<p>In a {(margin <= 7 ? "tightly contested" : "decisive")} matchup, <strong>{winner}</strong> {(margin <= 7 ? "edges out" : "controls")} <strong>{loser}</strong> {Math.Max(awayScore, homeScore)}-{Math.Min(awayScore, homeScore)}. Both offenses moved the ball, but {winner} made the difference late.</p>
+
+<h2>Team Statistics</h2>
+<table>
+  <thead><tr><th>Statistic</th><th>{awayTeam}</th><th>{homeTeam}</th></tr></thead>
+  <tbody>
+    <tr><td>Total Yards</td><td>{awayPassYds + awayRushYds}</td><td>{homePassYds + homeRushYds}</td></tr>
+    <tr><td>Passing Yards</td><td>{awayPassYds}</td><td>{homePassYds}</td></tr>
+    <tr><td>Rushing Yards</td><td>{awayRushYds}</td><td>{homeRushYds}</td></tr>
+    <tr><td>Turnovers</td><td>{rng.Next(0, 4)}</td><td>{rng.Next(0, 4)}</td></tr>
+    <tr><td>Time of Possession</td><td>{rng.Next(26, 34)}:00</td><td>{rng.Next(26, 34)}:00</td></tr>
+  </tbody>
+</table>
+
+<h2>Betting Analysis</h2>
+<ul>
+  <li><strong>Spread:</strong> {winner} wins by {margin}</li>
+  <li><strong>Over/Under:</strong> Combined {awayScore + homeScore} points</li>
+  <li><strong>Moneyline:</strong> {winner} wins outright</li>
+</ul>
+<p><em>Simulated game for entertainment purposes only.</em></p>";
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private static string StripCodeFences(string text)

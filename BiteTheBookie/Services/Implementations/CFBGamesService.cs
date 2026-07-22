@@ -187,6 +187,30 @@ namespace BiteTheBookie.Services.Implementations
             return TeamNameToCode.GetValueOrDefault(teamName, "");
         }
 
+        // Shared instance used by callers (e.g. simulation view models) to resolve a team
+        // code to its display name and logo without needing to hit the Odds API.
+        private static readonly Dictionary<string, (string Name, string Logo, string Code)> TeamInfoLookup =
+            BuildTeamInfo();
+
+        /// <summary>
+        /// Resolves a CFB team code (case-insensitive) to its display name and logo URL.
+        /// Returns the original code as the name and an empty logo when the code is unknown.
+        /// </summary>
+        public static (string Name, string Logo, string Code) GetTeamInfo(string teamCode)
+        {
+            if (!string.IsNullOrEmpty(teamCode) &&
+                TeamInfoLookup.TryGetValue(teamCode.ToUpper(), out var info))
+            {
+                return info;
+            }
+
+            return (teamCode, string.Empty, teamCode);
+        }
+
+        /// <summary>True when the supplied code maps to a known Division I FBS team.</summary>
+        public static bool IsKnownTeamCode(string teamCode)
+            => !string.IsNullOrEmpty(teamCode) && TeamInfoLookup.ContainsKey(teamCode.ToUpper());
+
         // Maps The Odds API team names (and common variants) to internal team codes.
         private static readonly Dictionary<string, string> TeamNameToCode = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -350,6 +374,11 @@ namespace BiteTheBookie.Services.Implementations
         };
 
         private Dictionary<string, (string Name, string Logo, string Code)> InitializeTeamInfo()
+        {
+            return BuildTeamInfo();
+        }
+
+        private static Dictionary<string, (string Name, string Logo, string Code)> BuildTeamInfo()
         {
             static (string, string, string) T(string name, string id, string code)
                 => (name, $"https://a.espncdn.com/i/teamlogos/ncaa/500/{id}.png", code);

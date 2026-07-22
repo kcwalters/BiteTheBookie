@@ -296,7 +296,7 @@ namespace BiteTheBookie.Controllers
         }
 
         [Authorize(Policy = "PremiumOnly")]
-        public async Task<IActionResult> Detail(string gameId, CancellationToken cancellationToken)
+        public async Task<IActionResult> Detail(string gameId, string? league, CancellationToken cancellationToken)
         {
             var parts = gameId?.Split('-') ?? Array.Empty<string>();
 
@@ -306,11 +306,18 @@ namespace BiteTheBookie.Controllers
             var awayTeamCode = parts[0];
             var homeTeamCode = parts[1];
 
+            // Explicit league hint from the calling view takes priority. Otherwise fall back to
+            // code-based detection. CFB is also detected when both codes map to known FBS teams.
+            bool isCfb = string.Equals(league, "CFB", StringComparison.OrdinalIgnoreCase)
+                || (CFBGamesService.IsKnownTeamCode(awayTeamCode)
+                    && CFBGamesService.IsKnownTeamCode(homeTeamCode)
+                    && !(NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode)));
+
             // NBA codes take priority — if both codes are recognised NBA codes the game
             // is NBA regardless of any overlap with MLB short codes (BOS, MIL, ATL, etc.)
-            bool isNba = NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
-            bool isMlb = !isNba && (MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode));
-            string league = isNba ? "NBA" : (isMlb ? "MLB" : "NBA");
+            bool isNba = !isCfb && NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
+            bool isMlb = !isCfb && !isNba && (MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode));
+            string resolvedLeague = isCfb ? "CFB" : (isNba ? "NBA" : (isMlb ? "MLB" : "NBA"));
 
             GameSimulationViewModel viewModel;
 
@@ -318,7 +325,11 @@ namespace BiteTheBookie.Controllers
             string? homeProbablePitcher = null;
             string? awayProbablePitcher = null;
 
-            if (isMlb)
+            if (isCfb)
+            {
+                viewModel = BuildCfbViewModel(gameId!, awayTeamCode, homeTeamCode);
+            }
+            else if (isMlb)
             {
                 viewModel = BuildMlbViewModel(gameId!, awayTeamCode, homeTeamCode);
 
@@ -404,6 +415,18 @@ namespace BiteTheBookie.Controllers
                             homeProbablePitcher: homeProbablePitcher,
                             awayProbablePitcher: awayProbablePitcher);
                     }
+                    else if (isCfb)
+                    {
+                        viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
+                            viewModel.HomeTeam,
+                            viewModel.AwayTeam,
+                            "CFB",
+                            homeRoster: null,
+                            awayRoster: null,
+                            injuries: null,
+                            DateTime.UtcNow.AddHours(6),
+                            cancellationToken);
+                    }
                     else
                     {
                         // Rosters are now fetched internally by the simulation service via OpenAI.
@@ -436,7 +459,7 @@ namespace BiteTheBookie.Controllers
                     var simulation = new GameSimulation
                     {
                         GameId            = gameId ?? string.Empty,
-                        League            = league,
+                        League            = resolvedLeague,
                         AwayTeamName      = viewModel.AwayTeam,
                         HomeTeamName      = viewModel.HomeTeam,
                         GameDate          = DateTime.UtcNow.Date,
@@ -462,6 +485,23 @@ namespace BiteTheBookie.Controllers
             }
 
             return View(viewModel);
+        }
+
+        private GameSimulationViewModel BuildCfbViewModel(string gameId, string awayTeamCode, string homeTeamCode)
+        {
+            var away = CFBGamesService.GetTeamInfo(awayTeamCode);
+            var home = CFBGamesService.GetTeamInfo(homeTeamCode);
+
+            return new GameSimulationViewModel
+            {
+                GameId       = gameId,
+                AwayTeam     = away.Name,
+                HomeTeam     = home.Name,
+                League       = "CFB",
+                AwayTeamLogo = away.Logo,
+                HomeTeamLogo = home.Logo,
+                IsLoading    = false
+            };
         }
 
         private GameSimulationViewModel BuildMlbViewModel(string gameId, string awayTeamCode, string homeTeamCode)

@@ -111,7 +111,7 @@
                                 <td>
                                     @if (isPremiumOrVip)
                                     {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
+                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "CFB" })"
                                            class="btn btn-sm btn-outline-secondary"
                                            data-sim-trigger>Simulation</a>
                                     }
