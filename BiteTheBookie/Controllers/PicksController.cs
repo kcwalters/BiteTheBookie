@@ -25,6 +25,7 @@ namespace BiteTheBookie.Controllers
         private readonly ILogger<PicksController> _logger;
         private readonly IMLBGamesService _mlbService;
         private readonly INBAScheduleService _nbaScheduleService;
+        private readonly ILeagueScheduleService _leagueScheduleService;
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -95,6 +96,7 @@ namespace BiteTheBookie.Controllers
             IInjuryReportService injuryReportService,
             IMLBGamesService mlbService,
             INBAScheduleService nbaScheduleService,
+            ILeagueScheduleService leagueScheduleService,
             ApplicationDbContext db,
             UserManager<ApplicationUser> userManager,
             ILogger<PicksController> logger)
@@ -109,6 +111,7 @@ namespace BiteTheBookie.Controllers
             _injuryReportService   = injuryReportService;
             _mlbService            = mlbService;
             _nbaScheduleService    = nbaScheduleService;
+            _leagueScheduleService = leagueScheduleService;
             _db                    = db;
             _userManager           = userManager;
             _logger                = logger;
@@ -150,6 +153,58 @@ namespace BiteTheBookie.Controllers
         public async Task<IActionResult> Index(string? date, CancellationToken cancellationToken)
         {
             return View(await BuildNbaScheduleViewModelAsync(date, cancellationToken));
+        }
+
+        /// <summary>
+        /// Date-aware Scores &amp; Simulations for ANY supported league (NBA, NFL, NHL,
+        /// MLB, CFB, CBB). Defaults to today, fetches the accurate schedule for the
+        /// selected date from ESPN, and renders the shared Index view.
+        /// </summary>
+        public async Task<IActionResult> Schedule(string league, string? date, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(league) || !_leagueScheduleService.IsSupported(league))
+            {
+                league = "NBA";
+            }
+            league = league.ToUpperInvariant();
+
+            var selectedDate = DateTime.Today;
+            if (!string.IsNullOrWhiteSpace(date) && DateTime.TryParse(date, out var parsed))
+            {
+                selectedDate = parsed.Date;
+            }
+
+            var viewModel = new PicksIndexViewModel
+            {
+                League = league,
+                SelectedDate = selectedDate
+            };
+
+            try
+            {
+                viewModel.Games = await _leagueScheduleService.GetGamesForDateAsync(league, selectedDate, cancellationToken);
+
+                // NBA also has betting lines available from the odds service.
+                if (league == "NBA")
+                {
+                    try
+                    {
+                        var oddsGames = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
+                        MergeOddsIntoSchedule(viewModel.Games, oddsGames);
+                    }
+                    catch (Exception oddsEx)
+                    {
+                        _logger?.LogWarning(oddsEx, "Unable to merge odds into {League} schedule", league);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error loading {League} schedule for {Date}", league, selectedDate);
+                viewModel.ErrorMessage = $"Unable to load games: {ex.Message}";
+            }
+
+            return View("Index", viewModel);
         }
 
         public async Task<IActionResult> AgainstTheSpread(CancellationToken cancellationToken)

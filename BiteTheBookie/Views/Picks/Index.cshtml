@@ -5,7 +5,7 @@
 @inject UserManager<ApplicationUser> UserManager
 
 @{
-    ViewData["Title"] = "Scores & Simulations - NBA";
+    ViewData["Title"] = $"Scores & Simulations - {Model.LeagueDisplayName}";
 
     var isPremiumOrVip = false;
     if (SignInManager.IsSignedIn(User))
@@ -24,17 +24,18 @@
     <div class="content-card">
         <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
-                <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nba.png" alt="NBA" style="width: 44px; height: 44px;" onerror="this.style.display='none'" />
+                <img src="@Model.LeagueLogo" alt="@Model.LeagueDisplayName" style="width: 44px; height: 44px;" onerror="this.style.display='none'" />
                 <div>
-                    <h1 class="h3 mb-0">NBA Scores &amp; Simulations</h1>
+                    <h1 class="h3 mb-0">@Model.LeagueDisplayName Scores &amp; Simulations</h1>
                     <div class="text-muted small">@Model.SelectedDateDisplay</div>
                 </div>
             </div>
 
-            @* Date navigation *@
-            <form method="get" asp-action="Index" asp-controller="Picks" class="d-flex align-items-center gap-2" id="dateForm">
+            @* Date navigation (preserves the current league) *@
+            <form method="get" asp-action="Schedule" asp-controller="Picks" class="d-flex align-items-center gap-2" id="dateForm">
+                <input type="hidden" name="league" value="@Model.League" />
                 <a class="btn btn-outline-secondary btn-sm"
-                   asp-action="Index" asp-controller="Picks" asp-route-date="@Model.PreviousDateInput"
+                   asp-action="Schedule" asp-controller="Picks" asp-route-league="@Model.League" asp-route-date="@Model.PreviousDateInput"
                    title="Previous day"><i class="fas fa-chevron-left"></i></a>
 
                 <input type="date" name="date" value="@Model.SelectedDateInput"
@@ -42,12 +43,12 @@
                        onchange="document.getElementById('dateForm').submit()" />
 
                 <a class="btn btn-outline-secondary btn-sm"
-                   asp-action="Index" asp-controller="Picks" asp-route-date="@Model.NextDateInput"
+                   asp-action="Schedule" asp-controller="Picks" asp-route-league="@Model.League" asp-route-date="@Model.NextDateInput"
                    title="Next day"><i class="fas fa-chevron-right"></i></a>
 
                 @if (!Model.IsToday)
                 {
-                    <a class="btn btn-outline-primary btn-sm" asp-action="Index" asp-controller="Picks">Today</a>
+                    <a class="btn btn-outline-primary btn-sm" asp-action="Schedule" asp-controller="Picks" asp-route-league="@Model.League">Today</a>
                 }
             </form>
         </div>
@@ -62,7 +63,7 @@
         @if (Model.Games == null || !Model.Games.Any())
         {
             <div class="text-center py-5">
-                <p class="text-muted mb-0">No NBA games scheduled for @Model.SelectedDateDisplay.</p>
+                <p class="text-muted mb-0">No @Model.LeagueDisplayName games scheduled for @Model.SelectedDateDisplay.</p>
             </div>
         }
         else
@@ -136,7 +137,7 @@
                                     }
                                 </td>
                                 <td class="text-end">
-                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "NBA" })"
+                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = Model.League })"
                                        class="btn btn-sm btn-outline-primary"
                                        data-sim-trigger>
                                         <i class="fas fa-bolt me-1"></i>Simulate

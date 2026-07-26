@@ -118,9 +118,39 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-hover">
                                 <li>
-                                    <a class="dropdown-item fw-semibold" asp-controller="Picks" asp-action="Index">
+                                    <a class="dropdown-item" asp-controller="Picks" asp-action="Schedule" asp-route-league="NFL">
+                                        <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="NFL" class="league-icon" />
+                                        <span>NFL Scores &amp; Simulations</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Picks" asp-action="Schedule" asp-route-league="NBA">
                                         <img src="~/img/NBALogoSmall.png" alt="NBA" class="league-icon" />
                                         <span>NBA Scores &amp; Simulations</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Picks" asp-action="Schedule" asp-route-league="MLB">
+                                        <img src="https://www.mlbstatic.com/team-logos/league-on-dark/1.svg" alt="MLB" class="league-icon" style="width: 24px;" />
+                                        <span>MLB Scores &amp; Simulations</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Picks" asp-action="Schedule" asp-route-league="NHL">
+                                        <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png" alt="NHL" class="league-icon" />
+                                        <span>NHL Scores &amp; Simulations</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Picks" asp-action="Schedule" asp-route-league="CBB">
+                                        <img src="~/img/NCAAMens_med.png" alt="CBB" class="league-icon" />
+                                        <span>College Basketball Scores &amp; Simulations</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="Picks" asp-action="Schedule" asp-route-league="CFB">
+                                        <img src="~/img/NCAAMens_med.png" alt="CFB" class="league-icon" />
+                                        <span>College Football Scores &amp; Simulations</span>
                                     </a>
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
