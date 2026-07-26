@@ -1,8 +1,8 @@
 /* =========================================================
    BiteTheBookie – "Cash Prime" Dark Fintech Theme
-   Loaded LAST so it overrides style.css / site-theme.css.
-   Only restyles look & feel (colors, surfaces, borders),
-   not layout or content.
+   Scoped under html.theme-cash so it is fully opt-in.
+   When the theme-cash class is absent the original
+   light/brand theme is used unchanged.
    ========================================================= */
 
 :root {
@@ -22,120 +22,124 @@
 }
 
 /* ?? Global surfaces & text ??????????????????????????????? */
-html,
-body,
-.site-body {
+html.theme-cash,
+html.theme-cash body,
+html.theme-cash .site-body {
     background-color: var(--cp-bg) !important;
     color: var(--cp-text) !important;
 }
 
-.site-main {
+html.theme-cash .site-main {
     background-color: var(--cp-bg) !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
+html.theme-cash h1,
+html.theme-cash h2,
+html.theme-cash h3,
+html.theme-cash h4,
+html.theme-cash h5,
+html.theme-cash h6 {
     color: var(--cp-text);
 }
 
-p {
+html.theme-cash p {
     color: var(--cp-text);
 }
 
-a {
+html.theme-cash a {
     color: var(--cp-primary);
 }
 
-.text-muted {
+html.theme-cash .text-muted {
     color: var(--cp-text-muted) !important;
 }
 
-.text-success {
+html.theme-cash .text-success {
     color: var(--cp-success) !important;
 }
 
-.text-danger {
+html.theme-cash .text-danger {
     color: var(--cp-danger) !important;
 }
 
 /* ?? Header / navigation ?????????????????????????????????? */
-.site-header,
-.top-header,
-.main-nav {
+html.theme-cash .site-header,
+html.theme-cash .top-header,
+html.theme-cash .main-nav {
     background: var(--cp-bg-elevated) !important;
     border-bottom: 1px solid var(--cp-border) !important;
 }
 
-.top-header a,
-.main-nav .nav-link {
+html.theme-cash .top-header a,
+html.theme-cash .main-nav .nav-link {
     color: var(--cp-text) !important;
 }
 
-.top-header a:hover,
-.main-nav .nav-link:hover {
+html.theme-cash .top-header a:hover,
+html.theme-cash .main-nav .nav-link:hover {
     color: var(--cp-primary) !important;
 }
 
-.main-nav .navbar-brand,
-.top-brand {
+html.theme-cash .main-nav .navbar-brand,
+html.theme-cash .top-brand {
     color: var(--cp-text) !important;
 }
 
-/* Active nav item underline (Cash Prime style) */
-.main-nav .nav-link.active {
+html.theme-cash .main-nav .nav-link.active {
     color: #fff !important;
     border-bottom: 2px solid var(--cp-primary);
 }
 
 /* ?? League menu / ticker strip ??????????????????????????? */
-.league-menu {
+html.theme-cash .league-menu {
     background: #060911 !important;
     border-bottom: 1px solid var(--cp-border) !important;
 }
 
-.league-menu a {
+html.theme-cash .league-menu a {
     color: var(--cp-text) !important;
 }
 
-.league-menu a:hover {
+html.theme-cash .league-menu a:hover {
     color: var(--cp-primary) !important;
     opacity: 1;
 }
 
 /* ?? Cards / panels ??????????????????????????????????????? */
-.card,
-.content-card,
-.pricing-card {
+html.theme-cash .card,
+html.theme-cash .content-card,
+html.theme-cash .pricing-card {
     background-color: var(--cp-bg-elevated) !important;
     border: 1px solid var(--cp-border) !important;
     color: var(--cp-text) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
-.card:hover {
+html.theme-cash .card:hover {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55) !important;
 }
 
-.card-body,
-.card-body p,
-.card-header,
-.card-footer {
+html.theme-cash .card-body,
+html.theme-cash .card-body p,
+html.theme-cash .card-header,
+html.theme-cash .card-footer {
     background-color: transparent !important;
     color: var(--cp-text) !important;
 }
 
-.card-header {
+html.theme-cash .card-header {
     border-bottom: 1px solid var(--cp-border) !important;
 }
 
 /* ?? Tables (the core dividends-style list) ??????????????? */
-.table {
+html.theme-cash .table {
     color: var(--cp-text) !important;
     border-color: var(--cp-border) !important;
     --bs-table-bg: transparent;
     --bs-table-color: var(--cp-text);
 }
 
-.table thead th {
+html.theme-cash .table thead th {
     background-color: transparent !important;
     color: var(--cp-text-muted) !important;
     font-weight: 600;
@@ -144,74 +148,74 @@ a {
     border-bottom: 1px solid var(--cp-border) !important;
 }
 
-.table tbody td {
+html.theme-cash .table tbody td {
     background-color: var(--cp-bg-row) !important;
     border-color: var(--cp-border) !important;
     color: var(--cp-text) !important;
 }
 
-.table tbody tr {
+html.theme-cash .table tbody tr {
     border-radius: 8px;
 }
 
-.table tbody tr:nth-child(even) td {
+html.theme-cash .table tbody tr:nth-child(even) td {
     background-color: var(--cp-bg-row-alt) !important;
 }
 
-.table tbody tr:hover td {
+html.theme-cash .table tbody tr:hover td {
     background-color: var(--cp-bg-hover) !important;
 }
 
 /* ?? Buttons ?????????????????????????????????????????????? */
-.btn-primary {
+html.theme-cash .btn-primary {
     background-color: var(--cp-primary) !important;
     border-color: var(--cp-primary) !important;
     color: #fff !important;
     font-weight: 600;
 }
 
-.btn-primary:hover {
+html.theme-cash .btn-primary:hover {
     background-color: var(--cp-primary-dark) !important;
     border-color: var(--cp-primary-dark) !important;
 }
 
-.btn-outline-primary {
+html.theme-cash .btn-outline-primary {
     color: var(--cp-primary) !important;
     border-color: var(--cp-primary) !important;
 }
 
-.btn-outline-primary:hover {
+html.theme-cash .btn-outline-primary:hover {
     background-color: var(--cp-primary) !important;
     color: #fff !important;
 }
 
-.btn-warning {
+html.theme-cash .btn-warning {
     background-color: var(--cp-primary) !important;
     border-color: var(--cp-primary) !important;
     color: #fff !important;
 }
 
-/* ?? Badges / tags (WATCHLIST / DIVIDEND / HYPE style) ???? */
-.badge {
+/* ?? Badges / tags ???????????????????????????????????????? */
+html.theme-cash .badge {
     font-weight: 600;
     letter-spacing: .3px;
 }
 
 /* ?? Form controls / search ??????????????????????????????? */
-.form-control,
-.form-select,
-.input-group-text {
+html.theme-cash .form-control,
+html.theme-cash .form-select,
+html.theme-cash .input-group-text {
     background-color: var(--cp-bg-row) !important;
     border-color: var(--cp-border) !important;
     color: var(--cp-text) !important;
 }
 
-.form-control::placeholder {
+html.theme-cash .form-control::placeholder {
     color: var(--cp-text-muted) !important;
 }
 
-.form-control:focus,
-.form-select:focus {
+html.theme-cash .form-control:focus,
+html.theme-cash .form-select:focus {
     background-color: var(--cp-bg-row) !important;
     border-color: var(--cp-primary) !important;
     box-shadow: 0 0 0 .2rem rgba(47, 107, 255, .25) !important;
@@ -219,56 +223,78 @@ a {
 }
 
 /* ?? Dropdown menus ??????????????????????????????????????? */
-.dropdown-menu {
+html.theme-cash .dropdown-menu {
     background-color: var(--cp-bg-elevated) !important;
     border: 1px solid var(--cp-border) !important;
 }
 
-.dropdown-item {
+html.theme-cash .dropdown-item {
     color: var(--cp-text) !important;
 }
 
-.dropdown-item:hover,
-.dropdown-item:focus {
+html.theme-cash .dropdown-item:hover,
+html.theme-cash .dropdown-item:focus {
     background-color: var(--cp-bg-hover) !important;
     color: #fff !important;
 }
 
-.dropdown-divider {
+html.theme-cash .dropdown-divider {
     border-color: var(--cp-border) !important;
 }
 
 /* ?? Section headers / hero bars ?????????????????????????? */
-.section-header,
-.cfb-conference__title,
-.cfb-teams-hero {
+html.theme-cash .section-header,
+html.theme-cash .cfb-conference__title,
+html.theme-cash .cfb-teams-hero {
     background: var(--cp-bg-elevated) !important;
     color: var(--cp-text) !important;
     border: 1px solid var(--cp-border);
 }
 
 /* ?? Modals ??????????????????????????????????????????????? */
-.modal-content {
+html.theme-cash .modal-content {
     background-color: var(--cp-bg-elevated) !important;
     color: var(--cp-text) !important;
     border: 1px solid var(--cp-border) !important;
 }
 
 /* ?? Nav pills ???????????????????????????????????????????? */
-.nav-pills .nav-link {
+html.theme-cash .nav-pills .nav-link {
     color: var(--cp-text-muted) !important;
 }
 
-.nav-pills .nav-link:hover {
+html.theme-cash .nav-pills .nav-link:hover {
     background-color: var(--cp-bg-hover) !important;
     color: var(--cp-text) !important;
 }
 
-.nav-pills .nav-link.active {
+html.theme-cash .nav-pills .nav-link.active {
     background-color: var(--cp-primary) !important;
     color: #fff !important;
 }
 
 /* ?? Breadcrumbs ?????????????????????????????????????????? */
-.breadcrumb-item a { color: var(--cp-primary) !important; }
-.breadcrumb-item.active { color: var(--cp-text-muted) !important; }
+html.theme-cash .breadcrumb-item a { color: var(--cp-primary) !important; }
+html.theme-cash .breadcrumb-item.active { color: var(--cp-text-muted) !important; }
+
+/* ?? Theme toggle button (visible in both themes) ????????? */
+.theme-toggle-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, .35);
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, .12);
+}
+
+html.theme-cash .theme-toggle-btn {
+    border-color: var(--cp-border);
+}
