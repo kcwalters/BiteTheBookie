@@ -51,6 +51,17 @@ namespace BiteTheBookie.Controllers
             "OKC","ORL","PHI","PHX","POR","SAC","SAS","TOR","UTA","WAS"
         };
 
+        // MLB ESPN abbreviations — safety-net detection when a gameId uses short codes
+        // (e.g. CIN, STL) instead of full team names. Checked only after NBA so that
+        // codes overlapping with NBA (ATL, BOS, etc.) don't misclassify basketball games.
+        private static readonly HashSet<string> MlbAbbrevCodes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "ARI","ATL","BAL","BOS","CHC","CWS","CIN","CLE","COL","DET",
+            "HOU","KC","LAA","LAD","MIA","MIL","MIN","NYM","NYY","OAK","ATH",
+            "PHI","PIT","SD","SF","SEA","STL","TB","TEX","TOR","WSH"
+        };
+
+
         private static readonly Dictionary<string, (string FullName, string LogoId)> NbaTeamNames = new()
         {
             { "ATL", ("Atlanta Hawks",           "333") },
@@ -415,11 +426,26 @@ namespace BiteTheBookie.Controllers
                     && CFBGamesService.IsKnownTeamCode(homeTeamCode)
                     && !(NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode)));
 
+            // NFL / NHL are only reached via an explicit league hint (their team codes
+            // overlap with NBA/MLB short codes, so they cannot be reliably auto-detected).
+            bool isNfl = !isCfb && string.Equals(league, "NFL", StringComparison.OrdinalIgnoreCase);
+            bool isNhl = !isCfb && string.Equals(league, "NHL", StringComparison.OrdinalIgnoreCase);
+
             // NBA codes take priority — if both codes are recognised NBA codes the game
             // is NBA regardless of any overlap with MLB short codes (BOS, MIL, ATL, etc.)
-            bool isNba = !isCfb && NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
-            bool isMlb = !isCfb && !isNba && (MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode));
-            string resolvedLeague = isCfb ? "CFB" : (isNba ? "NBA" : (isMlb ? "MLB" : "NBA"));
+            bool isNba = !isCfb && !isNfl && !isNhl && NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
+            bool isMlb = !isCfb && !isNfl && !isNhl && !isNba
+                && (string.Equals(league, "MLB", StringComparison.OrdinalIgnoreCase)
+                    || MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode)
+                    // Safety net: recognise ESPN short codes (CIN, STL, …) when both teams
+                    // map to MLB abbreviations, so MLB games never fall through to NBA.
+                    || (MlbAbbrevCodes.Contains(awayTeamCode) && MlbAbbrevCodes.Contains(homeTeamCode)));
+            string resolvedLeague = isCfb ? "CFB"
+                : isNfl ? "NFL"
+                : isNhl ? "NHL"
+                : isNba ? "NBA"
+                : isMlb ? "MLB"
+                : "NBA";
 
             GameSimulationViewModel viewModel;
 
@@ -456,6 +482,10 @@ namespace BiteTheBookie.Controllers
                 {
                     _logger.LogWarning(ex, "Could not fetch probable pitchers for {GameId}", gameId);
                 }
+            }
+            else if (isNfl || isNhl)
+            {
+                viewModel = BuildGenericViewModel(gameId!, awayTeamCode, homeTeamCode, resolvedLeague);
             }
             else
             {
@@ -529,6 +559,18 @@ namespace BiteTheBookie.Controllers
                             DateTime.UtcNow.AddHours(6),
                             cancellationToken);
                     }
+                    else if (isNfl || isNhl)
+                    {
+                        viewModel.SimulationContent = await _simulationService.GenerateGameSimulationAsync(
+                            viewModel.HomeTeam,
+                            viewModel.AwayTeam,
+                            resolvedLeague,
+                            homeRoster: null,
+                            awayRoster: null,
+                            injuries: null,
+                            DateTime.UtcNow.AddHours(6),
+                            cancellationToken);
+                    }
                     else
                     {
                         // Rosters are now fetched internally by the simulation service via OpenAI.
@@ -589,6 +631,31 @@ namespace BiteTheBookie.Controllers
             return View(viewModel);
         }
 
+        /// <summary>
+        /// Builds a matchup view model for leagues that use ESPN team abbreviations
+        /// directly (NFL, NHL). Logos come from ESPN's public CDN.
+        /// </summary>
+        private GameSimulationViewModel BuildGenericViewModel(string gameId, string awayTeamCode, string homeTeamCode, string league)
+        {
+            var sport = league.ToUpperInvariant() switch
+            {
+                "NFL" => "nfl",
+                "NHL" => "nhl",
+                _ => league.ToLowerInvariant()
+            };
+
+            return new GameSimulationViewModel
+            {
+                GameId       = gameId,
+                AwayTeam     = awayTeamCode.ToUpperInvariant(),
+                HomeTeam     = homeTeamCode.ToUpperInvariant(),
+                League       = league,
+                AwayTeamLogo = $"https://a.espncdn.com/i/teamlogos/{sport}/500/{awayTeamCode.ToLowerInvariant()}.png",
+                HomeTeamLogo = $"https://a.espncdn.com/i/teamlogos/{sport}/500/{homeTeamCode.ToLowerInvariant()}.png",
+                IsLoading    = false
+            };
+        }
+
         private GameSimulationViewModel BuildCfbViewModel(string gameId, string awayTeamCode, string homeTeamCode)
         {
             var away = CFBGamesService.GetTeamInfo(awayTeamCode);
@@ -608,16 +675,70 @@ namespace BiteTheBookie.Controllers
 
         private GameSimulationViewModel BuildMlbViewModel(string gameId, string awayTeamCode, string homeTeamCode)
         {
+            // The AI simulation needs full team names to resolve rosters — a 3-letter
+            // code like "col" or "mil" cannot be mapped to a roster. Resolve display
+            // names from the abbreviation, falling back to the raw code.
+            var awayName = MlbFullName(awayTeamCode);
+            var homeName = MlbFullName(homeTeamCode);
+
             return new GameSimulationViewModel
             {
                 GameId       = gameId,
-                AwayTeam     = awayTeamCode,
-                HomeTeam     = homeTeamCode,
+                AwayTeam     = awayName,
+                HomeTeam     = homeName,
                 League       = "MLB",
-                AwayTeamLogo = $"https://www.mlbstatic.com/team-logos/{GetMlbTeamId(awayTeamCode)}.svg",
-                HomeTeamLogo = $"https://www.mlbstatic.com/team-logos/{GetMlbTeamId(homeTeamCode)}.svg",
+                // ESPN's CDN keys MLB logos by team abbreviation (ari, wsh, …), matching
+                // the schedule codes. mlbstatic.com requires numeric IDs and only works for
+                // full team names, so it breaks on short codes.
+                AwayTeamLogo = MlbLogoUrl(awayTeamCode),
+                HomeTeamLogo = MlbLogoUrl(homeTeamCode),
                 IsLoading    = false
             };
+        }
+
+        // Maps an MLB ESPN abbreviation (or full name) to the full team name so the AI
+        // simulation can resolve rosters. Returns the input unchanged if not recognised.
+        private static string MlbFullName(string code)
+        {
+            return code.ToUpperInvariant() switch
+            {
+                "ARI" => "Arizona Diamondbacks", "ATL" => "Atlanta Braves",
+                "BAL" => "Baltimore Orioles",    "BOS" => "Boston Red Sox",
+                "CHC" => "Chicago Cubs",         "CWS" => "Chicago White Sox",
+                "CHW" => "Chicago White Sox",    "CIN" => "Cincinnati Reds",
+                "CLE" => "Cleveland Guardians",  "COL" => "Colorado Rockies",
+                "DET" => "Detroit Tigers",       "HOU" => "Houston Astros",
+                "KC"  => "Kansas City Royals",   "LAA" => "Los Angeles Angels",
+                "LAD" => "Los Angeles Dodgers",  "MIA" => "Miami Marlins",
+                "MIL" => "Milwaukee Brewers",    "MIN" => "Minnesota Twins",
+                "NYM" => "New York Mets",        "NYY" => "New York Yankees",
+                "OAK" => "Athletics",            "ATH" => "Athletics",
+                "PHI" => "Philadelphia Phillies","PIT" => "Pittsburgh Pirates",
+                "SD"  => "San Diego Padres",     "SF"  => "San Francisco Giants",
+                "SEA" => "Seattle Mariners",     "STL" => "St. Louis Cardinals",
+                "TB"  => "Tampa Bay Rays",       "TEX" => "Texas Rangers",
+                "TOR" => "Toronto Blue Jays",    "WSH" => "Washington Nationals",
+                "WSN" => "Washington Nationals",
+                _ => code
+            };
+        }
+
+        // Maps an MLB team code/name to an ESPN logo URL. ESPN uses lowercase abbreviations;
+        // a couple differ from the common codes used elsewhere.
+        private static string MlbLogoUrl(string code)
+        {
+            var abbr = code.ToLowerInvariant() switch
+            {
+                "cws" => "chw",          // Chicago White Sox
+                "wsh" => "wsh",
+                "sf"  => "sf",
+                "sd"  => "sd",
+                "tb"  => "tb",
+                "kc"  => "kc",
+                "ath" => "oak",          // Athletics
+                _     => code.ToLowerInvariant()
+            };
+            return $"https://a.espncdn.com/i/teamlogos/mlb/500/{abbr}.png";
         }
 
         private async Task<GameSimulationViewModel> BuildNbaViewModelAsync(

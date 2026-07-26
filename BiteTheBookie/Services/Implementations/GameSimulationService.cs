@@ -50,6 +50,10 @@ namespace BiteTheBookie.Services.Implementations
                 if (league.Equals("MLB", StringComparison.OrdinalIgnoreCase))
                     return GetMlbMockSimulation(homeTeam, awayTeam, homeProbablePitcher, awayProbablePitcher);
 
+                if (league.Equals("CFB", StringComparison.OrdinalIgnoreCase)
+                    || league.Equals("NFL", StringComparison.OrdinalIgnoreCase))
+                    return GetCfbMockSimulation(homeTeam, awayTeam);
+
                 var injuredPlayers = injuries?
                     .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
                     .Select(i => i.PlayerName)
@@ -61,6 +65,21 @@ namespace BiteTheBookie.Services.Implementations
             {
                 return await GenerateMlbSimulationAsync(homeTeam, awayTeam, simulationId, timestamp,
                     gameTime, cancellationToken, homeProbablePitcher, awayProbablePitcher);
+            }
+
+            if (league.Equals("CFB", StringComparison.OrdinalIgnoreCase))
+            {
+                return await GenerateCfbSimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken);
+            }
+
+            if (league.Equals("NFL", StringComparison.OrdinalIgnoreCase))
+            {
+                return await GenerateFootballSimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken, isNfl: true);
+            }
+
+            if (league.Equals("NHL", StringComparison.OrdinalIgnoreCase))
+            {
+                return await GenerateHockeySimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken);
             }
 
             // ── NBA ───────────────────────────────────────────────────────────
@@ -873,9 +892,225 @@ Confirm every stat is a FOOTBALL stat and the final score is a realistic footbal
 <p><em>Simulated game for entertainment purposes only.</em></p>";
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        // ── NFL (professional football) ────────────────────────────────────────
 
-        private static string StripCodeFences(string text)
+        private async Task<string> GenerateFootballSimulationAsync(
+            string homeTeam, string awayTeam, string simulationId,
+            string timestamp, DateTime? gameTime, CancellationToken cancellationToken, bool isNfl)
+        {
+            try
+            {
+                _logger.LogInformation(
+                    "Calling Azure OpenAI for NFL: {AwayTeam} @ {HomeTeam}", awayTeam, homeTeam);
+
+                var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var season = "2025 NFL season";
+
+                var prompt = $@"Generate a FRESH, UNIQUE NFL (professional football) game simulation: {awayTeam} (away) at {homeTeam} (home).
+
+SIMULATION ID : {simulationId}
+GENERATED AT  : {timestamp}
+SEASON        : {season} (as of {today})
+
+OUTPUT FORMAT — NON-NEGOTIABLE:
+- Return ONLY raw HTML. Zero Markdown.
+- Use <h2> for sections, <h3> for sub-headings, <p> for prose, <ul>/<li> for lists, <table> for tables.
+- Wrap every player name in <strong> tags each and every time it appears.
+- Do NOT put anything outside the HTML (no preamble, no code fences).
+
+ROSTER GUIDANCE:
+- Reference realistic, plausible CURRENT NFL players for each team (QB, RB, WR, TE, key defenders).
+- Use only players who plausibly play for {awayTeam} or {homeTeam} in the {season}.
+- A player who was traded, released, or signed elsewhere must NOT appear on his former team.
+- Do NOT invent absurd names or reference players from other teams.
+
+SIMULATION REQUIREMENTS:
+- This is FOOTBALL, not basketball. Scores MUST be realistic NFL totals
+  (typically 13-31 points per team; blowouts can reach the 40s).
+- THE GAME MUST HAVE A WINNER. No ties — use overtime if the score is level after regulation.
+- Reflect each team's realistic scheme, strengths, and home-field environment
+  (name the home stadium and how the crowd/venue affected play).
+- Football stat lines only — passing yards, rushing yards, receiving yards, touchdowns,
+  tackles, sacks, interceptions. Do NOT use basketball stats (points, rebounds, assists).
+
+Include these sections in order:
+1. <h2>Final Score</h2> — include an HTML quarter-by-quarter line score table (Q1-Q4 + Final)
+2. <h2>Game Summary</h2> — 2-3 sentences naming key players
+3. <h2>Key Performers</h2> — HTML table: Player | Team | Pos | Statline (QB/RB/WR/defense)
+4. <h2>Scoring Summary</h2> — HTML table: Quarter | Team | Play | Score
+5. <h2>Team Statistics</h2> — HTML table: Total Yards, Passing, Rushing, Turnovers, Time of Possession, 3rd-Down %
+6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
+7. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
+
+FINAL CHECK BEFORE RESPONDING:
+Confirm every stat is a FOOTBALL stat and the final score is a realistic NFL score.";
+
+                var messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an expert NFL game simulation engine for the {season}. " +
+                        $"ABSOLUTE RULES — violating any of these produces an invalid simulation: " +
+                        $"(1) Output raw HTML only — zero Markdown. " +
+                        $"(2) This is FOOTBALL — use only football stats (yards, TDs, tackles, sacks, INTs). " +
+                        $"Never use basketball stats (points, rebounds, assists) and never produce basketball-style scores. " +
+                        $"(3) Final scores must be realistic NFL totals and the game must have a winner. " +
+                        $"(4) Wrap every player name in <strong> tags wherever it appears. " +
+                        $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
+                    new UserChatMessage(prompt)
+                };
+
+                var response = await _chatClient!.CompleteChatAsync(
+                    messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
+                var simulationText = StripCodeFences(response.Value.Content[0].Text);
+
+                _logger.LogInformation("NFL simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
+                    simulationId, awayTeam, homeTeam);
+
+                return simulationText;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "NFL simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
+                    awayTeam, homeTeam);
+                return GetCfbMockSimulation(homeTeam, awayTeam);
+            }
+        }
+
+        // ── NHL (professional hockey) ──────────────────────────────────────────
+
+        private async Task<string> GenerateHockeySimulationAsync(
+            string homeTeam, string awayTeam, string simulationId,
+            string timestamp, DateTime? gameTime, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation(
+                    "Calling Azure OpenAI for NHL: {AwayTeam} @ {HomeTeam}", awayTeam, homeTeam);
+
+                var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var season = "2025-26 NHL season";
+
+                var prompt = $@"Generate a FRESH, UNIQUE NHL (professional hockey) game simulation: {awayTeam} (away) at {homeTeam} (home).
+
+SIMULATION ID : {simulationId}
+GENERATED AT  : {timestamp}
+SEASON        : {season} (as of {today})
+
+OUTPUT FORMAT — NON-NEGOTIABLE:
+- Return ONLY raw HTML. Zero Markdown.
+- Use <h2> for sections, <h3> for sub-headings, <p> for prose, <ul>/<li> for lists, <table> for tables.
+- Wrap every player name in <strong> tags each and every time it appears.
+- Do NOT put anything outside the HTML (no preamble, no code fences).
+
+ROSTER GUIDANCE:
+- Reference realistic, plausible CURRENT NHL players for each team (forwards, defensemen, starting goaltender).
+- Use only players who plausibly play for {awayTeam} or {homeTeam} in the {season}.
+- A player who was traded, released, or signed elsewhere must NOT appear on his former team.
+- Do NOT invent absurd names or reference players from other teams.
+
+SIMULATION REQUIREMENTS:
+- This is HOCKEY, not basketball. Scores MUST be realistic NHL totals
+  (typically 1-6 goals per team).
+- THE GAME MUST HAVE A WINNER. No ties — use overtime or a shootout if level after regulation.
+- Reflect each team's realistic style, strengths, goaltending, and home-arena environment.
+- Hockey stat lines only — goals, assists, points, shots on goal, saves, save %, time on ice,
+  power-play/penalty-kill. Do NOT use basketball stats (points as baskets, rebounds, assists as passes).
+
+Include these sections in order:
+1. <h2>Final Score</h2> — include an HTML period-by-period line score table (P1-P3 (+OT/SO) + Final)
+2. <h2>Game Summary</h2> — 2-3 sentences naming key players
+3. <h2>Key Performers</h2> — HTML table: Player | Team | Pos | Statline (skaters G/A/PTS/SOG; goalie SV/SV%)
+4. <h2>Scoring Summary</h2> — HTML table: Period | Team | Goal Scorer (assists) | Score
+5. <h2>Team Statistics</h2> — HTML table: Shots on Goal, Power Play, Penalty Minutes, Faceoff %, Hits
+6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
+7. <h2>Betting Analysis</h2> — puck line, over/under (total goals), moneyline impact
+
+FINAL CHECK BEFORE RESPONDING:
+Confirm every stat is a HOCKEY stat and the final score is a realistic NHL score.";
+
+                var messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an expert NHL game simulation engine for the {season}. " +
+                        $"ABSOLUTE RULES — violating any of these produces an invalid simulation: " +
+                        $"(1) Output raw HTML only — zero Markdown. " +
+                        $"(2) This is HOCKEY — use only hockey stats (goals, assists, shots, saves). " +
+                        $"Never use basketball stats and never produce basketball-style scores. " +
+                        $"(3) Final scores must be realistic NHL totals and the game must have a winner. " +
+                        $"(4) Wrap every player name in <strong> tags wherever it appears. " +
+                        $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
+                    new UserChatMessage(prompt)
+                };
+
+                var response = await _chatClient!.CompleteChatAsync(
+                    messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
+                var simulationText = StripCodeFences(response.Value.Content[0].Text);
+
+                _logger.LogInformation("NHL simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
+                    simulationId, awayTeam, homeTeam);
+
+                return simulationText;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "NHL simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
+                    awayTeam, homeTeam);
+                return GetHockeyMockSimulation(homeTeam, awayTeam);
+            }
+        }
+
+        private static string GetHockeyMockSimulation(string homeTeam, string awayTeam)
+        {
+            var seed = (homeTeam + awayTeam + DateTime.UtcNow.Ticks).GetHashCode();
+            var rng  = new Random(seed);
+
+            int[] awayP = { rng.Next(0, 3), rng.Next(0, 3), rng.Next(0, 3) };
+            int[] homeP = { rng.Next(0, 3), rng.Next(0, 3), rng.Next(0, 3) };
+            int awayScore = awayP.Sum();
+            int homeScore = homeP.Sum();
+            while (awayScore == homeScore) { homeScore++; }
+
+            bool awayWins = awayScore > homeScore;
+            string winner = awayWins ? awayTeam : homeTeam;
+            string loser  = awayWins ? homeTeam : awayTeam;
+
+            return $@"<h1>GAME SIMULATION: {awayTeam} @ {homeTeam}</h1>
+
+<h2>Final Score</h2>
+<table>
+  <thead><tr><th>Team</th><th>P1</th><th>P2</th><th>P3</th><th>Final</th></tr></thead>
+  <tbody>
+    <tr><td><strong>{awayTeam}</strong></td><td>{awayP[0]}</td><td>{awayP[1]}</td><td>{awayP[2]}</td><td><strong>{awayScore}</strong></td></tr>
+    <tr><td><strong>{homeTeam}</strong></td><td>{homeP[0]}</td><td>{homeP[1]}</td><td>{homeP[2]}</td><td><strong>{homeScore}</strong></td></tr>
+  </tbody>
+</table>
+
+<h2>Game Summary</h2>
+<p><strong>{winner}</strong> defeats <strong>{loser}</strong> {Math.Max(awayScore, homeScore)}-{Math.Min(awayScore, homeScore)} in a hard-fought contest decided by strong goaltending and timely scoring.</p>
+
+<h2>Team Statistics</h2>
+<table>
+  <thead><tr><th>Statistic</th><th>{awayTeam}</th><th>{homeTeam}</th></tr></thead>
+  <tbody>
+    <tr><td>Shots on Goal</td><td>{rng.Next(22, 40)}</td><td>{rng.Next(22, 40)}</td></tr>
+    <tr><td>Power Play</td><td>{rng.Next(0, 4)}/{rng.Next(2, 6)}</td><td>{rng.Next(0, 4)}/{rng.Next(2, 6)}</td></tr>
+    <tr><td>Penalty Minutes</td><td>{rng.Next(2, 14)}</td><td>{rng.Next(2, 14)}</td></tr>
+    <tr><td>Faceoff %</td><td>{rng.Next(42, 58)}%</td><td>{rng.Next(42, 58)}%</td></tr>
+  </tbody>
+</table>
+
+<h2>Betting Analysis</h2>
+<ul>
+  <li><strong>Puck Line:</strong> {winner} covers</li>
+  <li><strong>Over/Under:</strong> Combined {awayScore + homeScore} goals</li>
+  <li><strong>Moneyline:</strong> {winner} wins outright</li>
+</ul>
+<p><em>Simulated game for entertainment purposes only.</em></p>";
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
+private static string StripCodeFences(string text)
         {
             text = text.Trim();
             if (text.StartsWith("```html", StringComparison.OrdinalIgnoreCase))
