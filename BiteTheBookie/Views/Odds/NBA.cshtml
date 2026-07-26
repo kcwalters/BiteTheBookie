@@ -5,59 +5,6 @@
     ViewData["Title"] = "NBA Odds";
 }
 
-<style>
-    .odds-table th,
-    .odds-table td {
-        text-align: center;
-        vertical-align: middle;
-    }
-    
-    .odds-column {
-        min-width: 220px;
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-    
-    .odds-row {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        width: 100%;
-    }
-    
-    .odds-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        max-width: 300px;
-        min-width: 240px;
-    }
-    
-    .odds-item .team-label {
-        margin-right: 10px;
-        white-space: nowrap;
-        text-align: left;
-        flex: 0 0 auto;
-    }
-    
-    .odds-item .badge {
-        flex: 0 0 auto;
-        min-width: 60px;
-        text-align: center;
-    }
-    
-    .odds-table tbody tr {
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    
-    .odds-table tbody tr:hover {
-        background-color: rgba(13, 110, 253, 0.1) !important;
-    }
-</style>
-
 <div class="container py-4">
     <h2 class="mb-4">NBA Odds</h2>
 

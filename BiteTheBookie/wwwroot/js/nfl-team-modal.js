@@ -67,10 +67,12 @@
     { abbr: 'WAS', name: 'Washington Wizards' }
   ];
 
-  // Public, stable CDN for team logos (no copyrighted ESPN assets in repo)
-  // Source: https://github.com/StevenDaily/nfl-football-logos (raw GitHub CDN)
+  // Real team logos from ESPN's public CDN (lowercase abbreviation).
   function nflLogoUrl(abbr) {
-    return `https://raw.githubusercontent.com/StevenDaily/nfl-football-logos/master/svg/${abbr}.svg`;
+    const espnCode = {
+      WAS: 'wsh' // Washington Commanders
+    }[abbr] || abbr.toLowerCase();
+    return `https://a.espncdn.com/i/teamlogos/nfl/500/${espnCode}.png`;
   }
 
   function nbaLogoUrl(abbr) {
@@ -160,6 +162,15 @@
   ];
 
   function cbbLogoUrl(abbr) {
+    // Reuse the shared ESPN school logos from the CFB list (same schools, same
+    // logoId). Match by team name so College Basketball shows real logos like CFB.
+    const cbb = cbbTeams.find(x => x.abbr === abbr);
+    if (cbb) {
+      const cfb = cfbTeams.find(x => x.name === cbb.name);
+      if (cfb && cfb.logoId) {
+        return `https://a.espncdn.com/i/teamlogos/ncaa/500/${cfb.logoId}.png`;
+      }
+    }
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" rx="6" fill="#003366"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="700">${abbr}</text></svg>`;
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
@@ -236,6 +247,37 @@
     return 'https://www.espn.com/mens-college-basketball/teams';
   }
 
+  function getNflTeamUrl(abbr) {
+    return `/NFL/Team?code=${encodeURIComponent(abbr)}`;
+  }
+
+  function buildNFLModalBodyHtml(columns, teamMap, logoUrl) {
+    return columns
+      .map(col => {
+        const items = col.teams
+          .map(abbr => {
+            const t = teamMap.get(abbr);
+            if (!t) return '';
+            const url = getNflTeamUrl(abbr);
+            return `
+              <a class="nfl-team-modal__team" href="${url}" data-team="${abbr}">
+                <img class="nfl-team-modal__logo" src="${logoUrl(abbr)}" alt="${t.name}" loading="lazy" />
+                <span class="nfl-team-modal__name">${t.name}</span>
+              </a>`;
+          })
+          .join('');
+
+        return `
+          <div class="nfl-team-modal__col">
+            <div class="nfl-team-modal__col-title">${col.title}</div>
+            <div class="nfl-team-modal__teams">
+              ${items}
+            </div>
+          </div>`;
+      })
+      .join('');
+  }
+
   function buildModalBodyHtml(columns, teamMap, logoUrl) {
     return columns
       .map(col => {
@@ -262,6 +304,10 @@
       .join('');
   }
 
+  function getCbbTeamUrl(abbr) {
+    return `/CollegeBasketball/Team?code=${encodeURIComponent(abbr)}`;
+  }
+
   function buildCBBModalBodyHtml(columns, teamMap, logoUrl) {
     return columns
       .map(col => {
@@ -269,9 +315,9 @@
           .map(abbr => {
             const t = teamMap.get(abbr);
             if (!t) return '';
-            const espnUrl = getEspnTeamUrl(abbr, t.name);
+            const url = getCbbTeamUrl(abbr);
             return `
-              <a class="nfl-team-modal__team" href="${espnUrl}" target="_blank" data-team="${abbr}">
+              <a class="nfl-team-modal__team" href="${url}" data-team="${abbr}">
                 <img class="nfl-team-modal__logo" src="${logoUrl(abbr)}" alt="${t.name}" loading="lazy" />
                 <span class="nfl-team-modal__name">${t.name}</span>
               </a>`;
@@ -555,8 +601,15 @@
   ];
 
   function nhlLogoUrl(abbr) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="72" height="72" rx="12" fill="#111111"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">${abbr}</text></svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    // Real team logos from ESPN's public CDN. A few teams use ESPN-specific codes
+    // that differ from our internal abbreviations.
+    const espnCode = {
+      LAK: 'la',   // Los Angeles Kings
+      NJD: 'nj',   // New Jersey Devils
+      SJS: 'sj',   // San Jose Sharks
+      TBL: 'tb'    // Tampa Bay Lightning
+    }[abbr] || abbr.toLowerCase();
+    return `https://a.espncdn.com/i/teamlogos/nhl/500/${espnCode}.png`;
   }
 
   const nhlColumns = [
@@ -658,6 +711,7 @@
       teams: nflTeams,
       columns: nflColumns,
       logoUrl: nflLogoUrl,
+      buildFunction: buildNFLModalBodyHtml,
       oddsLink: { url: '/Odds/NFL', label: 'View NFL Odds' }
     });
 
