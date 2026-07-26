@@ -1,0 +1,274 @@
+/* =========================================================
+   BiteTheBookie – "Cash Prime" Dark Fintech Theme
+   Loaded LAST so it overrides style.css / site-theme.css.
+   Only restyles look & feel (colors, surfaces, borders),
+   not layout or content.
+   ========================================================= */
+
+:root {
+    --cp-bg:            #0a0e1a; /* page background (deep navy/near-black) */
+    --cp-bg-elevated:   #0f1626; /* cards, header surfaces */
+    --cp-bg-row:        #111a2e; /* table rows / panels */
+    --cp-bg-row-alt:    #0d1524;
+    --cp-bg-hover:      #16223b;
+    --cp-border:        #1e2a44; /* subtle hairline borders */
+    --cp-primary:       #2f6bff; /* accent blue */
+    --cp-primary-dark:  #2350cc;
+    --cp-text:          #e6ebf5; /* primary text */
+    --cp-text-muted:    #8a97b1; /* secondary text */
+    --cp-success:       #22c55e; /* green up */
+    --cp-danger:        #ef4444; /* red down */
+    --cp-gold:          #f3c623;
+}
+
+/* ?? Global surfaces & text ??????????????????????????????? */
+html,
+body,
+.site-body {
+    background-color: var(--cp-bg) !important;
+    color: var(--cp-text) !important;
+}
+
+.site-main {
+    background-color: var(--cp-bg) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--cp-text);
+}
+
+p {
+    color: var(--cp-text);
+}
+
+a {
+    color: var(--cp-primary);
+}
+
+.text-muted {
+    color: var(--cp-text-muted) !important;
+}
+
+.text-success {
+    color: var(--cp-success) !important;
+}
+
+.text-danger {
+    color: var(--cp-danger) !important;
+}
+
+/* ?? Header / navigation ?????????????????????????????????? */
+.site-header,
+.top-header,
+.main-nav {
+    background: var(--cp-bg-elevated) !important;
+    border-bottom: 1px solid var(--cp-border) !important;
+}
+
+.top-header a,
+.main-nav .nav-link {
+    color: var(--cp-text) !important;
+}
+
+.top-header a:hover,
+.main-nav .nav-link:hover {
+    color: var(--cp-primary) !important;
+}
+
+.main-nav .navbar-brand,
+.top-brand {
+    color: var(--cp-text) !important;
+}
+
+/* Active nav item underline (Cash Prime style) */
+.main-nav .nav-link.active {
+    color: #fff !important;
+    border-bottom: 2px solid var(--cp-primary);
+}
+
+/* ?? League menu / ticker strip ??????????????????????????? */
+.league-menu {
+    background: #060911 !important;
+    border-bottom: 1px solid var(--cp-border) !important;
+}
+
+.league-menu a {
+    color: var(--cp-text) !important;
+}
+
+.league-menu a:hover {
+    color: var(--cp-primary) !important;
+    opacity: 1;
+}
+
+/* ?? Cards / panels ??????????????????????????????????????? */
+.card,
+.content-card,
+.pricing-card {
+    background-color: var(--cp-bg-elevated) !important;
+    border: 1px solid var(--cp-border) !important;
+    color: var(--cp-text) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+.card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55) !important;
+}
+
+.card-body,
+.card-body p,
+.card-header,
+.card-footer {
+    background-color: transparent !important;
+    color: var(--cp-text) !important;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--cp-border) !important;
+}
+
+/* ?? Tables (the core dividends-style list) ??????????????? */
+.table {
+    color: var(--cp-text) !important;
+    border-color: var(--cp-border) !important;
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--cp-text);
+}
+
+.table thead th {
+    background-color: transparent !important;
+    color: var(--cp-text-muted) !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    border-bottom: 1px solid var(--cp-border) !important;
+}
+
+.table tbody td {
+    background-color: var(--cp-bg-row) !important;
+    border-color: var(--cp-border) !important;
+    color: var(--cp-text) !important;
+}
+
+.table tbody tr {
+    border-radius: 8px;
+}
+
+.table tbody tr:nth-child(even) td {
+    background-color: var(--cp-bg-row-alt) !important;
+}
+
+.table tbody tr:hover td {
+    background-color: var(--cp-bg-hover) !important;
+}
+
+/* ?? Buttons ?????????????????????????????????????????????? */
+.btn-primary {
+    background-color: var(--cp-primary) !important;
+    border-color: var(--cp-primary) !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: var(--cp-primary-dark) !important;
+    border-color: var(--cp-primary-dark) !important;
+}
+
+.btn-outline-primary {
+    color: var(--cp-primary) !important;
+    border-color: var(--cp-primary) !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--cp-primary) !important;
+    color: #fff !important;
+}
+
+.btn-warning {
+    background-color: var(--cp-primary) !important;
+    border-color: var(--cp-primary) !important;
+    color: #fff !important;
+}
+
+/* ?? Badges / tags (WATCHLIST / DIVIDEND / HYPE style) ???? */
+.badge {
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+/* ?? Form controls / search ??????????????????????????????? */
+.form-control,
+.form-select,
+.input-group-text {
+    background-color: var(--cp-bg-row) !important;
+    border-color: var(--cp-border) !important;
+    color: var(--cp-text) !important;
+}
+
+.form-control::placeholder {
+    color: var(--cp-text-muted) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--cp-bg-row) !important;
+    border-color: var(--cp-primary) !important;
+    box-shadow: 0 0 0 .2rem rgba(47, 107, 255, .25) !important;
+    color: var(--cp-text) !important;
+}
+
+/* ?? Dropdown menus ??????????????????????????????????????? */
+.dropdown-menu {
+    background-color: var(--cp-bg-elevated) !important;
+    border: 1px solid var(--cp-border) !important;
+}
+
+.dropdown-item {
+    color: var(--cp-text) !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: var(--cp-bg-hover) !important;
+    color: #fff !important;
+}
+
+.dropdown-divider {
+    border-color: var(--cp-border) !important;
+}
+
+/* ?? Section headers / hero bars ?????????????????????????? */
+.section-header,
+.cfb-conference__title,
+.cfb-teams-hero {
+    background: var(--cp-bg-elevated) !important;
+    color: var(--cp-text) !important;
+    border: 1px solid var(--cp-border);
+}
+
+/* ?? Modals ??????????????????????????????????????????????? */
+.modal-content {
+    background-color: var(--cp-bg-elevated) !important;
+    color: var(--cp-text) !important;
+    border: 1px solid var(--cp-border) !important;
+}
+
+/* ?? Nav pills ???????????????????????????????????????????? */
+.nav-pills .nav-link {
+    color: var(--cp-text-muted) !important;
+}
+
+.nav-pills .nav-link:hover {
+    background-color: var(--cp-bg-hover) !important;
+    color: var(--cp-text) !important;
+}
+
+.nav-pills .nav-link.active {
+    background-color: var(--cp-primary) !important;
+    color: #fff !important;
+}
+
+/* ?? Breadcrumbs ?????????????????????????????????????????? */
+.breadcrumb-item a { color: var(--cp-primary) !important; }
+.breadcrumb-item.active { color: var(--cp-text-muted) !important; }
