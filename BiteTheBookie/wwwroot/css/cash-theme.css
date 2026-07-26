@@ -406,6 +406,17 @@ html.theme-cash .espn-news-feed .list-group-item h5 {
     color: #fff !important;
 }
 
+/* League team modals keep white columns in both themes, so their text must
+   stay dark (white-on-white otherwise in dark mode). */
+html.theme-cash .nfl-team-modal__col,
+html.theme-cash .nfl-team-modal__col-title,
+html.theme-cash .nfl-team-modal__team,
+html.theme-cash .nfl-team-modal__name,
+html.theme-cash .nfl-team-modal__team span,
+html.theme-cash .nfl-team-modal__teams span {
+    color: #111 !important;
+}
+
 html.theme-cash .alert:not(.alert-warning):not(.alert-success):not(.alert-danger):not(.alert-info) {
     background-color: var(--cp-bg-elevated) !important;
     border-color: var(--cp-border) !important;
