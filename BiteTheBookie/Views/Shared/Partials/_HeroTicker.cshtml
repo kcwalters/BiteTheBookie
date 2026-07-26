@@ -1,13 +1,22 @@
 ﻿@using BiteTheBookie.ViewModels;
+@using BiteTheBookie.Services.Implementations
+@using Microsoft.Extensions.Options
+@inject IOptions<OddsApiOptions> OddsApiOptions
 @model IEnumerable<HeroOddViewModel>
+@{
+    var widgetKey = OddsApiOptions.Value.WidgetAccessKey;
+    var widgetSrc = string.IsNullOrEmpty(widgetKey)
+        ? null
+        : $"https://widget.the-odds-api.com/v1/sports/americanfootball_nfl/events/?accessKey={widgetKey}&bookmakerKeys=draftkings&oddsFormat=american&markets=h2h%2Cspreads%2Ctotals&marketNames=h2h%3AMoneyline%2Cspreads%3ASpreads%2Ctotals%3AOver%2FUnder";
+}
 <div class="d-flex overflow-auto bg-white py-2 border-bottom">
     @foreach (var odd in Model)
     {
         <div class="card mx-2 p-2" style="min-width:200px;">
-            <iframe title="Sports Odds Widget" style="width: 20rem; height: 25rem; border: 1px solid black;" src="https://widget.the-odds-api.com/v1/sports/americanfootball_nfl/events/?accessKey=wk_22829bbf42f6465025c2e7006642bfaa&bookmakerKeys=draftkings&oddsFormat=american&markets=h2h%2Cspreads%2Ctotals&marketNames=h2h%3AMoneyline%2Cspreads%3ASpreads%2Ctotals%3AOver%2FUnder"></iframe>
-
-
-           
+            @if (widgetSrc != null)
+            {
+                <iframe title="Sports Odds Widget" style="width: 20rem; height: 25rem; border: 1px solid black;" src="@widgetSrc"></iframe>
+            }
         </div>
     }
 </div>
