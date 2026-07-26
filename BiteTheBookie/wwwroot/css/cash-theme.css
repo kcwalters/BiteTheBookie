@@ -298,3 +298,128 @@ html.theme-cash .breadcrumb-item.active { color: var(--cp-text-muted) !important
 html.theme-cash .theme-toggle-btn {
     border-color: var(--cp-border);
 }
+
+/* ?? Dark-font safety net for dark mode ??????????????????????????????
+   Force light text anywhere the light theme (or inline styles) would
+   otherwise leave dark, low-contrast text on the dark background. */
+html.theme-cash .text-dark,
+html.theme-cash .text-black,
+html.theme-cash .text-body,
+html.theme-cash .text-body-secondary,
+html.theme-cash .text-secondary,
+html.theme-cash .text-muted,
+html.theme-cash .text-reset,
+html.theme-cash span,
+html.theme-cash li,
+html.theme-cash td,
+html.theme-cash th,
+html.theme-cash label,
+html.theme-cash dt,
+html.theme-cash dd,
+html.theme-cash small,
+html.theme-cash strong,
+html.theme-cash b,
+html.theme-cash div {
+    color: var(--cp-text);
+}
+
+/* Keep intentionally-coloured utilities readable (don't override these). */
+html.theme-cash .text-primary { color: var(--cp-primary) !important; }
+html.theme-cash .text-white   { color: #fff !important; }
+html.theme-cash .text-muted,
+html.theme-cash .text-body-secondary,
+html.theme-cash .text-secondary { color: var(--cp-text-muted) !important; }
+html.theme-cash .text-warning { color: var(--cp-gold) !important; }
+
+/* Elements sitting on white surfaces (badges, light backgrounds) must
+   NOT be flipped to light text — force dark text for legibility. */
+html.theme-cash .bg-white,
+html.theme-cash .bg-light,
+html.theme-cash .badge.bg-light,
+html.theme-cash .badge.text-dark,
+html.theme-cash .table-light,
+html.theme-cash .table-light td,
+html.theme-cash .table-light th {
+    color: #212529 !important;
+}
+
+/* The AI simulation panel keeps a white background in both themes, so its
+   text must stay dark/blue for legibility (headings & names remain blue). */
+html.theme-cash .simulation-content,
+html.theme-cash .simulation-content p,
+html.theme-cash .simulation-content li,
+html.theme-cash .simulation-content td,
+html.theme-cash .simulation-content div,
+html.theme-cash .simulation-content span,
+html.theme-cash .markdown-content,
+html.theme-cash .markdown-content p,
+html.theme-cash .markdown-content li,
+html.theme-cash .markdown-content td,
+html.theme-cash .markdown-content div,
+html.theme-cash .markdown-content span {
+    color: var(--btb-body, #212529) !important;
+}
+
+html.theme-cash .simulation-content h1,
+html.theme-cash .simulation-content h2,
+html.theme-cash .simulation-content h3,
+html.theme-cash .simulation-content strong,
+html.theme-cash .markdown-content h1,
+html.theme-cash .markdown-content h2,
+html.theme-cash .markdown-content h3,
+html.theme-cash .markdown-content strong {
+    color: var(--btb-primary, #0066cc) !important;
+}
+
+html.theme-cash .markdown-content table th {
+    color: #fff !important;
+}
+
+/* Coloured solid badges keep white text regardless of the utility. */
+html.theme-cash .badge.bg-primary,
+html.theme-cash .badge.bg-secondary,
+html.theme-cash .badge.bg-success,
+html.theme-cash .badge.bg-danger,
+html.theme-cash .badge.bg-info,
+html.theme-cash .badge.bg-dark {
+    color: #fff !important;
+}
+html.theme-cash .badge.bg-warning {
+    color: #212529 !important;
+}
+
+/* List groups & alerts often default to dark text. */
+html.theme-cash .list-group-item {
+    background-color: var(--cp-bg-elevated) !important;
+    border-color: var(--cp-border) !important;
+    color: var(--cp-text) !important;
+}
+
+/* ESPN news feed items use inline dark colours (#111/#222) that become
+   invisible on the dark list-group background — force light text. */
+html.theme-cash .espn-news-feed .list-group-item,
+html.theme-cash .espn-news-feed .list-group-item * {
+    color: var(--cp-text) !important;
+}
+
+html.theme-cash .espn-news-feed .list-group-item h5 {
+    color: #fff !important;
+}
+
+html.theme-cash .alert:not(.alert-warning):not(.alert-success):not(.alert-danger):not(.alert-info) {
+    background-color: var(--cp-bg-elevated) !important;
+    border-color: var(--cp-border) !important;
+    color: var(--cp-text) !important;
+}
+
+/* Inline dark colours used in some Razor views (e.g. style="color:#0b0c0d")
+   inside cards/main should still read as light text in dark mode. */
+html.theme-cash .content-card [style*="color:#0b0c0d"],
+html.theme-cash .content-card [style*="color: #0b0c0d"],
+html.theme-cash .content-card [style*="color:#111"],
+html.theme-cash .content-card [style*="color: #111"],
+html.theme-cash .content-card [style*="color:#000"],
+html.theme-cash .content-card [style*="color: #000"] {
+    color: var(--cp-text) !important;
+}
+
