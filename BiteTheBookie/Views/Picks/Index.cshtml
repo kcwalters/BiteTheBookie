@@ -5,7 +5,7 @@
 @inject UserManager<ApplicationUser> UserManager
 
 @{
-    ViewData["Title"] = "NBA Picks - Expert Predictions";
+    ViewData["Title"] = $"Scores & Simulations - {Model.LeagueDisplayName}";
 
     var isPremiumOrVip = false;
     if (SignInManager.IsSignedIn(User))
@@ -15,81 +15,108 @@
     }
 }
 
+@functions {
+    string StatusBadgeClass(BiteTheBookie.Models.NBAGameMatchup g) =>
+        g.IsLive ? "bg-danger" : g.IsFinal ? "bg-secondary" : "bg-primary";
+}
+
 <div class="container py-4">
     <div class="content-card">
-        <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
-                <img src="https://sports.cbsimg.net/fly/images/league-logos/54.svg" alt="NBA" style="width: 48px; height: 48px;" />
-                <h1 class="h2 mb-0">NBA Expert Picks</h1>
+                <img src="@Model.LeagueLogo" alt="@Model.LeagueDisplayName" style="width: 44px; height: 44px;" onerror="this.style.display='none'" />
+                <div>
+                    <h1 class="h3 mb-0">@Model.LeagueDisplayName Scores &amp; Simulations</h1>
+                    <div class="text-muted small">@Model.SelectedDateDisplay</div>
+                </div>
             </div>
-            <div class="btn-group" role="group">
-                <a href="@Url.Action("Index", "Picks")" class="btn btn-primary">Pick Sheet</a>
-                <a href="@Url.Action("NBA", "Picks")" class="btn btn-outline-primary">Expert Picks</a>
-            </div>
+
+            @* Date navigation (preserves the current league) *@
+            <form method="get" asp-action="Schedule" asp-controller="Picks" class="d-flex align-items-center gap-2" id="dateForm">
+                <input type="hidden" name="league" value="@Model.League" />
+                <a class="btn btn-outline-secondary btn-sm"
+                   asp-action="Schedule" asp-controller="Picks" asp-route-league="@Model.League" asp-route-date="@Model.PreviousDateInput"
+                   title="Previous day"><i class="fas fa-chevron-left"></i></a>
+
+                <input type="date" name="date" value="@Model.SelectedDateInput"
+                       class="form-control form-control-sm" style="max-width: 180px;"
+                       onchange="document.getElementById('dateForm').submit()" />
+
+                <a class="btn btn-outline-secondary btn-sm"
+                   asp-action="Schedule" asp-controller="Picks" asp-route-league="@Model.League" asp-route-date="@Model.NextDateInput"
+                   title="Next day"><i class="fas fa-chevron-right"></i></a>
+
+                @if (!Model.IsToday)
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-action="Schedule" asp-controller="Picks" asp-route-league="@Model.League">Today</a>
+                }
+            </form>
         </div>
 
-        <ul class="nav nav-pills mb-4" id="picksTabs">
-            <li class="nav-item">
-                <a class="nav-link active" href="#" data-filter="all">All</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="@Url.Action("AgainstTheSpread", "Picks")">Against the Spread</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-filter="moneyline">Money Line</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-filter="overunder">Over / Under</a>
-            </li>
-        </ul>
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                <strong>Error:</strong> @Model.ErrorMessage
+            </div>
+        }
 
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Game Information</th>
-                        <th>Projected Score</th>
-                        <th>Odds</th>
-                        <th>Picks</th>
-                        <th>Simulation</th>
-                    </tr>
-                </thead>
-                <tbody id="picksTableBody">
-                    @if (Model.Games != null && Model.Games.Any())
-                    {
+        @if (Model.Games == null || !Model.Games.Any())
+        {
+            <div class="text-center py-5">
+                <p class="text-muted mb-0">No @Model.LeagueDisplayName games scheduled for @Model.SelectedDateDisplay.</p>
+            </div>
+        }
+        else
+        {
+            @* Status filter pills *@
+            <ul class="nav nav-pills mb-4" id="statusTabs">
+                <li class="nav-item"><a class="nav-link active" href="#" data-status="all">All (@Model.Games.Count())</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" data-status="live">Live (@Model.LiveGames.Count())</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" data-status="scheduled">Scheduled (@Model.ScheduledGames.Count())</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" data-status="final">Final (@Model.FinalGames.Count())</a></li>
+            </ul>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Matchup</th>
+                            <th>Status</th>
+                            <th>Location</th>
+                            <th class="text-center">Score</th>
+                            <th>Odds</th>
+                            <th class="text-end">Simulation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gamesTableBody">
                         @foreach (var game in Model.Games)
                         {
-                            <tr data-bet-types="spread overunder moneyline">
+                            var statusKey = game.IsLive ? "live" : game.IsFinal ? "final" : "scheduled";
+                            <tr data-status="@statusKey">
                                 <td>
-                                    <div class="text-muted small mb-2">@game.GameTimeDisplay</div>
-                                    <div class="d-flex align-items-center gap-2 mt-2">
-                                        <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" style="width: 32px; height: 32px;" />
-                                        <span class="fw-semibold flex-grow-1">@game.AwayTeamName</span>
-                                        @if (game.AwayScore.HasValue)
-                                        {
-                                            <span class="score-badge">@game.AwayScore</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="score-badge score-badge-empty">--</span>
-                                        }
+                                    <div class="text-muted small mb-1">@game.GameTimeDisplay</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" style="width: 28px; height: 28px;" onerror="this.style.visibility='hidden'" />
+                                        <span class="fw-semibold">@game.AwayTeamName</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-2 mt-1">
-                                        <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" style="width: 32px; height: 32px;" />
-                                        <span class="fw-semibold flex-grow-1">@game.HomeTeamName</span>
-                                        @if (game.HomeScore.HasValue)
-                                        {
-                                            <span class="score-badge">@game.HomeScore</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="score-badge score-badge-empty">--</span>
-                                        }
+                                        <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" style="width: 28px; height: 28px;" onerror="this.style.visibility='hidden'" />
+                                        <span class="fw-semibold">@game.HomeTeamName</span>
                                     </div>
                                 </td>
+                                <td>
+                                    <span class="badge @StatusBadgeClass(game)">@game.Status</span>
+                                    @if (!string.IsNullOrWhiteSpace(game.StatusDetail))
+                                    {
+                                        <div class="small text-muted mt-1">@game.StatusDetail</div>
+                                    }
+                                </td>
+                                <td class="small text-muted">
+                                    @(string.IsNullOrWhiteSpace(game.Venue) ? "—" : game.Venue)
+                                </td>
                                 <td class="text-center">
-                                    <div>@(game.AwayScore?.ToString() ?? "--")</div>
-                                    <div>@(game.HomeScore?.ToString() ?? "--")</div>
+                                    <div>@(game.AwayScore?.ToString() ?? "–")</div>
+                                    <div>@(game.HomeScore?.ToString() ?? "–")</div>
                                 </td>
                                 <td>
                                     @if (game.OverUnder.HasValue)
@@ -104,127 +131,40 @@
                                     {
                                         <div class="small text-muted">ML: @(game.HomeMoneyline > 0 ? "+" : "")@game.HomeMoneyline</div>
                                     }
-                                </td>
-                                <td>
-                                    @if (isPremiumOrVip)
+                                    @if (!game.OverUnder.HasValue && !game.Spread.HasValue && !game.HomeMoneyline.HasValue)
                                     {
-                                        <a asp-controller="Picks" asp-action="ViewPicks"
-                                           asp-route-gameId="@game.GameId" asp-route-league="NBA"
-                                           class="btn btn-sm btn-outline-primary">View Picks</a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning" title="Upgrade to view picks">
-                                            <i class="fas fa-dollar-sign"></i>
-                                        </a>
+                                        <span class="text-muted small">—</span>
                                     }
                                 </td>
-                                <td>
-                                    @if (isPremiumOrVip)
-                                    {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
-                                           class="btn btn-sm btn-outline-secondary"
-                                           data-sim-trigger>Simulation</a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join"
-                                           class="btn btn-sm btn-warning"
-                                           title="Upgrade to view simulation">
-                                            <i class="fas fa-dollar-sign"></i>
-                                        </a>
-                                    }
+                                <td class="text-end">
+                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = Model.League })"
+                                       class="btn btn-sm btn-outline-primary"
+                                       data-sim-trigger>
+                                        <i class="fas fa-bolt me-1"></i>Simulate
+                                    </a>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-4">
-                                <p class="text-muted mb-0">No games available at this time.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="content-card mt-4">
-        <h2 class="h3 mb-4">Hottest NBA Experts</h2>
-        <div class="row g-3">
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
-                            <div>
-                                <h5 class="mb-0">Mike Barner</h5>
-                                <div class="text-success">+2253 (67%)</div>
-                            </div>
-                        </div>
-                        <p class="small text-muted mb-0">54-27 Last 81 NBA</p>
-                    </div>
-                </div>
+                    </tbody>
+                </table>
             </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
-                            <div>
-                                <h5 class="mb-0">Prop Bet Guy</h5>
-                                <div class="text-success">+2040 (59%)</div>
-                            </div>
-                        </div>
-                        <p class="small text-muted mb-0">116-82 Last 198 NBA Player Props</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="rounded-circle bg-secondary" style="width: 50px; height: 50px;"></div>
-                            <div>
-                                <h5 class="mb-0">Bruce Marshall</h5>
-                                <div class="text-success">+1517 (62%)</div>
-                            </div>
-                        </div>
-                        <p class="small text-muted mb-0">46-28 Last 74 NBA</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        }
     </div>
 </div>
 
-@if (!string.IsNullOrEmpty(Model.ErrorMessage))
-{
-    <div class="alert alert-danger" role="alert">
-        <strong>Error:</strong> @Model.ErrorMessage
-    </div>
-}
-
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const filterLinks = document.querySelectorAll('#picksTabs .nav-link');
-            const tableRows = document.querySelectorAll('#picksTableBody tr');
-            filterLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
+        document.addEventListener('DOMContentLoaded', function () {
+            const statusLinks = document.querySelectorAll('#statusTabs .nav-link');
+            const rows = document.querySelectorAll('#gamesTableBody tr');
+            statusLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
                     e.preventDefault();
-                    filterLinks.forEach(l => l.classList.remove('active'));
+                    statusLinks.forEach(l => l.classList.remove('active'));
                     this.classList.add('active');
-                    const filterType = this.getAttribute('data-filter');
-                    tableRows.forEach(row => {
-                        if (filterType === 'all') {
-                            row.style.display = '';
-                        } else {
-                            const betTypes = row.getAttribute('data-bet-types');
-                            row.style.display = (betTypes && betTypes.includes(filterType)) ? '' : 'none';
-                        }
+                    const filter = this.getAttribute('data-status');
+                    rows.forEach(row => {
+                        row.style.display = (filter === 'all' || row.getAttribute('data-status') === filter) ? '' : 'none';
                     });
                 });
             });
