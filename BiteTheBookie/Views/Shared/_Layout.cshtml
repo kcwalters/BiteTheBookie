@@ -106,6 +106,12 @@
                                         <span>NCAA Football Game Center</span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a class="dropdown-item" asp-controller="CollegeFootball" asp-action="Teams">
+                                        <img src="~/img/NCAAMens_med.png" alt="NCAAF" class="league-icon" />
+                                        <span>NCAA Football Teams</span>
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" asp-controller="Picks" asp-action="MLB">
@@ -204,6 +210,16 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade nfl-team-modal" id="cfbTeamModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
 
     <div class="modal fade nfl-team-modal" id="mlbTeamModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">

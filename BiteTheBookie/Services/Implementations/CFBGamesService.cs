@@ -211,6 +211,45 @@ namespace BiteTheBookie.Services.Implementations
         public static bool IsKnownTeamCode(string teamCode)
             => !string.IsNullOrEmpty(teamCode) && TeamInfoLookup.ContainsKey(teamCode.ToUpper());
 
+        // FBS conference groupings (team codes) used by the College Football teams landing page.
+        private static readonly IReadOnlyList<(string Conference, string[] Codes)> ConferenceGroups = new List<(string, string[])>
+        {
+            ("ACC", new[] { "BC", "CAL", "CLEM", "DUKE", "FSU", "GT", "LOU", "MIA", "NCST", "UNC", "PITT", "SMU", "STAN", "SYR", "UVA", "VT", "WAKE" }),
+            ("Big Ten", new[] { "ILL", "IND", "IOWA", "MD", "MICH", "MSU", "MINN", "NEB", "NW", "OSU", "ORE", "PSU", "PUR", "RUT", "UCLA", "USC", "WASH", "WISC" }),
+            ("Big 12", new[] { "ARIZ", "ASU", "BAY", "BYU", "CIN", "COLO", "HOU", "ISU", "KU", "KSU", "OKST", "TCU", "TTU", "UCF", "UTAH", "WVU" }),
+            ("SEC", new[] { "ALA", "ARK", "AUB", "FLA", "UGA", "UK", "LSU", "MSST", "MIZ", "OU", "MISS", "SC", "TENN", "TEX", "TAMU", "VAN" }),
+            ("Pac-12", new[] { "ORST", "WSU" }),
+            ("Independents", new[] { "ND", "CONN", "UMASS" }),
+            ("American Athletic", new[] { "ARMY", "CHAR", "ECU", "FAU", "MEM", "NAVY", "UNT", "RICE", "USF", "TEM", "TUL", "TLSA", "UAB", "UTSA" }),
+            ("Conference USA", new[] { "DEL", "FIU", "JVST", "KENN", "LIB", "LT", "MTSU", "MOST", "NMSU", "SHSU", "UTEP", "WKU" }),
+            ("Mid-American", new[] { "AKR", "BALL", "BGSU", "BUFF", "CMU", "EMU", "KENT", "M-OH", "NIU", "OHIO", "TOL", "WMU" }),
+            ("Mountain West", new[] { "AFA", "BSU", "CSU", "FRES", "HAW", "NEV", "UNM", "SDSU", "SJSU", "UNLV", "USU", "WYO" }),
+            ("Sun Belt", new[] { "APP", "ARST", "CCU", "GASO", "GAST", "JMU", "UL", "ULM", "MRSH", "ODU", "USA", "USM", "TXST", "TROY" })
+        };
+
+        /// <summary>
+        /// Returns all FBS teams grouped by conference, ordered as displayed on the landing page.
+        /// Each team includes its display name, logo URL, and code.
+        /// </summary>
+        public static IReadOnlyList<(string Conference, IReadOnlyList<(string Name, string Logo, string Code)> Teams)> GetTeamsByConference()
+        {
+            var result = new List<(string, IReadOnlyList<(string, string, string)>)>();
+
+            foreach (var (conference, codes) in ConferenceGroups)
+            {
+                var teams = codes
+                    .Select(GetTeamInfo)
+                    .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                result.Add((conference, teams));
+            }
+
+            return result;
+        }
+
+
+
         // Maps The Odds API team names (and common variants) to internal team codes.
         private static readonly Dictionary<string, string> TeamNameToCode = new(StringComparer.OrdinalIgnoreCase)
         {

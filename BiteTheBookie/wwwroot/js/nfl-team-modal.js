@@ -289,6 +289,212 @@
       .join('');
   }
 
+  // ?? College Football (CFB) ????????????????????????????????????????????
+  // Team codes MUST match BiteTheBookie.Services.Implementations.CFBGamesService codes.
+  const cfbTeams = [
+    // ACC
+    { abbr: 'BC', name: 'Boston College', logoId: '103' },
+    { abbr: 'CAL', name: 'California', logoId: '25' },
+    { abbr: 'CLEM', name: 'Clemson', logoId: '228' },
+    { abbr: 'DUKE', name: 'Duke', logoId: '150' },
+    { abbr: 'FSU', name: 'Florida State', logoId: '52' },
+    { abbr: 'GT', name: 'Georgia Tech', logoId: '59' },
+    { abbr: 'LOU', name: 'Louisville', logoId: '97' },
+    { abbr: 'MIA', name: 'Miami', logoId: '2390' },
+    { abbr: 'NCST', name: 'NC State', logoId: '152' },
+    { abbr: 'UNC', name: 'North Carolina', logoId: '153' },
+    { abbr: 'PITT', name: 'Pittsburgh', logoId: '221' },
+    { abbr: 'SMU', name: 'SMU', logoId: '2567' },
+    { abbr: 'STAN', name: 'Stanford', logoId: '24' },
+    { abbr: 'SYR', name: 'Syracuse', logoId: '183' },
+    { abbr: 'UVA', name: 'Virginia', logoId: '258' },
+    { abbr: 'VT', name: 'Virginia Tech', logoId: '259' },
+    { abbr: 'WAKE', name: 'Wake Forest', logoId: '154' },
+    // Big Ten
+    { abbr: 'ILL', name: 'Illinois', logoId: '356' },
+    { abbr: 'IND', name: 'Indiana', logoId: '84' },
+    { abbr: 'IOWA', name: 'Iowa', logoId: '2294' },
+    { abbr: 'MD', name: 'Maryland', logoId: '120' },
+    { abbr: 'MICH', name: 'Michigan', logoId: '130' },
+    { abbr: 'MSU', name: 'Michigan State', logoId: '127' },
+    { abbr: 'MINN', name: 'Minnesota', logoId: '135' },
+    { abbr: 'NEB', name: 'Nebraska', logoId: '158' },
+    { abbr: 'NW', name: 'Northwestern', logoId: '77' },
+    { abbr: 'OSU', name: 'Ohio State', logoId: '194' },
+    { abbr: 'ORE', name: 'Oregon', logoId: '2483' },
+    { abbr: 'PSU', name: 'Penn State', logoId: '213' },
+    { abbr: 'PUR', name: 'Purdue', logoId: '2509' },
+    { abbr: 'RUT', name: 'Rutgers', logoId: '164' },
+    { abbr: 'UCLA', name: 'UCLA', logoId: '26' },
+    { abbr: 'USC', name: 'USC', logoId: '30' },
+    { abbr: 'WASH', name: 'Washington', logoId: '264' },
+    { abbr: 'WISC', name: 'Wisconsin', logoId: '275' },
+    // Big 12
+    { abbr: 'ARIZ', name: 'Arizona', logoId: '12' },
+    { abbr: 'ASU', name: 'Arizona State', logoId: '9' },
+    { abbr: 'BAY', name: 'Baylor', logoId: '239' },
+    { abbr: 'BYU', name: 'BYU', logoId: '252' },
+    { abbr: 'CIN', name: 'Cincinnati', logoId: '2132' },
+    { abbr: 'COLO', name: 'Colorado', logoId: '38' },
+    { abbr: 'HOU', name: 'Houston', logoId: '248' },
+    { abbr: 'ISU', name: 'Iowa State', logoId: '66' },
+    { abbr: 'KU', name: 'Kansas', logoId: '2305' },
+    { abbr: 'KSU', name: 'Kansas State', logoId: '2306' },
+    { abbr: 'OKST', name: 'Oklahoma State', logoId: '197' },
+    { abbr: 'TCU', name: 'TCU', logoId: '2628' },
+    { abbr: 'TTU', name: 'Texas Tech', logoId: '2641' },
+    { abbr: 'UCF', name: 'UCF', logoId: '2116' },
+    { abbr: 'UTAH', name: 'Utah', logoId: '254' },
+    { abbr: 'WVU', name: 'West Virginia', logoId: '277' },
+    // SEC
+    { abbr: 'ALA', name: 'Alabama', logoId: '333' },
+    { abbr: 'ARK', name: 'Arkansas', logoId: '8' },
+    { abbr: 'AUB', name: 'Auburn', logoId: '2' },
+    { abbr: 'FLA', name: 'Florida', logoId: '57' },
+    { abbr: 'UGA', name: 'Georgia', logoId: '61' },
+    { abbr: 'UK', name: 'Kentucky', logoId: '96' },
+    { abbr: 'LSU', name: 'LSU', logoId: '99' },
+    { abbr: 'MSST', name: 'Mississippi State', logoId: '344' },
+    { abbr: 'MIZ', name: 'Missouri', logoId: '142' },
+    { abbr: 'OU', name: 'Oklahoma', logoId: '201' },
+    { abbr: 'MISS', name: 'Ole Miss', logoId: '145' },
+    { abbr: 'SC', name: 'South Carolina', logoId: '2579' },
+    { abbr: 'TENN', name: 'Tennessee', logoId: '2633' },
+    { abbr: 'TEX', name: 'Texas', logoId: '251' },
+    { abbr: 'TAMU', name: 'Texas A&M', logoId: '245' },
+    { abbr: 'VAN', name: 'Vanderbilt', logoId: '238' },
+    // Pac-12
+    { abbr: 'ORST', name: 'Oregon State', logoId: '204' },
+    { abbr: 'WSU', name: 'Washington State', logoId: '265' },
+    // Independents
+    { abbr: 'ND', name: 'Notre Dame', logoId: '87' },
+    { abbr: 'CONN', name: 'UConn', logoId: '41' },
+    { abbr: 'UMASS', name: 'UMass', logoId: '113' },
+    // American Athletic
+    { abbr: 'ARMY', name: 'Army', logoId: '349' },
+    { abbr: 'CHAR', name: 'Charlotte', logoId: '2429' },
+    { abbr: 'ECU', name: 'East Carolina', logoId: '151' },
+    { abbr: 'FAU', name: 'Florida Atlantic', logoId: '2226' },
+    { abbr: 'MEM', name: 'Memphis', logoId: '235' },
+    { abbr: 'NAVY', name: 'Navy', logoId: '2426' },
+    { abbr: 'UNT', name: 'North Texas', logoId: '249' },
+    { abbr: 'RICE', name: 'Rice', logoId: '242' },
+    { abbr: 'USF', name: 'South Florida', logoId: '58' },
+    { abbr: 'TEM', name: 'Temple', logoId: '218' },
+    { abbr: 'TUL', name: 'Tulane', logoId: '2655' },
+    { abbr: 'TLSA', name: 'Tulsa', logoId: '202' },
+    { abbr: 'UAB', name: 'UAB', logoId: '5' },
+    { abbr: 'UTSA', name: 'UTSA', logoId: '2636' },
+    // Conference USA
+    { abbr: 'DEL', name: 'Delaware', logoId: '48' },
+    { abbr: 'FIU', name: 'Florida International', logoId: '2229' },
+    { abbr: 'JVST', name: 'Jacksonville State', logoId: '55' },
+    { abbr: 'KENN', name: 'Kennesaw State', logoId: '338' },
+    { abbr: 'LIB', name: 'Liberty', logoId: '2335' },
+    { abbr: 'LT', name: 'Louisiana Tech', logoId: '2348' },
+    { abbr: 'MTSU', name: 'Middle Tennessee', logoId: '2393' },
+    { abbr: 'MOST', name: 'Missouri State', logoId: '2623' },
+    { abbr: 'NMSU', name: 'New Mexico State', logoId: '166' },
+    { abbr: 'SHSU', name: 'Sam Houston', logoId: '2534' },
+    { abbr: 'UTEP', name: 'UTEP', logoId: '2638' },
+    { abbr: 'WKU', name: 'Western Kentucky', logoId: '98' },
+    // Mid-American
+    { abbr: 'AKR', name: 'Akron', logoId: '2006' },
+    { abbr: 'BALL', name: 'Ball State', logoId: '2050' },
+    { abbr: 'BGSU', name: 'Bowling Green', logoId: '189' },
+    { abbr: 'BUFF', name: 'Buffalo', logoId: '2084' },
+    { abbr: 'CMU', name: 'Central Michigan', logoId: '2117' },
+    { abbr: 'EMU', name: 'Eastern Michigan', logoId: '2199' },
+    { abbr: 'KENT', name: 'Kent State', logoId: '2309' },
+    { abbr: 'M-OH', name: 'Miami (OH)', logoId: '193' },
+    { abbr: 'NIU', name: 'Northern Illinois', logoId: '2459' },
+    { abbr: 'OHIO', name: 'Ohio', logoId: '195' },
+    { abbr: 'TOL', name: 'Toledo', logoId: '2649' },
+    { abbr: 'WMU', name: 'Western Michigan', logoId: '2711' },
+    // Mountain West
+    { abbr: 'AFA', name: 'Air Force', logoId: '2005' },
+    { abbr: 'BSU', name: 'Boise State', logoId: '68' },
+    { abbr: 'CSU', name: 'Colorado State', logoId: '36' },
+    { abbr: 'FRES', name: 'Fresno State', logoId: '278' },
+    { abbr: 'HAW', name: "Hawai'i", logoId: '62' },
+    { abbr: 'NEV', name: 'Nevada', logoId: '2440' },
+    { abbr: 'UNM', name: 'New Mexico', logoId: '167' },
+    { abbr: 'SDSU', name: 'San Diego State', logoId: '21' },
+    { abbr: 'SJSU', name: 'San Jose State', logoId: '23' },
+    { abbr: 'UNLV', name: 'UNLV', logoId: '2439' },
+    { abbr: 'USU', name: 'Utah State', logoId: '328' },
+    { abbr: 'WYO', name: 'Wyoming', logoId: '2751' },
+    // Sun Belt
+    { abbr: 'APP', name: 'Appalachian State', logoId: '2026' },
+    { abbr: 'ARST', name: 'Arkansas State', logoId: '2032' },
+    { abbr: 'CCU', name: 'Coastal Carolina', logoId: '324' },
+    { abbr: 'GASO', name: 'Georgia Southern', logoId: '290' },
+    { abbr: 'GAST', name: 'Georgia State', logoId: '2247' },
+    { abbr: 'JMU', name: 'James Madison', logoId: '256' },
+    { abbr: 'UL', name: 'Louisiana', logoId: '309' },
+    { abbr: 'ULM', name: 'Louisiana-Monroe', logoId: '2433' },
+    { abbr: 'MRSH', name: 'Marshall', logoId: '276' },
+    { abbr: 'ODU', name: 'Old Dominion', logoId: '295' },
+    { abbr: 'USA', name: 'South Alabama', logoId: '6' },
+    { abbr: 'USM', name: 'Southern Miss', logoId: '2572' },
+    { abbr: 'TXST', name: 'Texas State', logoId: '326' },
+    { abbr: 'TROY', name: 'Troy', logoId: '2653' }
+  ];
+
+  function cfbLogoUrl(abbr) {
+    const t = cfbTeams.find(x => x.abbr === abbr);
+    if (t && t.logoId) {
+      return `https://a.espncdn.com/i/teamlogos/ncaa/500/${t.logoId}.png`;
+    }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" rx="6" fill="#003366"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="700">${abbr}</text></svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  }
+
+  function getCfbTeamUrl(abbr) {
+    return `/CollegeFootball/Team?code=${encodeURIComponent(abbr)}`;
+  }
+
+  function buildCFBModalBodyHtml(columns, teamMap, logoUrl) {
+    return columns
+      .map(col => {
+        const items = col.teams
+          .map(abbr => {
+            const t = teamMap.get(abbr);
+            if (!t) return '';
+            const url = getCfbTeamUrl(abbr);
+            return `
+              <a class="nfl-team-modal__team" href="${url}" data-team="${abbr}">
+                <img class="nfl-team-modal__logo" src="${logoUrl(abbr)}" alt="${t.name}" loading="lazy" />
+                <span class="nfl-team-modal__name">${t.name}</span>
+              </a>`;
+          })
+          .join('');
+
+        return `
+          <div class="nfl-team-modal__col">
+            <div class="nfl-team-modal__col-title">${col.title}</div>
+            <div class="nfl-team-modal__teams">
+              ${items}
+            </div>
+          </div>`;
+      })
+      .join('');
+  }
+
+  const cfbColumns = [
+    { title: 'ACC', teams: ['BC', 'CAL', 'CLEM', 'DUKE', 'FSU', 'GT', 'LOU', 'MIA', 'NCST', 'UNC', 'PITT', 'SMU', 'STAN', 'SYR', 'UVA', 'VT', 'WAKE'] },
+    { title: 'Big Ten', teams: ['ILL', 'IND', 'IOWA', 'MD', 'MICH', 'MSU', 'MINN', 'NEB', 'NW', 'OSU', 'ORE', 'PSU', 'PUR', 'RUT', 'UCLA', 'USC', 'WASH', 'WISC'] },
+    { title: 'Big 12', teams: ['ARIZ', 'ASU', 'BAY', 'BYU', 'CIN', 'COLO', 'HOU', 'ISU', 'KU', 'KSU', 'OKST', 'TCU', 'TTU', 'UCF', 'UTAH', 'WVU'] },
+    { title: 'SEC', teams: ['ALA', 'ARK', 'AUB', 'FLA', 'UGA', 'UK', 'LSU', 'MSST', 'MIZ', 'OU', 'MISS', 'SC', 'TENN', 'TEX', 'TAMU', 'VAN'] },
+    { title: 'Pac-12', teams: ['ORST', 'WSU'] },
+    { title: 'Independents', teams: ['ND', 'CONN', 'UMASS'] },
+    { title: 'American', teams: ['ARMY', 'CHAR', 'ECU', 'FAU', 'MEM', 'NAVY', 'UNT', 'RICE', 'USF', 'TEM', 'TUL', 'TLSA', 'UAB', 'UTSA'] },
+    { title: 'Conference USA', teams: ['DEL', 'FIU', 'JVST', 'KENN', 'LIB', 'LT', 'MTSU', 'MOST', 'NMSU', 'SHSU', 'UTEP', 'WKU'] },
+    { title: 'Mid-American', teams: ['AKR', 'BALL', 'BGSU', 'BUFF', 'CMU', 'EMU', 'KENT', 'M-OH', 'NIU', 'OHIO', 'TOL', 'WMU'] },
+    { title: 'Mountain West', teams: ['AFA', 'BSU', 'CSU', 'FRES', 'HAW', 'NEV', 'UNM', 'SDSU', 'SJSU', 'UNLV', 'USU', 'WYO'] },
+    { title: 'Sun Belt', teams: ['APP', 'ARST', 'CCU', 'GASO', 'GAST', 'JMU', 'UL', 'ULM', 'MRSH', 'ODU', 'USA', 'USM', 'TXST', 'TROY'] }
+  ];
+
   const nflColumns = [
     { title: 'AFC East', teams: ['BUF', 'MIA', 'NE', 'NYJ'] },
     { title: 'AFC North', teams: ['BAL', 'CIN', 'CLE', 'PIT'] },
@@ -379,7 +585,7 @@
   ];
 
   function showTicker(league) {
-    const tickers = ['nfl', 'nba', 'nhl', 'ncaa', 'mlb'];
+    const tickers = ['nfl', 'nba', 'nhl', 'ncaa', 'ncaaf', 'mlb'];
     tickers.forEach(item => {
       const ticker = document.getElementById(item + '-ticker');
       if (ticker) {
@@ -473,6 +679,17 @@
       buildFunction: buildCBBModalBodyHtml,
       oddsLink: { url: '/Odds/CBB', label: 'View CBB Odds' }
     });
+
+    initLeagueTeamModal({
+      league: 'ncaaf',
+      modalId: 'cfbTeamModal',
+      teams: cfbTeams,
+      columns: cfbColumns,
+      logoUrl: cfbLogoUrl,
+      buildFunction: buildCFBModalBodyHtml,
+      oddsLink: { url: '/Odds/CFB', label: 'View CFB Odds' }
+    });
+
 
     initLeagueTeamModal({
       league: 'mlb',

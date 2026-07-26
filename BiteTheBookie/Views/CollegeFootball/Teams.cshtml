@@ -1,0 +1,112 @@
+@model BiteTheBookie.ViewModels.CFBTeamsViewModel
+@{
+    ViewData["Title"] = "College Football Teams";
+}
+
+<style>
+    .cfb-teams-hero {
+        background: var(--primary-blue, #0b0c0d);
+        color: #fff;
+        padding: 28px 0;
+        margin-bottom: 24px;
+    }
+
+    .cfb-teams-hero h1 {
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: .3px;
+    }
+
+    .cfb-conference {
+        margin-bottom: 32px;
+    }
+
+    .cfb-conference__title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #fff;
+        background: var(--primary-blue, #0b0c0d);
+        padding: 10px 16px;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .cfb-team-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px 24px;
+        padding: 16px;
+        border: 1px solid rgba(0, 0, 0, .08);
+        border-top: 0;
+        border-radius: 0 0 8px 8px;
+        background: #fff;
+    }
+
+    @@media (max-width: 991px) {
+        .cfb-team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @@media (max-width: 575px) {
+        .cfb-team-grid { grid-template-columns: 1fr; }
+    }
+
+    .cfb-team {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        color: #111;
+        text-decoration: none;
+        transition: background-color .15s ease;
+    }
+
+    .cfb-team:hover {
+        background: rgba(13, 110, 253, .08);
+        text-decoration: none;
+        color: #0b5ed7;
+    }
+
+    .cfb-team__logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        flex: 0 0 auto;
+    }
+
+    .cfb-team__name {
+        font-size: .95rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+
+<div class="cfb-teams-hero">
+    <div class="container d-flex align-items-center gap-3">
+        <img src="~/img/NCAAMens_med.png" alt="College Football" style="width: 48px; height: 48px;" />
+        <h1>College Football Teams</h1>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <p class="text-muted mb-4">Select a school to view its team information.</p>
+
+    @foreach (var conference in Model.Conferences)
+    {
+        <section class="cfb-conference">
+            <div class="cfb-conference__title">@conference.Conference</div>
+            <div class="cfb-team-grid">
+                @foreach (var team in conference.Teams)
+                {
+                    <a class="cfb-team" href="@Url.Action("Team", "CollegeFootball", new { code = team.Code })" title="@team.Name">
+                        <img class="cfb-team__logo" src="@team.Logo" alt="@team.Name" loading="lazy" />
+                        <span class="cfb-team__name">@team.Name</span>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+</div>

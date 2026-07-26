@@ -1,0 +1,45 @@
+@model BiteTheBookie.ViewModels.CFBTeamViewModel
+@{
+    ViewData["Title"] = $"{Model.Name} - College Football";
+}
+
+<div class="cfb-team-hero" style="background: var(--primary-blue, #0b0c0d); color:#fff; padding:28px 0; margin-bottom:24px;">
+    <div class="container d-flex align-items-center gap-3">
+        <img src="@Model.Logo" alt="@Model.Name" style="width:72px; height:72px; object-fit:contain;" />
+        <div>
+            <h1 class="mb-1" style="font-weight:800;">@Model.Name</h1>
+            @if (!string.IsNullOrEmpty(Model.Conference))
+            {
+                <div class="opacity-75">@Model.Conference</div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <div class="content-card p-4">
+                <h2 class="h4 mb-3">Team Overview</h2>
+                <p class="text-muted mb-0">
+                    Information and matchups for the <strong>@Model.Name</strong>. Check the game center for upcoming
+                    games, odds, and simulations.
+                </p>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="content-card p-4">
+                <h2 class="h5 mb-3">Quick Links</h2>
+                <div class="d-grid gap-2">
+                    <a class="btn btn-primary" asp-controller="Picks" asp-action="CFB">CFB Game Center</a>
+                    <a class="btn btn-outline-primary" asp-controller="Odds" asp-action="CFB">CFB Odds</a>
+                    <a class="btn btn-outline-secondary" asp-controller="CollegeFootball" asp-action="Teams">All Teams</a>
+                    @if (!string.IsNullOrEmpty(Model.EspnUrl))
+                    {
+                        <a class="btn btn-outline-secondary" href="@Model.EspnUrl" target="_blank" rel="noopener">View on ESPN</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

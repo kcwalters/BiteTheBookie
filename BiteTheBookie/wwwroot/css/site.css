@@ -217,25 +217,16 @@ footer {
     animation-play-state: paused;
 }
 
-/* College Football ticker: slower and completes a full pass before restarting */
-.cfb-ticker-track {
-    animation: cfb-ticker-scroll 90s linear infinite;
-}
-
-@keyframes cfb-ticker-scroll {
-    0% {
-        transform: translateX(100%);
-    }
-
-    100% {
-        transform: translateX(-100%);
-    }
+/* College Football ticker: slower scroll so every upcoming game is readable.
+   Items are duplicated in markup, so translateX(-50%) shows the full list once
+   per cycle before seamlessly looping. */
+.cfb-ticker .cfb-ticker-track {
+    animation: ticker-scroll 300s linear infinite !important;
 }
 
 .cfb-ticker:hover .cfb-ticker-track {
     animation-play-state: paused;
 }
-
 
 
 /* Flags */
@@ -508,6 +499,16 @@ footer {
 
     .tickers-row > div {
         flex: 0 0 auto;
+    }
+
+/* Only one league ticker may be visible at a time. Hide every ticker by
+   default and reveal only the one flagged active by the league switcher. */
+.tickers-row > div {
+    display: none !important;
+}
+
+    .tickers-row > div.ticker-active {
+        display: block !important;
     }
 
 /* League logo sizing (fixed inline next to ticker) */
