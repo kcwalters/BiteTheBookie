@@ -24,6 +24,7 @@ namespace BiteTheBookie.Controllers
         private readonly IInjuryReportService _injuryReportService;
         private readonly ILogger<PicksController> _logger;
         private readonly IMLBGamesService _mlbService;
+        private readonly INBAScheduleService _nbaScheduleService;
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -93,6 +94,7 @@ namespace BiteTheBookie.Controllers
             ISpreadAnalysisService spreadAnalysisService,
             IInjuryReportService injuryReportService,
             IMLBGamesService mlbService,
+            INBAScheduleService nbaScheduleService,
             ApplicationDbContext db,
             UserManager<ApplicationUser> userManager,
             ILogger<PicksController> logger)
@@ -106,6 +108,7 @@ namespace BiteTheBookie.Controllers
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService   = injuryReportService;
             _mlbService            = mlbService;
+            _nbaScheduleService    = nbaScheduleService;
             _db                    = db;
             _userManager           = userManager;
             _logger                = logger;
@@ -144,33 +147,9 @@ namespace BiteTheBookie.Controllers
             return View(vm);
         }
 
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        public async Task<IActionResult> Index(string? date, CancellationToken cancellationToken)
         {
-            try
-            {
-                var games = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
-
-                var viewModel = new PicksIndexViewModel
-                {
-                    League = "NBA",
-                    Games = games
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error loading NBA picks");
-
-                var viewModel = new PicksIndexViewModel
-                {
-                    League = "NBA",
-                    Games = new List<NBAGameMatchup>(),
-                    ErrorMessage = $"Unable to load games: {ex.Message}"
-                };
-
-                return View(viewModel);
-            }
+            return View(await BuildNbaScheduleViewModelAsync(date, cancellationToken));
         }
 
         public async Task<IActionResult> AgainstTheSpread(CancellationToken cancellationToken)
@@ -188,7 +167,75 @@ namespace BiteTheBookie.Controllers
             return View(viewModel);
         }
 
-        public async Task<IActionResult> NBA(CancellationToken cancellationToken)
+        public async Task<IActionResult> NBA(string? date, CancellationToken cancellationToken)
+        {
+            return View("Index", await BuildNbaScheduleViewModelAsync(date, cancellationToken));
+        }
+
+        /// <summary>
+        /// Builds the date-aware NBA schedule view model. Defaults to today, fetches the
+        /// accurate schedule (teams, times, venue, status) for the selected date from ESPN,
+        /// then merges betting lines from the odds service when available.
+        /// </summary>
+        private async Task<PicksIndexViewModel> BuildNbaScheduleViewModelAsync(string? date, CancellationToken cancellationToken)
+        {
+            var selectedDate = DateTime.Today;
+            if (!string.IsNullOrWhiteSpace(date) &&
+                DateTime.TryParse(date, out var parsed))
+            {
+                selectedDate = parsed.Date;
+            }
+
+            var viewModel = new PicksIndexViewModel
+            {
+                League = "NBA",
+                SelectedDate = selectedDate
+            };
+
+            try
+            {
+                var games = await _nbaScheduleService.GetGamesForDateAsync(selectedDate, cancellationToken);
+
+                // Merge betting lines (spread / total / moneyline) from the odds service.
+                try
+                {
+                    var oddsGames = await _gamesService.GetUpcomingNBAGamesAsync(cancellationToken);
+                    MergeOddsIntoSchedule(games, oddsGames);
+                }
+                catch (Exception oddsEx)
+                {
+                    _logger?.LogWarning(oddsEx, "Unable to merge odds into NBA schedule for {Date}", selectedDate);
+                }
+
+                viewModel.Games = games;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error loading NBA schedule for {Date}", selectedDate);
+                viewModel.ErrorMessage = $"Unable to load games: {ex.Message}";
+            }
+
+            return viewModel;
+        }
+
+        private static void MergeOddsIntoSchedule(List<NBAGameMatchup> schedule, List<NBAGameMatchup> oddsGames)
+        {
+            foreach (var game in schedule)
+            {
+                var match = oddsGames.FirstOrDefault(o =>
+                    o.HomeTeamCode.Equals(game.HomeTeamCode, StringComparison.OrdinalIgnoreCase) &&
+                    o.AwayTeamCode.Equals(game.AwayTeamCode, StringComparison.OrdinalIgnoreCase));
+
+                if (match is null) continue;
+
+                game.Spread ??= match.Spread;
+                game.OverUnder ??= match.OverUnder;
+                game.HomeMoneyline ??= match.HomeMoneyline;
+                game.AwayMoneyline ??= match.AwayMoneyline;
+            }
+        }
+
+        private async Task<IActionResult> LegacyNBA(CancellationToken cancellationToken)
         {
             try
             {
