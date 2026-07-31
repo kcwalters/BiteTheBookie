@@ -480,7 +480,7 @@ namespace BiteTheBookie.Controllers
             }
         }
 
-        private async Task<List<SelectListItem>> GetNbaGameSelectListAsync()
+        private async Task<List<ViewModels.NbaGameOption>> GetNbaGameSelectListAsync()
         {
             try
             {
@@ -489,21 +489,26 @@ namespace BiteTheBookie.Controllers
                 return games
                     .Where(g => g.Status == "Scheduled")
                     .OrderBy(g => g.GameTime)
-                    .Select(g => new SelectListItem
+                    .Select(g => new ViewModels.NbaGameOption
                     {
                         Value = g.GameId,
-                        Text = $"{g.AwayTeamName} @ {g.HomeTeamName} — {g.GameTime.ToLocalTime():MMM dd, h:mm tt}"
+                        Text = $"{g.AwayTeamName} @ {g.HomeTeamName} — {g.GameTime.ToLocalTime():MMM dd, h:mm tt}",
+                        AwayCode = GetNbaTeamCode(g.AwayTeamName ?? ""),
+                        HomeCode = GetNbaTeamCode(g.HomeTeamName ?? ""),
+                        AwayName = g.AwayTeamName ?? string.Empty,
+                        HomeName = g.HomeTeamName ?? string.Empty,
+                        GameTime = g.GameTime
                     })
                     .ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to load NBA games for dropdown");
-                return new List<SelectListItem>();
+                return new List<ViewModels.NbaGameOption>();
             }
         }
 
-        private async Task<List<SelectListItem>> GetMlbGameSelectListAsync()
+        private async Task<List<ViewModels.MlbGameOption>> GetMlbGameSelectListAsync()
         {
             try
             {
@@ -511,17 +516,22 @@ namespace BiteTheBookie.Controllers
 
                 return games
                     .OrderBy(g => g.GameTime)
-                    .Select(g => new SelectListItem
+                    .Select(g => new ViewModels.MlbGameOption
                     {
                         Value = BuildMlbGameId(g),
-                        Text = $"{g.AwayTeam} @ {g.HomeTeam} — {g.GameTime:MMM dd, h:mm tt}"
+                        Text = $"{g.AwayTeam} @ {g.HomeTeam} — {g.GameTime:MMM dd, h:mm tt}",
+                        AwayCode = GetMlbTeamCode(g.AwayTeam ?? ""),
+                        HomeCode = GetMlbTeamCode(g.HomeTeam ?? ""),
+                        AwayName = g.AwayTeam ?? string.Empty,
+                        HomeName = g.HomeTeam ?? string.Empty,
+                        GameTime = g.GameTime
                     })
                     .ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to load MLB games for dropdown");
-                return new List<SelectListItem>();
+                return new List<ViewModels.MlbGameOption>();
             }
         }
 
@@ -577,6 +587,52 @@ namespace BiteTheBookie.Controllers
             };
 
             return mapping.GetValueOrDefault(teamName, teamName.Replace(" ", "").ToLower()[..Math.Min(3, teamName.Length)]);
+        }
+
+        /// <summary>
+        /// Maps a full NBA team name to a short code used for ESPN CDN logos.
+        /// </summary>
+        private static string GetNbaTeamCode(string teamName)
+        {
+            var mapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Atlanta Hawks", "atl" },
+                { "Boston Celtics", "bos" },
+                { "Brooklyn Nets", "bkn" },
+                { "Charlotte Hornets", "cha" },
+                { "Chicago Bulls", "chi" },
+                { "Cleveland Cavaliers", "cle" },
+                { "Dallas Mavericks", "dal" },
+                { "Denver Nuggets", "den" },
+                { "Detroit Pistons", "det" },
+                { "Golden State Warriors", "gsw" },
+                { "Houston Rockets", "hou" },
+                { "Indiana Pacers", "ind" },
+                { "LA Clippers", "lac" },
+                { "Los Angeles Clippers", "lac" },
+                { "Los Angeles Lakers", "lal" },
+                { "Memphis Grizzlies", "mem" },
+                { "Miami Heat", "mia" },
+                { "Milwaukee Bucks", "mil" },
+                { "Minnesota Timberwolves", "min" },
+                { "New Orleans Pelicans", "nop" },
+                { "New York Knicks", "nyk" },
+                { "Oklahoma City Thunder", "okc" },
+                { "Orlando Magic", "orl" },
+                { "Philadelphia 76ers", "phi" },
+                { "Phoenix Suns", "phx" },
+                { "Portland Trail Blazers", "por" },
+                { "Sacramento Kings", "sac" },
+                { "San Antonio Spurs", "sas" },
+                { "Toronto Raptors", "tor" },
+                { "Utah Jazz", "uta" },
+                { "Washington Wizards", "was" }
+            };
+
+            // Fallback: use first 3 non-space characters lowercased
+            if (mapping.TryGetValue(teamName, out var code)) return code;
+            var cleaned = teamName.Replace(" ", "").ToLower();
+            return cleaned.Length >= 3 ? cleaned[..3] : cleaned;
         }
     }
 }

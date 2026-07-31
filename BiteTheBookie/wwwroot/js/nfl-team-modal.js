@@ -76,8 +76,14 @@
   }
 
   function nbaLogoUrl(abbr) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" rx="6" fill="#1f2937"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="700">${abbr}</text></svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    // Prefer ESPN CDN NBA logos; fallback to SVG tile if unavailable.
+    try {
+      const code = (abbr || '').toLowerCase();
+      return `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png`;
+    } catch (e) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36"><rect width="36" height="36" rx="6" fill="#1f2937"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="12" font-weight="700">${abbr}</text></svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
   }
 
   const cbbTeams = [
@@ -215,8 +221,15 @@
   ];
 
   function mlbLogoUrl(abbr) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="72" height="72" rx="12" fill="#002D62"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">${abbr}</text></svg>`;
-    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    // Use ESPN CDN logos for MLB where available. Most team codes map directly to lowercase abbr.
+    // Fall back to a simple SVG placeholder if necessary.
+    try {
+      const code = (abbr || '').toLowerCase();
+      return `https://a.espncdn.com/i/teamlogos/mlb/500/${code}.png`;
+    } catch (e) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="72" height="72" rx="12" fill="#002D62"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700">${abbr}</text></svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
   }
 
   // ESPN team ID mappings for major college basketball teams

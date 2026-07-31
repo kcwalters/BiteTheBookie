@@ -35,11 +35,33 @@ namespace BiteTheBookie.ViewModels
         /// <summary>
         /// Available NBA games for the Game ID dropdown.
         /// </summary>
-        public List<SelectListItem> AvailableNbaGames { get; set; } = new();
+        public List<NbaGameOption> AvailableNbaGames { get; set; } = new();
 
         /// <summary>
         /// Available MLB games for the Game ID dropdown.
         /// </summary>
-        public List<SelectListItem> AvailableMlbGames { get; set; } = new();
+        public List<MlbGameOption> AvailableMlbGames { get; set; } = new();
+    }
+
+    public class MlbGameOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string AwayCode { get; set; } = string.Empty;
+        public string HomeCode { get; set; } = string.Empty;
+        public string AwayName { get; set; } = string.Empty;
+        public string HomeName { get; set; } = string.Empty;
+        public DateTime GameTime { get; set; }
+    }
+
+    public class NbaGameOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string AwayCode { get; set; } = string.Empty;
+        public string HomeCode { get; set; } = string.Empty;
+        public string AwayName { get; set; } = string.Empty;
+        public string HomeName { get; set; } = string.Empty;
+        public DateTime GameTime { get; set; }
     }
 }

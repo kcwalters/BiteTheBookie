@@ -36,14 +36,23 @@
 
                     <div class="mb-3" id="nbaGameDropdownContainer" style="display: none;">
                         <label class="form-label fw-semibold">Select Game</label>
-                        <select id="nbaGameDropdown" class="form-select">
-                            <option value="">-- Select an NBA Game --</option>
-                            @foreach (var game in Model.AvailableNbaGames)
-                            {
-                                var selected = game.Value == Model.GameId ? "selected" : "";
-                                <option value="@game.Value" selected="@selected">@game.Text</option>
-                            }
-                        </select>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="nbaGameDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                -- Select an NBA Game --
+                            </button>
+                            <ul class="dropdown-menu w-100" id="nbaGameDropdownMenu">
+                                @foreach (var game in Model.AvailableNbaGames)
+                                {
+                                    <li>
+                                        <a class="dropdown-item nba-game-item" href="#" data-value="@game.Value" data-away="@game.AwayCode" data-home="@game.HomeCode" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                            <img src="https://a.espncdn.com/i/teamlogos/nba/500/@(game.AwayCode).png" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            <img src="https://a.espncdn.com/i/teamlogos/nba/500/@(game.HomeCode).png" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            @game.Text
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
                         @if (!Model.AvailableNbaGames.Any())
                         {
                             <div class="form-text text-warning">
@@ -55,14 +64,23 @@
 
                     <div class="mb-3" id="mlbGameDropdownContainer" style="display: none;">
                         <label class="form-label fw-semibold">Select Game</label>
-                        <select id="mlbGameDropdown" class="form-select">
-                            <option value="">-- Select an MLB Game --</option>
-                            @foreach (var game in Model.AvailableMlbGames)
-                            {
-                                var selected = game.Value == Model.GameId ? "selected" : "";
-                                <option value="@game.Value" selected="@selected">@game.Text</option>
-                            }
-                        </select>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="mlbGameDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                -- Select an MLB Game --
+                            </button>
+                            <ul class="dropdown-menu w-100" id="mlbGameDropdownMenu">
+                                @foreach (var game in Model.AvailableMlbGames)
+                                {
+                                    <li>
+                                        <a class="dropdown-item mlb-game-item" href="#" data-value="@game.Value" data-away="@game.AwayCode" data-home="@game.HomeCode" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                            <img src="https://a.espncdn.com/i/teamlogos/mlb/500/@(game.AwayCode).png" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            <img src="https://a.espncdn.com/i/teamlogos/mlb/500/@(game.HomeCode).png" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            @game.Text
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
                         @if (!Model.AvailableMlbGames.Any())
                         {
                             <div class="form-text text-warning">
@@ -174,8 +192,11 @@
         var nbaDropdownContainer = document.getElementById('nbaGameDropdownContainer');
         var mlbDropdownContainer = document.getElementById('mlbGameDropdownContainer');
         var gameIdTextContainer = document.getElementById('gameIdTextContainer');
+        var nbaGameDropdownBtn = document.getElementById('nbaGameDropdownBtn');
+        var nbaGameDropdownMenu = document.getElementById('nbaGameDropdownMenu');
         var nbaGameDropdown = document.getElementById('nbaGameDropdown');
-        var mlbGameDropdown = document.getElementById('mlbGameDropdown');
+        var mlbGameDropdownBtn = document.getElementById('mlbGameDropdownBtn');
+        var mlbGameDropdownMenu = document.getElementById('mlbGameDropdownMenu');
         var gameIdInput = document.getElementById('gameIdInput');
         var gameIdTextInput = document.getElementById('gameIdTextInput');
         var awayTeamInput = document.getElementById('awayTeamInput');
@@ -186,8 +207,8 @@
 
         function toggleGameIdField() {
             var league = leagueSelect.value;
-            var nbaHasGames = nbaGameDropdown.options.length > 1;
-            var mlbHasGames = mlbGameDropdown.options.length > 1;
+            var nbaHasGames = nbaGameDropdownMenu && nbaGameDropdownMenu.querySelectorAll('.nba-game-item').length > 0;
+            var mlbHasGames = mlbGameDropdownMenu && mlbGameDropdownMenu.querySelectorAll('.mlb-game-item').length > 0;
 
             nbaDropdownContainer.style.display = 'none';
             mlbDropdownContainer.style.display = 'none';
@@ -212,8 +233,8 @@
             toggleGameIdField();
             gameIdInput.value = '';
             gameIdTextInput.value = '';
-            nbaGameDropdown.value = '';
-            mlbGameDropdown.value = '';
+            if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = '-- Select an NBA Game --';
+            if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = '-- Select an MLB Game --';
             awayTeamInput.value = '';
             homeTeamInput.value = '';
             gameTimeInput.value = '';
@@ -273,9 +294,55 @@
             onGameSelected('NBA', this.value);
         });
 
-        mlbGameDropdown.addEventListener('change', function () {
-            onGameSelected('MLB', this.value);
-            loadMlbPregameSummary(this.value);
-        });
+        if (nbaGameDropdownMenu) {
+            nbaGameDropdownMenu.addEventListener('click', function (e) {
+                var a = e.target.closest('.nba-game-item');
+                if (!a) return;
+                e.preventDefault();
+                var val = a.getAttribute('data-value');
+                var away = a.getAttribute('data-away-name') || a.getAttribute('data-away');
+                var home = a.getAttribute('data-home-name') || a.getAttribute('data-home');
+                var gtime = a.getAttribute('data-gametime');
+
+                if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = a.textContent.trim();
+                gameIdInput.value = val || '';
+                awayTeamInput.value = away || '';
+                homeTeamInput.value = home || '';
+
+                if (gtime) {
+                    try { gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { gameTimeInput.value = ''; }
+                } else {
+                    gameTimeInput.value = '';
+                }
+
+                onGameSelected('NBA', val);
+            });
+        }
+
+        if (mlbGameDropdownMenu) {
+            mlbGameDropdownMenu.addEventListener('click', function (e) {
+                var a = e.target.closest('.mlb-game-item');
+                if (!a) return;
+                e.preventDefault();
+                var val = a.getAttribute('data-value');
+                var away = a.getAttribute('data-away-name') || a.getAttribute('data-away');
+                var home = a.getAttribute('data-home-name') || a.getAttribute('data-home');
+                var gtime = a.getAttribute('data-gametime');
+
+                if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = a.textContent.trim();
+                gameIdInput.value = val || '';
+                awayTeamInput.value = away || '';
+                homeTeamInput.value = home || '';
+
+                if (gtime) {
+                    try { gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { gameTimeInput.value = ''; }
+                } else {
+                    gameTimeInput.value = '';
+                }
+
+                onGameSelected('MLB', val);
+                loadMlbPregameSummary(val);
+            });
+        }
     </script>
 }
