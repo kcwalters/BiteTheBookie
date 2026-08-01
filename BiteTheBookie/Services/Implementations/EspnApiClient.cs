@@ -230,5 +230,96 @@ namespace BiteTheBookie.Services.Implementations
             "day-to-day"   => "Day-to-Day",
             _              => espnStatus
         };
+
+        // ── Generic roster helper ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Fetches a roster from any ESPN Site API sport/league endpoint.
+        /// Returns a list of player full names; empty list on failure.
+        /// </summary>
+        private async Task<List<string>> GetRosterNamesAsync(
+            string sportPath,   // e.g. "football/nfl"
+            string teamCode,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var url = $"apis/site/v2/sports/{sportPath}/teams/{teamCode.ToLower()}/roster";
+                var response = await _httpClient.GetAsync(url, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN {Sport} roster returned {Status} for {Team}", sportPath, response.StatusCode, teamCode);
+                    return new List<string>();
+                }
+
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                var root = JsonDocument.Parse(content).RootElement;
+
+                var names = new List<string>();
+
+                if (root.TryGetProperty("athletes", out var athletesEl))
+                {
+                    foreach (var item in athletesEl.EnumerateArray())
+                    {
+                        // Grouped format (position groups with "items" array)
+                        if (item.TryGetProperty("items", out var groupItems))
+                        {
+                            foreach (var athlete in groupItems.EnumerateArray())
+                                ExtractName(athlete, names);
+                        }
+                        else
+                        {
+                            ExtractName(item, names);
+                        }
+                    }
+                }
+
+                _logger.LogInformation("ESPN {Sport} roster: {Count} players for {Team}", sportPath, names.Count, teamCode);
+                return names;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch ESPN {Sport} roster for {Team}", sportPath, teamCode);
+                return new List<string>();
+            }
+        }
+
+        private static void ExtractName(JsonElement athlete, List<string> names)
+        {
+            // Skip inactive/non-roster statuses
+            if (athlete.TryGetProperty("active", out var activeProp) && !activeProp.GetBoolean())
+                return;
+            if (athlete.TryGetProperty("status", out var statusEl) &&
+                statusEl.TryGetProperty("type", out var statusType) &&
+                _nonRosterStatusTypes.Contains(statusType.GetString() ?? ""))
+                return;
+
+            if (athlete.TryGetProperty("displayName", out var nameProp))
+            {
+                var name = nameProp.GetString();
+                if (!string.IsNullOrWhiteSpace(name))
+                    names.Add(name);
+            }
+        }
+
+        /// <summary>Fetches the current NFL roster for a team by ESPN team code (e.g. "phi", "ne").</summary>
+        public Task<List<string>> GetNflRosterAsync(string teamCode, CancellationToken cancellationToken = default)
+            => GetRosterNamesAsync("football/nfl", teamCode, cancellationToken);
+
+        /// <summary>Fetches the current CFB roster for a team by ESPN team code (e.g. "alabama", "ohio-state").</summary>
+        public Task<List<string>> GetCfbRosterAsync(string teamCode, CancellationToken cancellationToken = default)
+            => GetRosterNamesAsync("football/college-football", teamCode, cancellationToken);
+
+        /// <summary>Fetches the current NHL roster for a team by ESPN team code (e.g. "pit", "bos").</summary>
+        public Task<List<string>> GetNhlRosterAsync(string teamCode, CancellationToken cancellationToken = default)
+            => GetRosterNamesAsync("hockey/nhl", teamCode, cancellationToken);
+
+        /// <summary>Fetches the current NBA roster as a plain name list (parallel to GetTeamRosterAsync but simpler output).</summary>
+        public async Task<List<string>> GetNbaRosterNamesAsync(string teamCode, CancellationToken cancellationToken = default)
+        {
+            var roster = await GetTeamRosterAsync(teamCode, cancellationToken);
+            return roster?.Players.Select(p => p.Name).ToList() ?? new List<string>();
+        }
     }
 }

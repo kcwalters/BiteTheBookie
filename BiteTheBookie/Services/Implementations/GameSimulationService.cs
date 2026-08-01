@@ -1,5 +1,6 @@
-﻿using BiteTheBookie.Services.Interfaces;
+using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.Models;
+using Microsoft.Extensions.Configuration;
 using OpenAI.Chat;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -10,18 +11,100 @@ namespace BiteTheBookie.Services.Implementations
     {
         private readonly ChatClient? _chatClient;
         private readonly ILogger<GameSimulationService> _logger;
+        private readonly IHttpClientFactory _httpFactory;
+        private readonly bool _useMockData;
+        private readonly EspnApiClient _espnClient;
 
         private static readonly Regex StrongNamePattern = new(
             @"<strong>([A-Z][a-zA-Z''-]+(?: [A-Z][a-zA-Z''-]+){1,2})</strong>",
             RegexOptions.Compiled);
 
-        public GameSimulationService(ChatClient? chatClient, ILogger<GameSimulationService> logger)
+        public GameSimulationService(ChatClient? chatClient, ILogger<GameSimulationService> logger, IHttpClientFactory httpFactory, IConfiguration configuration, EspnApiClient espnClient)
         {
             _logger = logger;
             _chatClient = chatClient;
+            _httpFactory = httpFactory;
+            _useMockData = configuration.GetValue<bool>("Simulation:UseMockData", true);
+            _espnClient = espnClient;
 
             if (_chatClient == null)
                 _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use mock simulation.");
+        }
+
+        /// <summary>
+        /// Fallback: fetch active roster from MLB Stats API (/teams/{teamId}/roster).
+        /// Returns empty list on any failure.
+        /// </summary>
+        private async Task<List<string>> FetchMlbRosterFromStatsApiAsync(string teamName, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var teamId = GetMlbTeamIdLocal(teamName);
+                if (string.IsNullOrEmpty(teamId))
+                {
+                    _logger.LogWarning("No MLB team ID mapping for {Team} — cannot call statsapi", teamName);
+                    return new List<string>();
+                }
+
+                using var client = _httpFactory?.CreateClient() ?? new HttpClient();
+                client.BaseAddress = new Uri("https://statsapi.mlb.com/api/v1/");
+
+                var url = $"teams/{teamId}/roster?rosterType=active&season=2026";
+                var resp = await client.GetAsync(url, cancellationToken);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("MLB Stats API roster request failed for {Team} (id={Id}) with status {Status}", teamName, teamId, resp.StatusCode);
+                    return new List<string>();
+                }
+
+                using var stream = await resp.Content.ReadAsStreamAsync(cancellationToken);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                var root = doc.RootElement;
+                if (!root.TryGetProperty("roster", out var rosterElem)) return new List<string>();
+
+                var players = new List<string>();
+                foreach (var item in rosterElem.EnumerateArray())
+                {
+                    if (item.TryGetProperty("person", out var person) && person.TryGetProperty("fullName", out var nameEl))
+                    {
+                        var name = nameEl.GetString();
+                        if (!string.IsNullOrWhiteSpace(name)) players.Add(name);
+                    }
+                }
+
+                _logger.LogInformation("MLB Stats API returned {Count} players for {Team}", players.Count, teamName);
+                return players.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch MLB roster from statsapi for {Team}", teamName);
+                return new List<string>();
+            }
+        }
+
+        // Local mapping of full MLB team names to mlbstats team IDs — copied from PicksController mapping.
+        private static string GetMlbTeamIdLocal(string team)
+        {
+            return team switch
+            {
+                "Arizona Diamondbacks" => "109", "Atlanta Braves"       => "144",
+                "Baltimore Orioles"    => "110", "Boston Red Sox"       => "111",
+                "Chicago Cubs"         => "112", "Chicago White Sox"    => "145",
+                "Cincinnati Reds"      => "113", "Cleveland Guardians"  => "114",
+                "Colorado Rockies"     => "115", "Detroit Tigers"       => "116",
+                "Houston Astros"       => "117", "Kansas City Royals"   => "118",
+                "Los Angeles Angels"   => "108", "Los Angeles Dodgers"  => "119",
+                "Miami Marlins"        => "146", "Milwaukee Brewers"    => "158",
+                "Minnesota Twins"      => "142", "New York Mets"        => "121",
+                "New York Yankees"     => "147", "Oakland Athletics"    => "133",
+                "Athletics"            => "133",
+                "Philadelphia Phillies"=> "143", "Pittsburgh Pirates"   => "134",
+                "San Diego Padres"     => "135", "San Francisco Giants" => "137",
+                "Seattle Mariners"     => "136", "St. Louis Cardinals"  => "138",
+                "Tampa Bay Rays"       => "139", "Texas Rangers"        => "140",
+                "Toronto Blue Jays"    => "141", "Washington Nationals" => "120",
+                _ => string.Empty
+            };
         }
 
         public async Task<string> GenerateGameSimulationAsync(
@@ -46,6 +129,9 @@ namespace BiteTheBookie.Services.Implementations
             if (_chatClient == null)
             {
                 _logger.LogWarning("_chatClient is NULL — returning mock simulation for {HomeTeam} vs {AwayTeam}", homeTeam, awayTeam);
+
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
 
                 if (league.Equals("MLB", StringComparison.OrdinalIgnoreCase))
                     return GetMlbMockSimulation(homeTeam, awayTeam, homeProbablePitcher, awayProbablePitcher);
@@ -88,20 +174,26 @@ namespace BiteTheBookie.Services.Implementations
                 .Select(i => i.PlayerName)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
 
-            // ── Fetch rosters from OpenAI ─────────────────────────────────────
+
+            // -- Fetch rosters from OpenAI, with ESPN fallback
             _logger.LogInformation("Fetching NBA rosters from OpenAI for {AwayTeam} and {HomeTeam}", awayTeam, homeTeam);
 
-            // Fetch both rosters concurrently for speed
             var rosterTasks = await Task.WhenAll(
                 FetchOpenAIRosterAsync(awayTeam, awayRoster?.TeamCode ?? awayTeam, cancellationToken),
                 FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken));
-
-            // Do NOT fall back to ESPN — a null here intentionally triggers the hard-stop
-            // below so the simulation never runs with stale or incorrect player data.
             awayRoster = rosterTasks[0];
             homeRoster = rosterTasks[1];
 
-            if (injuredPlayersNba.Any())
+            if (awayRoster == null || awayRoster.Players.Count == 0)
+            {
+                _logger.LogWarning("OpenAI returned no roster for {Team} -- falling back to ESPN", awayTeam);
+                awayRoster = await _espnClient.GetTeamRosterAsync(awayRoster?.TeamCode ?? awayTeam, cancellationToken);
+            }
+            if (homeRoster == null || homeRoster.Players.Count == 0)
+            {
+                _logger.LogWarning("OpenAI returned no roster for {Team} -- falling back to ESPN", homeTeam);
+                homeRoster = await _espnClient.GetTeamRosterAsync(homeRoster?.TeamCode ?? homeTeam, cancellationToken);
+            }
             {
                 _logger.LogWarning("EXCLUDING {Count} injured players: {Players}",
                     injuredPlayersNba.Count, string.Join(", ", injuredPlayersNba));
@@ -287,6 +379,8 @@ Review every player name in your response. If ANY name does not appear in the AU
                 _logger.LogError(ex,
                     "AI simulation FAILED for {HomeTeam} vs {AwayTeam}: {Type}: {Message} — falling back to mock",
                     homeTeam, awayTeam, ex.GetType().FullName, ex.Message);
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
                 return GetMockSimulation(homeTeam, awayTeam, homeRoster, awayRoster, injuredPlayersNba);
             }
         }
@@ -617,6 +711,8 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
             {
                 _logger.LogError(ex, "MLB simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
                     awayTeam, homeTeam);
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
                 return GetMlbMockSimulation(homeTeam, awayTeam, homeProbablePitcher, awayProbablePitcher);
             }
         }
@@ -630,7 +726,11 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
             string teamName,
             CancellationToken cancellationToken)
         {
-            if (_chatClient == null) return new List<string>();
+            if (_chatClient == null)
+            {
+                _logger.LogInformation("ChatClient not configured — falling back to MLB Stats API for {Team}", teamName);
+                return await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
+            }
 
             try
             {
@@ -671,6 +771,13 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
                 if (candidates.Count == 0)
                 {
                     _logger.LogWarning("OpenAI returned zero MLB players for {Team}", teamName);
+                    // Try fallback to MLB Stats API
+                    var fallback = await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
+                    if (fallback != null && fallback.Count > 0)
+                    {
+                        _logger.LogInformation("Fetched {Count} roster players from MLB Stats API for {Team}", fallback.Count, teamName);
+                        return fallback;
+                    }
                     return new List<string>();
                 }
 
@@ -688,12 +795,21 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
                         invalid.Count, teamName, string.Join(", ", invalid));
 
                 _logger.LogInformation("MLB roster: {Count} active players confirmed for {Team}", validated.Count, teamName);
+                if (validated.Count == 0)
+                {
+                    var fallback2 = await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
+                    if (fallback2 != null && fallback2.Count > 0)
+                    {
+                        _logger.LogInformation("Using MLB Stats API fallback roster ({Count}) for {Team}", fallback2.Count, teamName);
+                        return fallback2;
+                    }
+                }
                 return validated;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "MLB roster fetch failed for {Team}", teamName);
-                return new List<string>();
+                _logger.LogWarning(ex, "MLB roster OpenAI fetch failed for {Team} — falling back to MLB Stats API", teamName);
+                return await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
             }
         }
 
@@ -770,6 +886,16 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
                 var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
                 var season = "2025 college football season";
 
+                // -- Fetch live rosters from ESPN (CFB)
+                var awayCfbCode = GetCfbEspnCode(awayTeam);
+                var homeCfbCode = GetCfbEspnCode(homeTeam);
+                var cfbRosters = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayCfbCode) ? Task.FromResult(new List<string>()) : _espnClient.GetCfbRosterAsync(awayCfbCode, cancellationToken),
+                    string.IsNullOrEmpty(homeCfbCode) ? Task.FromResult(new List<string>()) : _espnClient.GetCfbRosterAsync(homeCfbCode, cancellationToken));
+                var awayCfbRoster = cfbRosters[0];
+                var homeCfbRoster = cfbRosters[1];
+                var cfbRosterSection = BuildRosterSection(awayTeam, awayCfbRoster, homeTeam, homeCfbRoster, today);
+
                 var prompt = $@"Generate a FRESH, UNIQUE college football (NCAA FBS) game simulation: {awayTeam} (away) at {homeTeam} (home).
 
 SIMULATION ID : {simulationId}
@@ -782,11 +908,7 @@ OUTPUT FORMAT — NON-NEGOTIABLE:
 - Wrap every player name in <strong> tags each and every time it appears.
 - Do NOT put anything outside the HTML (no preamble, no code fences).
 
-ROSTER GUIDANCE:
-- Reference realistic, plausible current players for each program (QB, RB, WR, key defenders).
-- Use only players who plausibly play for {awayTeam} or {homeTeam} in the {season}.
-- Do NOT invent absurd names or reference players from other programs.
-
+{cfbRosterSection}
 SIMULATION REQUIREMENTS:
 - This is FOOTBALL, not basketball. Scores MUST be realistic college football totals
   (typically 10-45 points per team; blowouts can reach the 50s-60s).
@@ -804,8 +926,7 @@ Include these sections in order:
 5. <h2>Team Statistics</h2> — HTML table: Total Yards, Passing, Rushing, Turnovers, Time of Possession, 3rd-Down %
 6. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK BEFORE RESPONDING:
-Confirm every stat is a FOOTBALL stat and the final score is a realistic football score.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic college football. (3) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -834,6 +955,8 @@ Confirm every stat is a FOOTBALL stat and the final score is a realistic footbal
             {
                 _logger.LogError(ex, "CFB simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
                     awayTeam, homeTeam);
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
                 return GetCfbMockSimulation(homeTeam, awayTeam);
             }
         }
@@ -906,6 +1029,16 @@ Confirm every stat is a FOOTBALL stat and the final score is a realistic footbal
                 var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
                 var season = "2025 NFL season";
 
+
+                // -- Fetch live rosters from ESPN (NFL)
+                var awayNflCode = GetNflEspnCode(awayTeam);
+                var homeNflCode = GetNflEspnCode(homeTeam);
+                var nflRosters = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayNflCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNflRosterAsync(awayNflCode, cancellationToken),
+                    string.IsNullOrEmpty(homeNflCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNflRosterAsync(homeNflCode, cancellationToken));
+                var awayNflRoster = nflRosters[0];
+                var homeNflRoster = nflRosters[1];
+                var nflRosterSection = BuildRosterSection(awayTeam, awayNflRoster, homeTeam, homeNflRoster, today);
                 var prompt = $@"Generate a FRESH, UNIQUE NFL (professional football) game simulation: {awayTeam} (away) at {homeTeam} (home).
 
 SIMULATION ID : {simulationId}
@@ -918,12 +1051,7 @@ OUTPUT FORMAT — NON-NEGOTIABLE:
 - Wrap every player name in <strong> tags each and every time it appears.
 - Do NOT put anything outside the HTML (no preamble, no code fences).
 
-ROSTER GUIDANCE:
-- Reference realistic, plausible CURRENT NFL players for each team (QB, RB, WR, TE, key defenders).
-- Use only players who plausibly play for {awayTeam} or {homeTeam} in the {season}.
-- A player who was traded, released, or signed elsewhere must NOT appear on his former team.
-- Do NOT invent absurd names or reference players from other teams.
-
+{nflRosterSection}
 SIMULATION REQUIREMENTS:
 - This is FOOTBALL, not basketball. Scores MUST be realistic NFL totals
   (typically 13-31 points per team; blowouts can reach the 40s).
@@ -942,8 +1070,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK BEFORE RESPONDING:
-Confirm every stat is a FOOTBALL stat and the final score is a realistic NFL score.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score. (3) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -972,11 +1099,13 @@ Confirm every stat is a FOOTBALL stat and the final score is a realistic NFL sco
             {
                 _logger.LogError(ex, "NFL simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
                     awayTeam, homeTeam);
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
                 return GetCfbMockSimulation(homeTeam, awayTeam);
             }
         }
 
-        // ── NHL (professional hockey) ──────────────────────────────────────────
+        // ── NHL (professional hockey)
 
         private async Task<string> GenerateHockeySimulationAsync(
             string homeTeam, string awayTeam, string simulationId,
@@ -988,6 +1117,16 @@ Confirm every stat is a FOOTBALL stat and the final score is a realistic NFL sco
                     "Calling Azure OpenAI for NHL: {AwayTeam} @ {HomeTeam}", awayTeam, homeTeam);
 
                 var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+                // -- Fetch live rosters from ESPN (NHL)
+                var awayNhlCode = GetNhlEspnCode(awayTeam);
+                var homeNhlCode = GetNhlEspnCode(homeTeam);
+                var nhlRosters = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayNhlCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNhlRosterAsync(awayNhlCode, cancellationToken),
+                    string.IsNullOrEmpty(homeNhlCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNhlRosterAsync(homeNhlCode, cancellationToken));
+                var awayNhlRoster = nhlRosters[0];
+                var homeNhlRoster = nhlRosters[1];
+                var nhlRosterSection = BuildRosterSection(awayTeam, awayNhlRoster, homeTeam, homeNhlRoster, today);
                 var season = "2025-26 NHL season";
 
                 var prompt = $@"Generate a FRESH, UNIQUE NHL (professional hockey) game simulation: {awayTeam} (away) at {homeTeam} (home).
@@ -1002,12 +1141,7 @@ OUTPUT FORMAT — NON-NEGOTIABLE:
 - Wrap every player name in <strong> tags each and every time it appears.
 - Do NOT put anything outside the HTML (no preamble, no code fences).
 
-ROSTER GUIDANCE:
-- Reference realistic, plausible CURRENT NHL players for each team (forwards, defensemen, starting goaltender).
-- Use only players who plausibly play for {awayTeam} or {homeTeam} in the {season}.
-- A player who was traded, released, or signed elsewhere must NOT appear on his former team.
-- Do NOT invent absurd names or reference players from other teams.
-
+{nhlRosterSection}
 SIMULATION REQUIREMENTS:
 - This is HOCKEY, not basketball. Scores MUST be realistic NHL totals
   (typically 1-6 goals per team).
@@ -1025,8 +1159,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — puck line, over/under (total goals), moneyline impact
 
-FINAL CHECK BEFORE RESPONDING:
-Confirm every stat is a HOCKEY stat and the final score is a realistic NHL score.";
+FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL score. (3) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1055,6 +1188,8 @@ Confirm every stat is a HOCKEY stat and the final score is a realistic NHL score
             {
                 _logger.LogError(ex, "NHL simulation FAILED for {AwayTeam} @ {HomeTeam} — falling back to mock",
                     awayTeam, homeTeam);
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
                 return GetHockeyMockSimulation(homeTeam, awayTeam);
             }
         }
@@ -1405,6 +1540,103 @@ private static string StripCodeFences(string text)
   <li><strong>Moneyline:</strong> {winner} wins outright</li>
 </ul>
 <p><em>Simulated game for entertainment purposes only.</em></p>";
+        }
+
+        // ── Roster section builder ────────────────────────────────────────────
+
+        private static string BuildRosterSection(
+            string awayTeam, List<string> awayRoster,
+            string homeTeam, List<string> homeRoster,
+            string today)
+        {
+            if (awayRoster.Count == 0 && homeRoster.Count == 0)
+                return $"\nROSTER NOTE: Live roster data was unavailable for both teams. Use only players " +
+                       $"known to play for {awayTeam} or {homeTeam} as of {today}. " +
+                       $"Do NOT include traded, released, or retired players.\n";
+
+            var awayBlock = awayRoster.Count > 0
+                ? string.Join("\n", awayRoster.Select(n => $"  \u2022 {n}"))
+                : $"  (roster unavailable \u2014 use known {awayTeam} players as of {today})";
+            var homeBlock = homeRoster.Count > 0
+                ? string.Join("\n", homeRoster.Select(n => $"  \u2022 {n}"))
+                : $"  (roster unavailable \u2014 use known {homeTeam} players as of {today})";
+
+            return $"AUTHORITATIVE ROSTERS as of {today}\n" +
+                   $"Use ONLY players listed below. Do NOT include any player not on this list.\n\n" +
+                   $"{awayTeam} ROSTER:\n{awayBlock}\n\n" +
+                   $"{homeTeam} ROSTER:\n{homeBlock}\n\n";
+        }
+
+        // ── ESPN team-code mappings ───────────────────────────────────────────
+
+        private static string GetNflEspnCode(string teamName)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Arizona Cardinals","ari" },{ "Atlanta Falcons","atl" },{ "Baltimore Ravens","bal" },
+                { "Buffalo Bills","buf" },{ "Carolina Panthers","car" },{ "Chicago Bears","chi" },
+                { "Cincinnati Bengals","cin" },{ "Cleveland Browns","cle" },{ "Dallas Cowboys","dal" },
+                { "Denver Broncos","den" },{ "Detroit Lions","det" },{ "Green Bay Packers","gb" },
+                { "Houston Texans","hou" },{ "Indianapolis Colts","ind" },{ "Jacksonville Jaguars","jax" },
+                { "Kansas City Chiefs","kc" },{ "Las Vegas Raiders","lv" },{ "Los Angeles Chargers","lac" },
+                { "Los Angeles Rams","lar" },{ "Miami Dolphins","mia" },{ "Minnesota Vikings","min" },
+                { "New England Patriots","ne" },{ "New Orleans Saints","no" },{ "New York Giants","nyg" },
+                { "New York Jets","nyj" },{ "Philadelphia Eagles","phi" },{ "Pittsburgh Steelers","pit" },
+                { "San Francisco 49ers","sf" },{ "Seattle Seahawks","sea" },{ "Tampa Bay Buccaneers","tb" },
+                { "Tennessee Titans","ten" },{ "Washington Commanders","wsh" },
+            };
+            return map.TryGetValue(teamName, out var code) ? code : string.Empty;
+        }
+
+        private static string GetNhlEspnCode(string teamName)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Anaheim Ducks","ana" },{ "Arizona Coyotes","ari" },{ "Boston Bruins","bos" },
+                { "Buffalo Sabres","buf" },{ "Calgary Flames","cgy" },{ "Carolina Hurricanes","car" },
+                { "Chicago Blackhawks","chi" },{ "Colorado Avalanche","col" },{ "Columbus Blue Jackets","cbj" },
+                { "Dallas Stars","dal" },{ "Detroit Red Wings","det" },{ "Edmonton Oilers","edm" },
+                { "Florida Panthers","fla" },{ "Los Angeles Kings","la" },{ "Minnesota Wild","min" },
+                { "Montreal Canadiens","mtl" },{ "Nashville Predators","nsh" },{ "New Jersey Devils","nj" },
+                { "New York Islanders","nyi" },{ "New York Rangers","nyr" },{ "Ottawa Senators","ott" },
+                { "Philadelphia Flyers","phi" },{ "Pittsburgh Penguins","pit" },{ "San Jose Sharks","sj" },
+                { "Seattle Kraken","sea" },{ "St. Louis Blues","stl" },{ "Tampa Bay Lightning","tb" },
+                { "Toronto Maple Leafs","tor" },{ "Utah Hockey Club","uta" },{ "Vancouver Canucks","van" },
+                { "Vegas Golden Knights","vgk" },{ "Washington Capitals","wsh" },{ "Winnipeg Jets","wpg" },
+            };
+            return map.TryGetValue(teamName, out var code) ? code : string.Empty;
+        }
+
+        private static string GetCfbEspnCode(string teamName)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Alabama","alabama" },{ "Arizona","arizona" },{ "Arizona State","arizona-state" },
+                { "Arkansas","arkansas" },{ "Auburn","auburn" },{ "Baylor","baylor" },
+                { "Boston College","boston-college" },{ "BYU","byu" },{ "California","california" },
+                { "Cincinnati","cincinnati" },{ "Clemson","clemson" },{ "Colorado","colorado" },
+                { "Duke","duke" },{ "Florida","florida" },{ "Florida State","florida-state" },
+                { "Georgia","georgia" },{ "Georgia Tech","georgia-tech" },{ "Houston","houston" },
+                { "Illinois","illinois" },{ "Indiana","indiana" },{ "Iowa","iowa" },
+                { "Iowa State","iowa-state" },{ "Kansas","kansas" },{ "Kansas State","kansas-state" },
+                { "Kentucky","kentucky" },{ "LSU","lsu" },{ "Maryland","maryland" },
+                { "Memphis","memphis" },{ "Miami","miami" },{ "Michigan","michigan" },
+                { "Michigan State","michigan-state" },{ "Minnesota","minnesota" },{ "Mississippi State","mississippi-state" },
+                { "Missouri","missouri" },{ "Nebraska","nebraska" },{ "North Carolina","north-carolina" },
+                { "NC State","nc-state" },{ "Northwestern","northwestern" },{ "Notre Dame","notre-dame" },
+                { "Ohio State","ohio-state" },{ "Oklahoma","oklahoma" },{ "Oklahoma State","oklahoma-state" },
+                { "Ole Miss","ole-miss" },{ "Oregon","oregon" },{ "Oregon State","oregon-state" },
+                { "Penn State","penn-state" },{ "Pittsburgh","pittsburgh" },{ "Purdue","purdue" },
+                { "Rutgers","rutgers" },{ "SMU","smu" },{ "South Carolina","south-carolina" },
+                { "Stanford","stanford" },{ "Syracuse","syracuse" },{ "TCU","tcu" },
+                { "Tennessee","tennessee" },{ "Texas","texas" },{ "Texas A&M","texas-am" },
+                { "Texas Tech","texas-tech" },{ "UCLA","ucla" },{ "USC","usc" },
+                { "Utah","utah" },{ "Vanderbilt","vanderbilt" },{ "Virginia","virginia" },
+                { "Virginia Tech","virginia-tech" },{ "Wake Forest","wake-forest" },
+                { "Washington","washington" },{ "Washington State","washington-state" },
+                { "West Virginia","west-virginia" },{ "Wisconsin","wisconsin" },
+            };
+            return map.TryGetValue(teamName, out var code) ? code : string.Empty;
         }
     }
 }
