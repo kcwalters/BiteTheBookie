@@ -61,6 +61,12 @@ namespace BiteTheBookie.Controllers
                 Email = model.Email,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
+                DateOfBirth = model.DateOfBirth,
+                StreetAddress = model.StreetAddress,
+                City = model.City,
+                State = model.State,
+                ZipCode = model.ZipCode,
+                PhoneNumber = model.PhoneNumber,
                 SubscriptionTier = model.SelectedPlan?.ToLower() switch
                 {
                     "premium" => SubscriptionTier.Premium,
