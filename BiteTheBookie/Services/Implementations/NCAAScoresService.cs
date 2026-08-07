@@ -66,10 +66,17 @@ namespace BiteTheBookie.Services.Implementations
                 var games = new List<NCAATickerView>();
                 foreach (var ev in eventsElement.EnumerateArray())
                 {
-                    var game = MapEventToTickerGame(ev);
-                    if (game is not null)
+                    try
                     {
-                        games.Add(game.Value);
+                        var game = MapEventToTickerGame(ev);
+                        if (game is not null)
+                        {
+                            games.Add(game.Value);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Skipping malformed NCAA MBB event while mapping ticker game.");
                     }
                 }
 
@@ -118,8 +125,14 @@ namespace BiteTheBookie.Services.Implementations
             {
                 foreach (var teamElement in competitorsElement.EnumerateArray())
                 {
-                    var homeAway = teamElement.GetProperty("homeAway").GetString();
-                    var teamNode = teamElement.GetProperty("team");
+                    var homeAway = teamElement.TryGetProperty("homeAway", out var homeAwayEl)
+                        ? homeAwayEl.GetString()
+                        : null;
+
+                    if (!teamElement.TryGetProperty("team", out var teamNode))
+                    {
+                        continue;
+                    }
 
                     // For NCAA, abbreviation may be missing or not meaningful; fall back to shortDisplayName
                     var teamAbbr = teamNode.TryGetProperty("abbreviation", out var abbrEl)

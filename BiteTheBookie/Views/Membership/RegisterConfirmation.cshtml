@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Confirm Your Email";
+    var email = ViewBag.Email as string;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm text-center">
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-envelope-open-text fa-3x text-primary"></i>
+                    </div>
+                    <h2 class="fw-bold mb-2">Check your email</h2>
+                    <p class="text-muted mb-3">
+                        We've sent a confirmation link@(string.IsNullOrEmpty(email) ? "" : $" to {email}").
+                        Please click the link in that email to activate your account.
+                    </p>
+                    <p class="small text-muted mb-4">
+                        Didn't get it? Check your spam folder, or the link may take a minute to arrive.
+                    </p>
+                    <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary">
+                        Go to Log In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

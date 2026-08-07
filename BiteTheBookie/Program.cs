@@ -31,7 +31,7 @@ builder.Services.AddDataProtection()
 // Identity with ApplicationUser and Roles
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedAccount = true;
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
@@ -40,6 +40,10 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Email sender for account confirmation & transactional email
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, SmtpEmailSender>();
 
 // Authorization policies for Free vs Paid access
 builder.Services.AddAuthorization(options =>
@@ -111,13 +115,13 @@ builder.Services.AddScoped<ICFBGamesService, CFBGamesService>();
 builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
 
 // Date-aware NBA schedule (ESPN scoreboard by date) for Scores & Simulations
-builder.Services.AddHttpClient<INBAScheduleService, NBAScheduleService>();
+builder.Services.AddHttpClient<INBAScheduleService, NBAScheduleService>(BiteTheBookie.ServiceCollectionExtensions.ApplyEspnHeaders);
 
 // Date-aware schedule for ALL sports (ESPN scoreboard by date)
-builder.Services.AddHttpClient<ILeagueScheduleService, EspnScheduleService>();
+builder.Services.AddHttpClient<ILeagueScheduleService, EspnScheduleService>(BiteTheBookie.ServiceCollectionExtensions.ApplyEspnHeaders);
 
 // ESPN API Client
-builder.Services.AddHttpClient<EspnApiClient>();
+builder.Services.AddHttpClient<EspnApiClient>(BiteTheBookie.ServiceCollectionExtensions.ApplyEspnHeaders);
 
 // Razor Pages
 builder.Services.AddRazorPages();

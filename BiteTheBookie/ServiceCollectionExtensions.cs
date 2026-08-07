@@ -24,47 +24,61 @@ namespace BiteTheBookie
             // Bind once and consume via IOptions<T> in HttpClient configuration
             services.Configure<SportsTickerOptions>(configuration.GetSection("SportsTicker"));
 
-            services.AddHttpClient<NFLScoresService>((sp, client) =>
+            services.AddHttpClient<INFLScoresService, NFLScoresService>((sp, client) =>
             {
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NflApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NflApiBaseUrl);
+                ApplyEspnHeaders(client);
             });
-            services.AddScoped<INFLScoresService, NFLScoresService>();
 
-            services.AddHttpClient<NBAScoresService>((sp, client) =>
+            services.AddHttpClient<INBAScoresService, NBAScoresService>((sp, client) =>
             {
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NbaApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NbaApiBaseUrl);
+                ApplyEspnHeaders(client);
             });
-            services.AddScoped<INBAScoresService, NBAScoresService>();
 
-            services.AddHttpClient<NHLScoresService>((sp, client) =>
+            services.AddHttpClient<INHLScoresService, NHLScoresService>((sp, client) =>
             {
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NhlApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NhlApiBaseUrl);
+                ApplyEspnHeaders(client);
             });
-            services.AddScoped<INHLScoresService, NHLScoresService>();
 
-            services.AddHttpClient<NCAAScoresService>((sp, client) =>
+            services.AddHttpClient<INCAAScoresService, NCAAScoresService>((sp, client) =>
             {
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NcaaMensBasketballApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NcaaMensBasketballApiBaseUrl);
+                ApplyEspnHeaders(client);
             });
-            services.AddScoped<INCAAScoresService, NCAAScoresService>();
 
-            services.AddHttpClient<CFBScoresService>((sp, client) =>
+            services.AddHttpClient<ICFBScoresService, CFBScoresService>((sp, client) =>
             {
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NcaaFootballApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NcaaFootballApiBaseUrl);
+                ApplyEspnHeaders(client);
             });
-            services.AddScoped<ICFBScoresService, CFBScoresService>();
 
             return services;
+        }
+
+        /// <summary>
+        /// ESPN's public scoreboard API returns 403 for requests without a browser-like
+        /// User-Agent. Apply standard browser headers so the calls succeed.
+        /// </summary>
+        internal static void ApplyEspnHeaders(HttpClient client)
+        {
+            if (!client.DefaultRequestHeaders.UserAgent.TryParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"))
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+            }
+            client.DefaultRequestHeaders.Accept.TryParseAdd("application/json, text/plain, */*");
         }
     }
 }

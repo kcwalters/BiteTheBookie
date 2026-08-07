@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "Email Confirmation";
+    var success = ViewBag.Success as bool? ?? false;
+    var redirectPlan = ViewBag.RedirectPlan as string;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm text-center">
+                <div class="card-body p-4">
+                    @if (success)
+                    {
+                        <div class="mb-3">
+                            <i class="fas fa-check-circle fa-3x text-success"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">Email confirmed!</h2>
+                        <p class="text-muted mb-4">Your account is now active. Welcome to BiteTheBookie.</p>
+
+                        @if (!string.IsNullOrEmpty(redirectPlan))
+                        {
+                            <a asp-action="PaymentConfirmation" asp-route-plan="@redirectPlan" class="btn btn-primary">
+                                Continue to Payment
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                                Go to Home
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <i class="fas fa-times-circle fa-3x text-danger"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">Confirmation failed</h2>
+                        <p class="text-muted mb-4">
+                            This confirmation link is invalid or has expired. Please try registering again
+                            or request a new confirmation link.
+                        </p>
+                        <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary">
+                            Go to Log In
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
