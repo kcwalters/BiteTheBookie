@@ -1,4 +1,4 @@
-﻿using BiteTheBookie.Models;
+using BiteTheBookie.Models;
 using System.Text.Json;
 
 namespace BiteTheBookie.Services.Implementations
@@ -12,7 +12,7 @@ namespace BiteTheBookie.Services.Implementations
         {
             _httpClient = httpClient;
             _logger = logger;
-            _httpClient.BaseAddress = new Uri("https://site.api.espn.com/");
+            _httpClient.BaseAddress = new Uri("https://site.web.api.espn.com/");
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace BiteTheBookie.Services.Implementations
             }
         }
 
-        // ── Helpers ──────────────────────────────────────────────────────────────
+        // -- Helpers --------------------------------------------------------------
 
         private static readonly HashSet<string> _nonRosterStatusTypes = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -178,7 +178,7 @@ namespace BiteTheBookie.Services.Implementations
                 posProp.TryGetProperty("abbreviation", out var abbr))
                 position = abbr.GetString() ?? string.Empty;
 
-            // ── Season averages (ESPN returns a "statistics" array on the athlete node) ──
+            // -- Season averages (ESPN returns a "statistics" array on the athlete node) --
             double ppg = 0, rpg = 0, apg = 0;
             if (athlete.TryGetProperty("statistics", out var stats))
             {
@@ -231,7 +231,7 @@ namespace BiteTheBookie.Services.Implementations
             _              => espnStatus
         };
 
-        // ── Generic roster helper ─────────────────────────────────────────────
+        // -- Generic roster helper ---------------------------------------------
 
         /// <summary>
         /// Fetches a roster from any ESPN Site API sport/league endpoint.

@@ -15,7 +15,7 @@ namespace BiteTheBookie.Services.Implementations
         private readonly string _scoreboardUrl;
 
         private const string DefaultScoreboardUrl =
-            "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard";
+            "https://site.web.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard";
         private const string CacheKey = "nhl:scoreboard";
         private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);
 
@@ -38,17 +38,14 @@ namespace BiteTheBookie.Services.Implementations
 
             try
             {
-                using var response = await _httpClient.GetAsync(_scoreboardUrl, cancellationToken);
-                response.EnsureSuccessStatusCode();
+                // Fetch today's games, falling forward to the next scheduled day when the
+                // league is off today (off-day or out of season) so the ticker stays populated.
+                var events = await EspnScoreboardFetcher.GetEarliestDayEventsAsync(
+                    _httpClient, _scoreboardUrl, cancellationToken);
 
-                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("events", out var eventsElement) ||
-                    eventsElement.ValueKind != JsonValueKind.Array)
+                if (events.Count == 0)
                 {
-                    _logger.LogWarning("ESPN NHL scoreboard: 'events' array missing or invalid.");
+                    _logger.LogInformation("ESPN NHL scoreboard: no games today or upcoming.");
                     var empty = Array.Empty<NHLTickerView>();
                     _cache.Set(CacheKey, empty, new MemoryCacheEntryOptions
                     {
@@ -58,7 +55,7 @@ namespace BiteTheBookie.Services.Implementations
                 }
 
                 var games = new List<NHLTickerView>();
-                foreach (var ev in eventsElement.EnumerateArray())
+                foreach (var ev in events)
                 {
                     var game = MapEventToTickerGame(ev);
                     if (game is not null)
