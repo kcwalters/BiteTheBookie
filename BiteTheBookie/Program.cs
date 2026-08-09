@@ -1,13 +1,11 @@
 using Azure;
 using Azure.AI.OpenAI;
-using Azure.Identity;
 using BiteTheBookie;
 using BiteTheBookie.Data;
 using BiteTheBookie.Models;
 using BiteTheBookie.Services;
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -86,9 +84,7 @@ builder.Services.AddHttpClient<OddsService>();
 builder.Services.AddScoped<IOddsService>(sp => sp.GetRequiredService<OddsService>());
 
 // News (ESPN RSS overrides the stub — only register EspnRssNewsService)
-builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
-builder.Services.AddHttpClient<EspnRssNewsService>();
-builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
+builder.Services.AddScoped<INewsService, BiteTheBookie.Services.Implementations.StaticNewsService>();
 
 // Bet slip
 builder.Services.AddScoped<IBetSlipService, BetSlipService>();
@@ -112,16 +108,9 @@ builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();
 builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
 builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
 builder.Services.AddScoped<ICFBGamesService, CFBGamesService>();
-builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
 
-// Date-aware NBA schedule (ESPN scoreboard by date) for Scores & Simulations
-builder.Services.AddHttpClient<INBAScheduleService, NBAScheduleService>(BiteTheBookie.ServiceCollectionExtensions.ApplyEspnHeaders);
-
-// Date-aware schedule for ALL sports (ESPN scoreboard by date)
-builder.Services.AddHttpClient<ILeagueScheduleService, EspnScheduleService>(BiteTheBookie.ServiceCollectionExtensions.ApplyEspnHeaders);
-
-// ESPN API Client
-builder.Services.AddHttpClient<EspnApiClient>(BiteTheBookie.ServiceCollectionExtensions.ApplyEspnHeaders);
+// Date-aware schedule for ALL sports (The Odds API by date)
+builder.Services.AddScoped<ILeagueScheduleService, OddsApiScheduleService>();
 
 // Razor Pages
 builder.Services.AddRazorPages();

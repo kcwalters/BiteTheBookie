@@ -11,45 +11,21 @@ namespace BiteTheBookie.Services.Implementations
     {
         private readonly ILogger<InjuryReportService> _logger;
         private readonly ChatClient? _chatClient;
-        private readonly EspnApiClient _espnApiClient;
 
-        public InjuryReportService(
-            ChatClient? chatClient,
-            ILogger<InjuryReportService> logger,
-            EspnApiClient espnApiClient)
+        public InjuryReportService(ChatClient? chatClient, ILogger<InjuryReportService> logger)
         {
             _logger = logger;
-            _espnApiClient = espnApiClient;
             _chatClient = chatClient;
 
             if (_chatClient == null)
             {
-                _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use mock injury data as final fallback.");
+                _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use mock injury data as the final fallback.");
             }
         }
 
         public async Task<List<PlayerInjuryReport>> GetCurrentInjuriesAsync(string teamCode, CancellationToken cancellationToken = default)
         {
-            // Priority 1: Try ESPN API for real data
-            try
-            {
-                _logger.LogInformation("Fetching real injury data from ESPN API for {TeamCode}", teamCode);
-                var espnInjuries = await _espnApiClient.GetTeamInjuriesAsync(teamCode, cancellationToken);
-                
-                if (espnInjuries.Any())
-                {
-                    _logger.LogInformation("? Successfully retrieved {Count} real injuries from ESPN for {TeamCode}", espnInjuries.Count, teamCode);
-                    return espnInjuries;
-                }
-                
-                _logger.LogInformation("No injuries found on ESPN for {TeamCode}, trying AI fallback", teamCode);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "ESPN API failed for {TeamCode}, trying AI fallback", teamCode);
-            }
-
-            // Priority 2: Try OpenAI for recent injury knowledge
+            // Priority 1: Use OpenAI to fetch injury data
             if (_chatClient != null)
             {
                 try
@@ -62,7 +38,7 @@ namespace BiteTheBookie.Services.Implementations
                 }
             }
 
-            // Priority 3: Use mock data as last resort
+            // Priority 2: Use mock data as the final fallback
             _logger.LogWarning("Using mock injury data for {TeamCode}", teamCode);
             return GetMockInjuries(teamCode);
         }
@@ -105,7 +81,7 @@ Today's Date: {DateTime.UtcNow:MMMM dd, yyyy}";
 
                 var chatOptions = new ChatCompletionOptions
                 {
-                    Temperature = 0.3f // Lower temperature for more factual, consistent responses
+                    Temperature = 0.3f // Lower temperature for more factual, consistent AI responses
                 };
 
                 var response = await _chatClient!.CompleteChatAsync(messages, chatOptions, cancellationToken);
@@ -113,7 +89,7 @@ Today's Date: {DateTime.UtcNow:MMMM dd, yyyy}";
 
                 _logger.LogInformation("Received injury report from AI for {TeamCode}: {Preview}", teamCode, content.Substring(0, Math.Min(100, content.Length)));
 
-                // Clean up response
+                // Clean up response content
                 if (content.StartsWith("```json")) content = content.Substring(7);
                 if (content.StartsWith("```")) content = content.Substring(3);
                 if (content.EndsWith("```")) content = content.Substring(0, content.Length - 3);
@@ -125,11 +101,11 @@ Today's Date: {DateTime.UtcNow:MMMM dd, yyyy}";
                 }) ?? new List<PlayerInjuryReport>();
 
                 _logger.LogInformation("Retrieved {Count} injuries for {TeamCode} from AI", injuries.Count, teamCode);
-                
+
                 // Log each injury for debugging
                 foreach (var injury in injuries)
                 {
-                    _logger.LogInformation("Injury: {Player} ({Team}) - {Status} - {Description}", 
+                    _logger.LogInformation("Injury: {Player} ({Team}) - {Status} - {Description}",
                         injury.PlayerName, injury.TeamCode, injury.InjuryStatus, injury.InjuryDescription);
                 }
 
@@ -143,9 +119,9 @@ Today's Date: {DateTime.UtcNow:MMMM dd, yyyy}";
         }
 
         public async Task<List<PlayerInjuryReport>> GetCurrentInjuriesForGameAsync(
-            string awayTeamCode, 
-            string homeTeamCode, 
-            DateTime gameTime, 
+            string awayTeamCode,
+            string homeTeamCode,
+            DateTime gameTime,
             CancellationToken cancellationToken = default)
         {
             var awayInjuries = await GetCurrentInjuriesAsync(awayTeamCode, cancellationToken);
@@ -165,7 +141,7 @@ Today's Date: {DateTime.UtcNow:MMMM dd, yyyy}";
 
         private List<PlayerInjuryReport> GetMockInjuries(string teamCode)
         {
-            // Mock injury data - in production this would come from an API like ESPN or NBA.com
+            // Mock injury data
             var mockInjuries = new Dictionary<string, List<PlayerInjuryReport>>
             {
                 {
@@ -199,79 +175,8 @@ Today's Date: {DateTime.UtcNow:MMMM dd, yyyy}";
                             EstimatedReturn = DateTime.UtcNow.AddDays(14)
                         }
                     }
-                },
-                {
-                    "MIL", new List<PlayerInjuryReport>
-                    {
-                        new PlayerInjuryReport
-                        {
-                            PlayerName = "Jae Crowder",
-                            TeamCode = "MIL",
-                            InjuryStatus = "Questionable",
-                            InjuryDescription = "Ankle sprain",
-                            ReportedTime = DateTime.UtcNow.AddHours(-6),
-                            EstimatedReturn = null
-                        }
-                    }
-                },
-                {
-                    "DEN", new List<PlayerInjuryReport>()
-                },
-                {
-                    "UTA", new List<PlayerInjuryReport>
-                    {
-                        new PlayerInjuryReport
-                        {
-                            PlayerName = "Taylor Hendricks",
-                            TeamCode = "UTA",
-                            InjuryStatus = "Out",
-                            InjuryDescription = "Hamstring strain",
-                            ReportedTime = DateTime.UtcNow.AddDays(-1),
-                            EstimatedReturn = DateTime.UtcNow.AddDays(7)
-                        }
-                    }
-                },
-                {
-                    "HOU", new List<PlayerInjuryReport>()
-                },
-                {
-                    "WAS", new List<PlayerInjuryReport>
-                    {
-                        new PlayerInjuryReport
-                        {
-                            PlayerName = "Isaiah Livers",
-                            TeamCode = "WAS",
-                            InjuryStatus = "Out",
-                            InjuryDescription = "Hip injury",
-                            ReportedTime = DateTime.UtcNow.AddDays(-3),
-                            EstimatedReturn = null
-                        }
-                    }
-                },
-                {
-                    "LAL", new List<PlayerInjuryReport>()
-                },
-                {
-                    "GSW", new List<PlayerInjuryReport>()
-                },
-                {
-                    "PHI", new List<PlayerInjuryReport>()
-                },
-                {
-                    "MIA", new List<PlayerInjuryReport>()
-                },
-                {
-                    "BKN", new List<PlayerInjuryReport>()
-                },
-                {
-                    "DAL", new List<PlayerInjuryReport>()
-                },
-                {
-                    "PHX", new List<PlayerInjuryReport>()
-                },
-                {
-                    "LAC", new List<PlayerInjuryReport>()
                 }
+                // Add other teams' mock injuries as needed
             };
 
             return mockInjuries.GetValueOrDefault(teamCode.ToUpper(), new List<PlayerInjuryReport>());

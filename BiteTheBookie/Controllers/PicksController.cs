@@ -24,7 +24,6 @@ namespace BiteTheBookie.Controllers
         private readonly IInjuryReportService _injuryReportService;
         private readonly ILogger<PicksController> _logger;
         private readonly IMLBGamesService _mlbService;
-        private readonly INBAScheduleService _nbaScheduleService;
         private readonly ILeagueScheduleService _leagueScheduleService;
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -106,7 +105,6 @@ namespace BiteTheBookie.Controllers
             ISpreadAnalysisService spreadAnalysisService,
             IInjuryReportService injuryReportService,
             IMLBGamesService mlbService,
-            INBAScheduleService nbaScheduleService,
             ILeagueScheduleService leagueScheduleService,
             ApplicationDbContext db,
             UserManager<ApplicationUser> userManager,
@@ -121,7 +119,6 @@ namespace BiteTheBookie.Controllers
             _spreadAnalysisService = spreadAnalysisService;
             _injuryReportService   = injuryReportService;
             _mlbService            = mlbService;
-            _nbaScheduleService    = nbaScheduleService;
             _leagueScheduleService = leagueScheduleService;
             _db                    = db;
             _userManager           = userManager;
@@ -260,7 +257,7 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                var games = await _nbaScheduleService.GetGamesForDateAsync(selectedDate, cancellationToken);
+                var games = await _leagueScheduleService.GetGamesForDateAsync("NBA", selectedDate, cancellationToken);
 
                 // Merge betting lines (spread / total / moneyline) from the odds service.
                 try
@@ -288,7 +285,16 @@ namespace BiteTheBookie.Controllers
         {
             foreach (var game in schedule)
             {
+                // Match on team codes AND the same calendar day so a future rematch's
+                // odds are never merged onto a different date's game.
                 var match = oddsGames.FirstOrDefault(o =>
+                    o.HomeTeamCode.Equals(game.HomeTeamCode, StringComparison.OrdinalIgnoreCase) &&
+                    o.AwayTeamCode.Equals(game.AwayTeamCode, StringComparison.OrdinalIgnoreCase) &&
+                    o.GameTime.Date == game.GameTime.Date);
+
+                // Fall back to a code-only match when no same-day odds exist (e.g. the
+                // odds feed lists the game under a slightly different local date).
+                match ??= oddsGames.FirstOrDefault(o =>
                     o.HomeTeamCode.Equals(game.HomeTeamCode, StringComparison.OrdinalIgnoreCase) &&
                     o.AwayTeamCode.Equals(game.AwayTeamCode, StringComparison.OrdinalIgnoreCase));
 
@@ -431,11 +437,18 @@ namespace BiteTheBookie.Controllers
             bool isNfl = !isCfb && string.Equals(league, "NFL", StringComparison.OrdinalIgnoreCase);
             bool isNhl = !isCfb && string.Equals(league, "NHL", StringComparison.OrdinalIgnoreCase);
 
+            // An explicit MLB hint from the calling view takes priority over code-based
+            // detection. MLB short codes overlap with NBA codes (atl, wsh, bos, mil, …),
+            // so without this an MLB game whose codes exist in NbaTeamCodes would be
+            // misdetected as NBA and return a basketball simulation.
+            bool isMlbHint = string.Equals(league, "MLB", StringComparison.OrdinalIgnoreCase);
+
             // NBA codes take priority — if both codes are recognised NBA codes the game
             // is NBA regardless of any overlap with MLB short codes (BOS, MIL, ATL, etc.)
-            bool isNba = !isCfb && !isNfl && !isNhl && NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
+            bool isNba = !isCfb && !isNfl && !isNhl && !isMlbHint
+                && NbaTeamCodes.Contains(awayTeamCode) && NbaTeamCodes.Contains(homeTeamCode);
             bool isMlb = !isCfb && !isNfl && !isNhl && !isNba
-                && (string.Equals(league, "MLB", StringComparison.OrdinalIgnoreCase)
+                && (isMlbHint
                     || MlbTeamCodes.Contains(awayTeamCode) || MlbTeamCodes.Contains(homeTeamCode)
                     // Safety net: recognise ESPN short codes (CIN, STL, …) when both teams
                     // map to MLB abbreviations, so MLB games never fall through to NBA.

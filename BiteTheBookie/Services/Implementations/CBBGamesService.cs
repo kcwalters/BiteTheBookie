@@ -23,9 +23,14 @@ namespace BiteTheBookie.Services.Implementations
         {
             _logger.LogInformation("Fetching NCAA Men's Basketball games from The Odds API");
 
+            // /events returns the full upcoming schedule (all games), while /odds only
+            // returns games with posted betting lines. Fetch both and merge so every
+            // scheduled game shows, enriched with lines where available.
+            var eventsData = await _oddsApiClient.GetEventsAsync("basketball_ncaab", cancellationToken);
             var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_ncaab/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
 
-            var games = ParseCBBOddsApiResponse(oddsData);
+            var games = ParseCBBOddsApiResponse(eventsData);
+            MergeCBBOdds(games, oddsData);
 
             if (games.Any())
             {
@@ -35,6 +40,71 @@ namespace BiteTheBookie.Services.Implementations
 
             _logger.LogWarning("No CBB games available from The Odds API");
             return new List<CBBGameMatchup>();
+        }
+
+        // Enriches parsed games with spread/total/moneyline from the /odds payload, matching
+        // by team names. Games without posted lines simply keep null odds.
+        private void MergeCBBOdds(List<CBBGameMatchup> games, JsonElement oddsData)
+        {
+            if (oddsData.ValueKind != JsonValueKind.Array) return;
+
+            foreach (var game in oddsData.EnumerateArray())
+            {
+                try
+                {
+                    var homeTeam = game.TryGetProperty("home_team", out var h) ? h.GetString() ?? "" : "";
+                    var awayTeam = game.TryGetProperty("away_team", out var a) ? a.GetString() ?? "" : "";
+                    var homeCode = MapTeamNameToCode(homeTeam);
+                    var awayCode = MapTeamNameToCode(awayTeam);
+                    if (string.IsNullOrEmpty(homeCode) || string.IsNullOrEmpty(awayCode)) continue;
+
+                    var match = games.FirstOrDefault(g =>
+                        g.HomeTeamCode == homeCode && g.AwayTeamCode == awayCode);
+                    if (match is null) continue;
+
+                    if (!game.TryGetProperty("bookmakers", out var bookmakers) ||
+                        bookmakers.ValueKind != JsonValueKind.Array) continue;
+
+                    foreach (var bookmaker in bookmakers.EnumerateArray())
+                    {
+                        if (!bookmaker.TryGetProperty("markets", out var markets) ||
+                            markets.ValueKind != JsonValueKind.Array) continue;
+
+                        foreach (var market in markets.EnumerateArray())
+                        {
+                            var key = market.TryGetProperty("key", out var k) ? k.GetString() : null;
+                            if (!market.TryGetProperty("outcomes", out var outcomes) ||
+                                outcomes.ValueKind != JsonValueKind.Array) continue;
+                            var list = outcomes.EnumerateArray().ToList();
+
+                            if (key == "spreads" && !match.Spread.HasValue)
+                            {
+                                var ho = list.FirstOrDefault(o => o.GetProperty("name").GetString() == homeTeam);
+                                if (ho.ValueKind != JsonValueKind.Undefined && ho.TryGetProperty("point", out var p))
+                                    match.Spread = p.GetDecimal();
+                            }
+                            else if (key == "totals" && !match.OverUnder.HasValue && list.Count > 0 &&
+                                     list[0].TryGetProperty("point", out var tp))
+                            {
+                                match.OverUnder = tp.GetDecimal();
+                            }
+                            else if (key == "h2h")
+                            {
+                                var ho = list.FirstOrDefault(o => o.GetProperty("name").GetString() == homeTeam);
+                                var ao = list.FirstOrDefault(o => o.GetProperty("name").GetString() == awayTeam);
+                                if (ho.ValueKind != JsonValueKind.Undefined && !match.HomeMoneyline.HasValue && ho.TryGetProperty("price", out var hp))
+                                    match.HomeMoneyline = hp.GetInt32();
+                                if (ao.ValueKind != JsonValueKind.Undefined && !match.AwayMoneyline.HasValue && ao.TryGetProperty("price", out var ap))
+                                    match.AwayMoneyline = ap.GetInt32();
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error merging CBB odds");
+                }
+            }
         }
 
         private List<CBBGameMatchup> ParseCBBOddsApiResponse(JsonElement oddsData)

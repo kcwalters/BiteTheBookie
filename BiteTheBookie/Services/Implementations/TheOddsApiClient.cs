@@ -87,5 +87,60 @@ namespace BiteTheBookie.Services.Implementations
                 throw;
             }
         }
+
+        /// <summary>
+        /// Fetches recent/live/upcoming scores for a sport from The Odds API
+        /// <c>/sports/{sportKey}/scores</c> endpoint (daysFrom=3 includes recently completed games).
+        /// Returns an empty array element on failure.
+        /// </summary>
+        public async Task<JsonElement> GetScoresAsync(string sportKey, int daysFrom = 3, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await GetAsync($"sports/{sportKey}/scores?daysFrom={daysFrom}", cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Odds API scores fallback failed for {Sport}", sportKey);
+                using var empty = JsonDocument.Parse("[]");
+                return empty.RootElement.Clone();
+            }
+        }
+
+        /// <summary>
+        /// Fetches upcoming scheduled events for a sport from The Odds API
+        /// <c>/sports/{sportKey}/events</c> endpoint. Unlike /scores this returns future
+        /// games (no scores) so date-based schedules can populate. Empty array on failure.
+        /// When <paramref name="commenceTimeFrom"/>/<paramref name="commenceTimeTo"/> are
+        /// supplied, the query is restricted to that UTC window so a specific date can be
+        /// fetched rather than only the default upcoming window.
+        /// </summary>
+        public async Task<JsonElement> GetEventsAsync(
+            string sportKey,
+            CancellationToken cancellationToken = default,
+            DateTimeOffset? commenceTimeFrom = null,
+            DateTimeOffset? commenceTimeTo = null)
+        {
+            try
+            {
+                // The Odds API requires ISO8601 UTC without fractional seconds (e.g. 2026-01-15T00:00:00Z).
+                var query = $"sports/{sportKey}/events";
+                var filters = new List<string>();
+                if (commenceTimeFrom.HasValue)
+                    filters.Add($"commenceTimeFrom={commenceTimeFrom.Value.ToUniversalTime():yyyy-MM-ddTHH:mm:ssZ}");
+                if (commenceTimeTo.HasValue)
+                    filters.Add($"commenceTimeTo={commenceTimeTo.Value.ToUniversalTime():yyyy-MM-ddTHH:mm:ssZ}");
+                if (filters.Count > 0)
+                    query += "?" + string.Join("&", filters);
+
+                return await GetAsync(query, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Odds API events fetch failed for {Sport}", sportKey);
+                using var empty = JsonDocument.Parse("[]");
+                return empty.RootElement.Clone();
+            }
+        }
     }
 }

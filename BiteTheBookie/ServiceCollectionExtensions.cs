@@ -21,48 +21,14 @@ namespace BiteTheBookie
         /// </remarks>
         public static IServiceCollection AddSportsTickers(this IServiceCollection services, IConfiguration configuration)
         {
-            // Bind once and consume via IOptions<T> in HttpClient configuration
             services.Configure<SportsTickerOptions>(configuration.GetSection("SportsTicker"));
 
-            services.AddHttpClient<INFLScoresService, NFLScoresService>((sp, client) =>
-            {
-                var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
-                if (!string.IsNullOrWhiteSpace(opts.NflApiBaseUrl))
-                    client.BaseAddress = new Uri(opts.NflApiBaseUrl);
-                ApplyEspnHeaders(client);
-            });
-
-            services.AddHttpClient<INBAScoresService, NBAScoresService>((sp, client) =>
-            {
-                var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
-                if (!string.IsNullOrWhiteSpace(opts.NbaApiBaseUrl))
-                    client.BaseAddress = new Uri(opts.NbaApiBaseUrl);
-                ApplyEspnHeaders(client);
-            });
-
-            services.AddHttpClient<INHLScoresService, NHLScoresService>((sp, client) =>
-            {
-                var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
-                if (!string.IsNullOrWhiteSpace(opts.NhlApiBaseUrl))
-                    client.BaseAddress = new Uri(opts.NhlApiBaseUrl);
-                ApplyEspnHeaders(client);
-            });
-
-            services.AddHttpClient<INCAAScoresService, NCAAScoresService>((sp, client) =>
-            {
-                var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
-                if (!string.IsNullOrWhiteSpace(opts.NcaaMensBasketballApiBaseUrl))
-                    client.BaseAddress = new Uri(opts.NcaaMensBasketballApiBaseUrl);
-                ApplyEspnHeaders(client);
-            });
-
-            services.AddHttpClient<ICFBScoresService, CFBScoresService>((sp, client) =>
-            {
-                var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
-                if (!string.IsNullOrWhiteSpace(opts.NcaaFootballApiBaseUrl))
-                    client.BaseAddress = new Uri(opts.NcaaFootballApiBaseUrl);
-                ApplyEspnHeaders(client);
-            });
+            // Tickers now source real games/scores from The Odds API (see *ScoresService).
+            services.AddScoped<INFLScoresService, NFLScoresService>();
+            services.AddScoped<INBAScoresService, NBAScoresService>();
+            services.AddScoped<INHLScoresService, NHLScoresService>();
+            services.AddScoped<INCAAScoresService, NCAAScoresService>();
+            services.AddScoped<ICFBScoresService, CFBScoresService>();
 
             return services;
         }

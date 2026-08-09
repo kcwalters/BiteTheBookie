@@ -14,12 +14,18 @@
     <div class="content-card mb-4">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
-                <img src="@Model.AwayTeamLogo" alt="@Model.AwayTeam" style="width:48px;height:48px;" />
-                <div>
-                    <h1 class="h4 mb-0 fw-bold">@Model.AwayTeam <span class="text-muted">@@</span> @Model.HomeTeam</h1>
-                    <span class="badge bg-primary">@Model.League · AI Game Simulation</span>
-                </div>
-                <img src="@Model.HomeTeamLogo" alt="@Model.HomeTeam" style="width:48px;height:48px;" />
+                <h1 class="h4 mb-0 fw-bold d-flex align-items-center gap-2 flex-wrap">
+                    <span class="d-inline-flex align-items-center gap-2">
+                        <img src="@Model.AwayTeamLogo" alt="@Model.AwayTeam" style="width:40px;height:40px;object-fit:contain;" />
+                        @Model.AwayTeam
+                    </span>
+                    <span class="text-muted">@@</span>
+                    <span class="d-inline-flex align-items-center gap-2">
+                        <img src="@Model.HomeTeamLogo" alt="@Model.HomeTeam" style="width:40px;height:40px;object-fit:contain;" />
+                        @Model.HomeTeam
+                    </span>
+                </h1>
+                <span class="badge bg-primary">@Model.League · AI Game Simulation</span>
             </div>
             <a asp-controller="Picks" asp-action="Index" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left me-1"></i> Back to Picks

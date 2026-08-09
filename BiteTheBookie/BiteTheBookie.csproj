@@ -52,4 +52,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Views\Shared\Components\EspnNewsFeed\" />
+  </ItemGroup>
 </Project>

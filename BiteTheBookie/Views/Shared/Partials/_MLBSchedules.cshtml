@@ -32,6 +32,24 @@
             margin-right: 0.5rem;
         }
 
+    /* Standalone team logos rendered in the schedule/score rows. */
+    .mlb-schedule .team-logo,
+    .table .team-logo {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        vertical-align: middle;
+    }
+
+    /* Show team name and logo together in each cell. */
+    .team-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+    }
+
+
     .status {
         font-weight: bold;
     }
@@ -62,9 +80,7 @@
         <tr>
             <th>Time</th>
             <th>Away</th>
-            <th></th>
             <th>Home</th>
-            <th></th>
             <th>Score</th>
             <th>Status</th>
         </tr>
@@ -74,13 +90,25 @@
         {
             <tr>
                 <td>@g.GameTime.AddHours(-3).ToString("h:mm tt")</td>
-                <td>@g.AwayTeam</td>
                 <td>
-                    <img src="@g.AwayTeamLogoUrl" class="team-logo" alt="@g.AwayTeam" />
+                    <span class="team-name-cell">
+                        @if (!string.IsNullOrEmpty(g.AwayTeamLogoUrl))
+                        {
+                            <img src="@g.AwayTeamLogoUrl" class="team-logo" alt="@g.AwayTeam"
+                                 onerror="this.style.display='none';" />
+                        }
+                        <span>@g.AwayTeam</span>
+                    </span>
                 </td>
-                <td>@g.HomeTeam</td>
                 <td>
-                    <img src="@g.HomeTeamLogoUrl" class="team-logo" alt="@g.HomeTeam" />
+                    <span class="team-name-cell">
+                        @if (!string.IsNullOrEmpty(g.HomeTeamLogoUrl))
+                        {
+                            <img src="@g.HomeTeamLogoUrl" class="team-logo" alt="@g.HomeTeam"
+                                 onerror="this.style.display='none';" />
+                        }
+                        <span>@g.HomeTeam</span>
+                    </span>
                 </td>
                 <td>
                     @(g.AwayScore.HasValue ? g.AwayScore : "-") -
