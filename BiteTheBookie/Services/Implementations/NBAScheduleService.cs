@@ -18,7 +18,7 @@ namespace BiteTheBookie.Services.Implementations
         private readonly IMemoryCache _cache;
 
         private const string ScoreboardUrl =
-            "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+            "https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
         private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);
 
         public NBAScheduleService(HttpClient httpClient, ILogger<NBAScheduleService> logger, IMemoryCache cache)

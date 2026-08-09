@@ -36,7 +36,9 @@ namespace BiteTheBookie.Services.Implementations
             _httpClient = httpClient;
             _logger = logger;
             _cache = cache;
-            _httpClient.BaseAddress ??= new Uri("https://site.api.espn.com/");
+            // Use the "web" API host — site.api.espn.com returns 403 for server-side
+            // requests, while site.web.api.espn.com serves the identical JSON unblocked.
+            _httpClient.BaseAddress ??= new Uri("https://site.web.api.espn.com/");
         }
 
         public bool IsSupported(string league) =>

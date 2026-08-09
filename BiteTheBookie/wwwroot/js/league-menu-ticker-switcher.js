@@ -32,14 +32,35 @@
     try { localStorage.setItem(LEAGUE_KEY, league); } catch (e) {}
   }
 
+  function tickerHasGames(league) {
+    var el = document.getElementById(league + '-ticker');
+    return !!(el && el.querySelector('.nfl-ticker-item'));
+  }
+
+  // Picks the league to show on load: the previously selected one (if it still has
+  // games), otherwise the first league in preferred order that actually has games
+  // today/upcoming, falling back to the first league overall.
+  function pickInitialLeague(saved) {
+    if (saved && leagues.indexOf(saved) !== -1 && tickerHasGames(saved)) {
+      return saved;
+    }
+    for (var i = 0; i < leagues.length; i++) {
+      if (tickerHasGames(leagues[i])) {
+        return leagues[i];
+      }
+    }
+    return leagues[0];
+  }
+
   function initLeagueMenuTickerSwitcher() {
     var container = document.querySelector('.league-menu .container');
     if (!container) return;
 
-    // Restore last selection — default to 'nfl'
+    // Restore last selection, but only if that league currently has games; otherwise
+    // default to the first in-season league so users never land on an empty ticker.
     var saved = null;
     try { saved = localStorage.getItem(LEAGUE_KEY); } catch (e) {}
-    showTicker(saved && leagues.indexOf(saved) !== -1 ? saved : 'nfl');
+    showTicker(pickInitialLeague(saved));
 
     container.addEventListener('click', function (e) {
       var link = e.target.closest('a[data-league]');
