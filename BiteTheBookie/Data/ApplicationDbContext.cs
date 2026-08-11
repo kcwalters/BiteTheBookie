@@ -15,6 +15,7 @@ namespace BiteTheBookie.Data
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<ExpertPick> ExpertPicks { get; set; }
         public DbSet<GameSimulation> GameSimulations { get; set; }
+        public DbSet<SiteVideo> SiteVideos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -45,6 +46,15 @@ namespace BiteTheBookie.Data
                 entity.HasIndex(e => e.GeneratedAt);
                 entity.Property(e => e.SimulationContent).HasColumnType("nvarchar(max)");
                 entity.Property(e => e.GeneratedAt).HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            builder.Entity<SiteVideo>(entity =>
+            {
+                entity.HasIndex(e => e.IsPublished);
+                entity.HasIndex(e => e.IsFeatured);
+                entity.HasIndex(e => e.SortOrder);
+                entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
             });
         }
     }

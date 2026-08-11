@@ -1,5 +1,5 @@
 /* =========================================================
-   BiteTheBookie – "Cash Prime" Dark Fintech Theme
+   BiteTheBookie ï¿½ "Cash Prime" Dark Fintech Theme
    Scoped under html.theme-cash so it is fully opt-in.
    When the theme-cash class is absent the original
    light/brand theme is used unchanged.
@@ -88,21 +88,6 @@ html.theme-cash .top-brand {
 html.theme-cash .main-nav .nav-link.active {
     color: #fff !important;
     border-bottom: 2px solid var(--cp-primary);
-}
-
-/* ?? League menu / ticker strip ??????????????????????????? */
-html.theme-cash .league-menu {
-    background: #060911 !important;
-    border-bottom: 1px solid var(--cp-border) !important;
-}
-
-html.theme-cash .league-menu a {
-    color: var(--cp-text) !important;
-}
-
-html.theme-cash .league-menu a:hover {
-    color: var(--cp-primary) !important;
-    opacity: 1;
 }
 
 /* ?? Cards / panels ??????????????????????????????????????? */
@@ -332,7 +317,7 @@ html.theme-cash .text-secondary { color: var(--cp-text-muted) !important; }
 html.theme-cash .text-warning { color: var(--cp-gold) !important; }
 
 /* Elements sitting on white surfaces (badges, light backgrounds) must
-   NOT be flipped to light text — force dark text for legibility. */
+   NOT be flipped to light text ï¿½ force dark text for legibility. */
 html.theme-cash .bg-white,
 html.theme-cash .bg-light,
 html.theme-cash .badge.bg-light,
@@ -396,7 +381,7 @@ html.theme-cash .list-group-item {
 }
 
 /* ESPN news feed items use inline dark colours (#111/#222) that become
-   invisible on the dark list-group background — force light text. */
+   invisible on the dark list-group background ï¿½ force light text. */
 html.theme-cash .espn-news-feed .list-group-item,
 html.theme-cash .espn-news-feed .list-group-item * {
     color: var(--cp-text) !important;
@@ -433,4 +418,56 @@ html.theme-cash .content-card [style*="color:#000"],
 html.theme-cash .content-card [style*="color: #000"] {
     color: var(--cp-text) !important;
 }
+
+/* ?? Home page (SportsLine-style layout) ?????????????????? */
+html.theme-cash .home-panel__title {
+    background-color: var(--cp-bg-row) !important;
+    color: var(--cp-text) !important;
+    border-bottom: 1px solid var(--cp-border);
+}
+html.theme-cash .matchup-item + .matchup-item,
+html.theme-cash .more-stories li + li {
+    border-top-color: var(--cp-border);
+}
+html.theme-cash .matchup-link,
+html.theme-cash .more-stories a,
+html.theme-cash .matchup-teams,
+html.theme-cash .feature-story__link,
+html.theme-cash .feature-story__title,
+html.theme-cash .expert-pick__game {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .matchup-link:hover,
+html.theme-cash .more-stories a:hover {
+    background-color: var(--cp-bg-hover) !important;
+    color: var(--cp-primary) !important;
+}
+html.theme-cash .matchup-league { color: var(--cp-primary) !important; }
+html.theme-cash .matchup-meta,
+html.theme-cash .matchup-at,
+html.theme-cash .feature-story__excerpt,
+html.theme-cash .feature-story__meta,
+html.theme-cash .promo-card__text,
+html.theme-cash .discord-card__text,
+html.theme-cash .expert-pick__analysis,
+html.theme-cash .expert-pick__foot {
+    color: var(--cp-text-muted) !important;
+}
+html.theme-cash .promo-card__title { color: var(--cp-text) !important; }
+html.theme-cash .promo-card__price { color: var(--cp-primary) !important; }
+html.theme-cash .feature-story__media { background: var(--cp-bg-row) !important; }
+html.theme-cash .expert-pick {
+    background: var(--cp-bg-row) !important;
+    border-color: var(--cp-border) !important;
+}
+html.theme-cash .expert-pick__league { background: var(--cp-primary) !important; color: #fff !important; }
+html.theme-cash .expert-pick__pick { color: var(--cp-success) !important; }
+html.theme-cash .expert-pick__foot { border-top-color: var(--cp-border) !important; }
+html.theme-cash .newsletter-card { background: #060911 !important; }
+html.theme-cash .video-feature__title { color: var(--cp-text) !important; }
+html.theme-cash .video-feature__desc { color: var(--cp-text-muted) !important; }
+html.theme-cash .video-strip__thumb { background: var(--cp-bg-row) !important; }
+html.theme-cash .video-strip__item,
+html.theme-cash .video-strip__title { color: var(--cp-text) !important; }
+html.theme-cash .video-strip__item:hover .video-strip__title { color: var(--cp-primary) !important; }
 

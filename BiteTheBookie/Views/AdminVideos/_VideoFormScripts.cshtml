@@ -1,0 +1,32 @@
+<script>
+    (function () {
+        var input = document.getElementById('youTubeUrlInput');
+        var container = document.getElementById('videoPreviewContainer');
+        var frame = document.getElementById('videoPreviewFrame');
+        if (!input || !container || !frame) return;
+
+        function extractId(value) {
+            if (!value) return null;
+            value = value.trim();
+            if (/^[A-Za-z0-9_-]{11}$/.test(value)) return value;
+            var m = value.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/|v\/))([A-Za-z0-9_-]{11})/i);
+            return m ? m[1] : null;
+        }
+
+        function updatePreview() {
+            var id = extractId(input.value);
+            if (id) {
+                var src = 'https://www.youtube.com/embed/' + id;
+                if (frame.src !== src) frame.src = src;
+                container.style.display = 'block';
+            } else {
+                frame.src = '';
+                container.style.display = 'none';
+            }
+        }
+
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+        updatePreview();
+    })();
+</script>

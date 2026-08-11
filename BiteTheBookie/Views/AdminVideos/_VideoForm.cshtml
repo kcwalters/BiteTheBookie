@@ -1,0 +1,65 @@
+@model BiteTheBookie.ViewModels.VideoViewModel
+
+<div class="mb-3">
+    <label asp-for="Title" class="form-label fw-semibold"></label>
+    <input asp-for="Title" class="form-control" placeholder="e.g. NFL Week 5 Best Bets" />
+    <span asp-validation-for="Title" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="YouTubeUrl" class="form-label fw-semibold"></label>
+    <input asp-for="YouTubeUrl" class="form-control" id="youTubeUrlInput"
+           placeholder="https://www.youtube.com/watch?v=... or 11-character ID" />
+    <div class="form-text">Paste a full YouTube link (watch, youtu.be, embed or shorts) or the bare video ID.</div>
+    <span asp-validation-for="YouTubeUrl" class="text-danger"></span>
+</div>
+
+<div class="mb-3" id="videoPreviewContainer" style="display: none;">
+    <label class="form-label fw-semibold">Preview</label>
+    <div class="ratio ratio-16x9 rounded overflow-hidden border">
+        <iframe id="videoPreviewFrame" src="" title="Video preview"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="Description" class="form-label fw-semibold"></label>
+    <textarea asp-for="Description" class="form-control" rows="3"
+              placeholder="Short description shown under the video (optional)"></textarea>
+    <span asp-validation-for="Description" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Category" class="form-label fw-semibold"></label>
+        <input asp-for="Category" class="form-control" placeholder="e.g. NFL, Analysis, Recap (optional)" />
+        <span asp-validation-for="Category" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="SortOrder" class="form-label fw-semibold"></label>
+        <input asp-for="SortOrder" type="number" class="form-control" />
+        <div class="form-text">Lower numbers appear first.</div>
+        <span asp-validation-for="SortOrder" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="form-check form-switch">
+            <input asp-for="IsFeatured" class="form-check-input" role="switch" />
+            <label asp-for="IsFeatured" class="form-check-label"></label>
+        </div>
+        <div class="form-text">Only one video can be featured; setting this replaces the current featured video.</div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="form-check form-switch">
+            <input asp-for="IsPublished" class="form-check-input" role="switch" />
+            <label asp-for="IsPublished" class="form-check-label"></label>
+        </div>
+        <div class="form-text">Unpublished videos are hidden from the site.</div>
+    </div>
+</div>
+
+<hr class="my-4" />

@@ -9,6 +9,9 @@ namespace BiteTheBookie.ViewModels
         public IEnumerable<LiveOddsViewModel> LiveOdds { get; set; }
         public LeagueOddsViewModel LeagueOdds { get; set; }
         public BetSlipViewModel BetSlip { get; set; }
+        public IEnumerable<ExpertPickSummary> ExpertPicks { get; set; }
+        public VideoListItemViewModel FeaturedVideo { get; set; }
+        public IEnumerable<VideoListItemViewModel> RecentVideos { get; set; }
 
         public HomePageViewModel()
         {
@@ -17,6 +20,8 @@ namespace BiteTheBookie.ViewModels
             LiveOdds = new List<LiveOddsViewModel>();
             LeagueOdds = new LeagueOddsViewModel();
             BetSlip = new BetSlipViewModel();
+            ExpertPicks = new List<ExpertPickSummary>();
+            RecentVideos = new List<VideoListItemViewModel>();
         }
     }
 }

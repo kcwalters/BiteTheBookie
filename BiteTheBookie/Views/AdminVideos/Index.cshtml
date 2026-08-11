@@ -1,0 +1,115 @@
+@model BiteTheBookie.ViewModels.AdminVideosListViewModel
+
+@{
+    ViewData["Title"] = "Admin - Manage Videos";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <h1 class="h2 mb-0">
+                <i class="fab fa-youtube me-2 text-danger"></i>Manage Videos
+            </h1>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Add Video
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-1"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="content-card">
+        @if (Model.Videos.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">Preview</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th class="text-center">Featured</th>
+                            <th class="text-center">Published</th>
+                            <th class="text-center">Order</th>
+                            <th>Added By</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var video in Model.Videos)
+                        {
+                            <tr>
+                                <td>
+                                    <img src="@video.ThumbnailUrl" alt="@video.Title"
+                                         style="width: 120px; height: 68px; object-fit: cover; border-radius: 6px;" loading="lazy" />
+                                </td>
+                                <td>
+                                    <span class="fw-semibold">@video.Title</span>
+                                    <div class="small text-muted">@video.YouTubeId</div>
+                                </td>
+                                <td class="text-muted">@(string.IsNullOrWhiteSpace(video.Category) ? "—" : video.Category)</td>
+                                <td class="text-center">
+                                    @if (video.IsFeatured)
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-star"></i></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (video.IsPublished)
+                                    {
+                                        <span class="badge bg-success">Live</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Hidden</span>
+                                    }
+                                </td>
+                                <td class="text-center text-muted">@video.SortOrder</td>
+                                <td class="text-muted small">@video.EnteredBy</td>
+                                <td class="text-end">
+                                    <a asp-action="Edit" asp-route-id="@video.Id" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@video.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Delete this video?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fab fa-youtube fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No videos added yet.</p>
+                <a asp-action="Create" class="btn btn-primary">Add First Video</a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+</style>

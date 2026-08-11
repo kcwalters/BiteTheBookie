@@ -2,28 +2,240 @@
 
 @{
     ViewData["Title"] = "Home";
-    var envName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-    var isDevelopment = string.Equals(envName, "Development", StringComparison.OrdinalIgnoreCase);
+
+    var news = (Model.NewsFeed ?? Enumerable.Empty<BiteTheBookie.ViewModels.NewsItemViewModel>()).ToList();
+    var featured = news.Take(3).ToList();
+    var moreStories = news.Skip(3).Take(8).ToList();
+
+    // Hottest matchups: pull highlighted/first games from the league odds feed.
+    var matchups = (Model.LeagueOdds?.Leagues ?? new List<BiteTheBookie.ViewModels.LeagueViewModel>())
+        .SelectMany(l => l.Games.Select(g => new { League = l.Name, Game = g }))
+        .OrderByDescending(x => x.Game.IsHighlighted)
+        .ThenBy(x => x.Game.StartTime)
+        .Take(6)
+        .ToList();
+
+    var expertPicks = (Model.ExpertPicks ?? Enumerable.Empty<BiteTheBookie.ViewModels.ExpertPickSummary>()).ToList();
 }
 
-<div class="container py-3">
+<div class="container py-3 home-page">
     <div class="row g-3">
-        <div class="col-12 col-lg-8">
-            <div class="content-card">
-                <div class="ratio ratio-16x9 rounded overflow-hidden">
-                    @if (!isDevelopment)
+
+        <!-- ============ LEFT SIDEBAR ============ -->
+        <div class="col-12 col-lg-3 order-2 order-lg-1">
+
+            <div class="content-card home-panel mb-3">
+                <div class="home-panel__title">Hottest Matchups</div>
+                @if (matchups.Any())
+                {
+                    <ul class="matchup-list">
+                        @foreach (var m in matchups)
+                        {
+                            <li class="matchup-item">
+                                <a asp-controller="Odds" asp-action="Index" class="matchup-link">
+                                    <span class="matchup-teams">@m.Game.Away <span class="matchup-at">@@</span> @m.Game.Home</span>
+                                    <span class="matchup-meta">
+                                        <span class="matchup-league">@m.League</span>
+                                        <span class="matchup-time">@m.Game.StartTime.ToString("h:mm tt")</span>
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0 px-1 py-2">No matchups available right now. Check back soon.</p>
+                }
+            </div>
+
+            <div class="content-card promo-card mb-3">
+                <div class="promo-card__eyebrow">Get Access To</div>
+                <div class="promo-card__title">Premium Picks By Vegas Experts</div>
+                <p class="promo-card__text">
+                    Get winning picks from our expert handicappers. Don't wait&mdash;get the
+                    insights you need now!
+                </p>
+                <div class="promo-card__price">All Picks $13.99 Monthly</div>
+                <a asp-controller="Membership" asp-action="Join" class="btn btn-primary w-100 fw-bold">Join Now</a>
+            </div>
+
+        </div>
+
+        <!-- ============ CENTER COLUMN ============ -->
+        <div class="col-12 col-lg-6 order-1 order-lg-2">
+
+            @if (Model.FeaturedVideo != null)
+            {
+                var fv = Model.FeaturedVideo;
+                var recentVideos = (Model.RecentVideos ?? Enumerable.Empty<BiteTheBookie.ViewModels.VideoListItemViewModel>())
+                    .Where(v => v.Id != fv.Id)
+                    .Take(4)
+                    .ToList();
+
+                <div class="content-card video-feature mb-3">
+                    <div class="section-header d-flex align-items-center justify-content-between">
+                        <span><i class="fab fa-youtube me-2"></i>Featured Video</span>
+                    </div>
+                    <div class="ratio ratio-16x9 video-feature__player">
+                        <iframe src="https://www.youtube.com/embed/@fv.YouTubeId" title="@fv.Title"
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                    <div class="video-feature__body">
+                        <h3 class="video-feature__title">@fv.Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(fv.Description))
+                        {
+                            <p class="video-feature__desc">@fv.Description</p>
+                        }
+                    </div>
+
+                    @if (recentVideos.Any())
                     {
-                        <iframe width="939" height="528" src="https://www.youtube.com/embed/7dRmcudjTKo" title="The NBA Turned Into A WARZONE Last Night..." frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                        <div class="video-strip">
+                            @foreach (var rv in recentVideos)
+                            {
+                                <a class="video-strip__item" href="https://www.youtube.com/watch?v=@rv.YouTubeId"
+                                   target="_blank" rel="noopener" title="@rv.Title">
+                                    <span class="video-strip__thumb">
+                                        <img src="@rv.ThumbnailUrl" alt="@rv.Title" loading="lazy" />
+                                        <span class="video-strip__play"><i class="fas fa-play"></i></span>
+                                    </span>
+                                    <span class="video-strip__title">@rv.Title</span>
+                                </a>
+                            }
+                        </div>
                     }
                 </div>
+            }
+
+            @if (featured.Any())
+            {
+                var lead = featured.First();
+                <div class="content-card feature-story mb-3">
+                    <a href="@lead.ArticleUrl" target="_blank" class="feature-story__link">
+                        @if (!string.IsNullOrWhiteSpace(lead.ImageUrl))
+                        {
+                            <div class="feature-story__media">
+                                <img src="@lead.ImageUrl" alt="@lead.Title" />
+                            </div>
+                        }
+                        <div class="feature-story__body">
+                            <h3 class="feature-story__title">@lead.Title</h3>
+                            @if (!string.IsNullOrWhiteSpace(lead.Excerpt))
+                            {
+                                <p class="feature-story__excerpt">@lead.Excerpt</p>
+                            }
+                            <div class="feature-story__meta">@lead.PublishedAt.ToString("MMM d, yyyy")</div>
+                        </div>
+                    </a>
+                </div>
+
+                @foreach (var story in featured.Skip(1))
+                {
+                    <div class="content-card feature-story feature-story--sm mb-3">
+                        <a href="@story.ArticleUrl" target="_blank" class="feature-story__link">
+                            @if (!string.IsNullOrWhiteSpace(story.ImageUrl))
+                            {
+                                <div class="feature-story__media">
+                                    <img src="@story.ImageUrl" alt="@story.Title" />
+                                </div>
+                            }
+                            <div class="feature-story__body">
+                                <h4 class="feature-story__title">@story.Title</h4>
+                                @if (!string.IsNullOrWhiteSpace(story.Excerpt))
+                                {
+                                    <p class="feature-story__excerpt">@story.Excerpt</p>
+                                }
+                                <div class="feature-story__meta">@story.PublishedAt.ToString("MMM d, yyyy")</div>
+                            </div>
+                        </a>
+                    </div>
+                }
+            }
+
+            <div class="content-card mb-3">
+                <div class="section-header d-flex align-items-center justify-content-between">
+                    <span><i class="fas fa-clipboard-check me-2"></i>Expert Picks</span>
+                    <a asp-controller="Picks" asp-action="Index" class="section-header__link">View All</a>
+                </div>
+                @if (expertPicks.Any())
+                {
+                    <div class="expert-pick-grid">
+                        @foreach (var pick in expertPicks)
+                        {
+                            <div class="expert-pick">
+                                <div class="expert-pick__top">
+                                    <span class="expert-pick__league">@pick.League</span>
+                                    <span class="expert-pick__confidence" title="Confidence">
+                                        <i class="fas fa-star"></i> @pick.Confidence
+                                    </span>
+                                </div>
+                                <div class="expert-pick__game">@pick.AwayTeamName @@ @pick.HomeTeamName</div>
+                                <div class="expert-pick__selection">
+                                    <span class="expert-pick__type">@pick.PickType</span>
+                                    <span class="expert-pick__pick">@pick.PickSelection</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(pick.Analysis))
+                                {
+                                    <p class="expert-pick__analysis">@pick.Analysis</p>
+                                }
+                                <div class="expert-pick__foot">
+                                    <span>@pick.EnteredBy</span>
+                                    <span>@pick.GameTime.ToString("MMM d, h:mm tt")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0 p-3">No expert picks published yet. Check back soon.</p>
+                }
             </div>
+
         </div>
-        <div class="col-12 col-lg-4">
-            <div class="content-card">
-                <div class="section-header">More Stories &amp; Analysis</div>
-                @await Component.InvokeAsync("EspnNewsFeed", new { count = 20 })
+
+        <!-- ============ RIGHT SIDEBAR ============ -->
+        <div class="col-12 col-lg-3 order-3">
+
+            <div class="content-card home-panel mb-3">
+                <div class="home-panel__title">More Stories &amp; Analysis</div>
+                @if (moreStories.Any())
+                {
+                    <ul class="more-stories">
+                        @foreach (var story in moreStories)
+                        {
+                            <li>
+                                <a href="@story.ArticleUrl" target="_blank">@story.Title</a>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0 px-1 py-2">No additional stories right now.</p>
+                }
             </div>
+
+            <div class="content-card newsletter-card mb-3">
+                <div class="newsletter-card__title">BiteTheBookie Newsletter</div>
+                <p class="newsletter-card__text">Get FREE picks in your inbox. Expert picks, game projections and analysis.</p>
+                <form asp-controller="Membership" asp-action="Join" method="get" class="newsletter-form">
+                    <input type="email" name="email" class="form-control mb-2" placeholder="Email Address" aria-label="Email Address" />
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Sign Up</button>
+                </form>
+            </div>
+
+            <div class="content-card discord-card mb-3">
+                <div class="discord-card__title"><i class="fab fa-discord me-2"></i>Join us on Discord</div>
+                <p class="discord-card__text">Engage with our experts and the BiteTheBookie community.</p>
+                <a href="#" class="btn btn-outline-primary w-100 fw-bold">Join Our Community</a>
+            </div>
+
         </div>
+
     </div>
 </div>
 

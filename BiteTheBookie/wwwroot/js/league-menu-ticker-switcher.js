@@ -53,7 +53,10 @@
   }
 
   function initLeagueMenuTickerSwitcher() {
-    var container = document.querySelector('.league-menu .container');
+    // The league quick-links now live inside the main navbar (SportsLine-style).
+    // Fall back to the legacy .league-menu container if present.
+    var container = document.querySelector('.league-nav') ||
+                    document.querySelector('.league-menu .container');
     if (!container) return;
 
     // Restore last selection, but only if that league currently has games; otherwise
@@ -65,8 +68,11 @@
     container.addEventListener('click', function (e) {
       var link = e.target.closest('a[data-league]');
       if (!link) return;
-      e.preventDefault();
       var league = link.getAttribute('data-league');
+      // Legacy placeholder links (href="#") only switch the ticker; real league
+      // links are allowed to navigate to their per-sport page.
+      var href = link.getAttribute('href');
+      if (!href || href === '#') e.preventDefault();
       if (league) showTicker(league);
     });
 

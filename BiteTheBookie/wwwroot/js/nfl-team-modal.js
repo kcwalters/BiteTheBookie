@@ -667,7 +667,8 @@
   }
 
   function initLeagueTeamModal(options) {
-    const link = document.querySelector(`.league-menu a[data-league="${options.league}"]`);
+    const link = document.querySelector(`.league-nav a[data-league="${options.league}"]`)
+              || document.querySelector(`.league-menu a[data-league="${options.league}"]`);
     const modalEl = document.getElementById(options.modalId);
     const modalBody = modalEl?.querySelector('.modal-body');
 
