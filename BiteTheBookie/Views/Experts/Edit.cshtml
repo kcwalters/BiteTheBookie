@@ -1,0 +1,184 @@
+@model ExpertPost
+
+@{
+    ViewData["Title"] = "Edit Article - " + Model.Title;
+}
+
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="h2 mb-2">
+            <i class="fas fa-edit me-2"></i>Edit Article
+        </h1>
+        <p class="text-muted">Update your article content</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div asp-validation-message=""></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Title Field -->
+                <div class="mb-4">
+                    <label asp-for="Title" class="form-label fw-bold">
+                        <i class="fas fa-heading me-2"></i>Article Title <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Title" class="form-control form-control-lg" 
+                           placeholder="Enter article title..." 
+                           maxlength="300">
+                    <span asp-validation-for="Title" class="text-danger small d-block mt-1"></span>
+                    <small class="text-muted d-block mt-1">
+                        <span id="titleCount">0</span>/300 characters
+                    </small>
+                </div>
+
+                <!-- Summary Field -->
+                <div class="mb-4">
+                    <label asp-for="Summary" class="form-label fw-bold">
+                        <i class="fas fa-align-left me-2"></i>Summary
+                    </label>
+                    <textarea asp-for="Summary" class="form-control" 
+                              placeholder="Brief summary of your article (optional)..." 
+                              rows="2"
+                              maxlength="200"></textarea>
+                    <span asp-validation-for="Summary" class="text-danger small d-block mt-1"></span>
+                    <small class="text-muted d-block mt-1">
+                        <span id="summaryCount">0</span>/200 characters
+                    </small>
+                </div>
+
+                <!-- Category Field -->
+                <div class="mb-4">
+                    <label asp-for="Category" class="form-label fw-bold">
+                        <i class="fas fa-tag me-2"></i>Category
+                    </label>
+                    <input asp-for="Category" class="form-control" 
+                           placeholder="e.g., Sports Analysis, Betting Strategies, Team News" 
+                           maxlength="200">
+                    <span asp-validation-for="Category" class="text-danger small d-block mt-1"></span>
+                </div>
+
+                <!-- Content Field -->
+                <div class="mb-4">
+                    <label asp-for="Content" class="form-label fw-bold">
+                        <i class="fas fa-file-alt me-2"></i>Article Content <span class="text-danger">*</span>
+                    </label>
+                    <textarea asp-for="Content" class="form-control" 
+                              placeholder="Write your article content here... (Minimum 20 characters)" 
+                              rows="12"
+                              maxlength="5000"></textarea>
+                    <span asp-validation-for="Content" class="text-danger small d-block mt-1"></span>
+                    <small class="text-muted d-block mt-1">
+                        <span id="contentCount">0</span>/5000 characters
+                    </small>
+                </div>
+
+                <!-- Publish Status -->
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" asp-for="IsPublished" id="isPublished">
+                        <label class="form-check-label" for="isPublished">
+                            <i class="fas fa-globe me-1"></i>Publish this article (make it visible to all users)
+                        </label>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        @if (Model.IsPublished)
+                        {
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                            <span>This article is currently published</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-eye-slash text-warning me-1"></i>
+                            <span>This article is currently hidden</span>
+                        }
+                    </small>
+                </div>
+
+                <!-- Article Info -->
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>Article Info:</strong>
+                    <ul class="mb-0 ms-3 mt-2">
+                        <li>Created: @Model.CreatedAt.ToString("MMMM dd, yyyy at hh:mm tt")</li>
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <li>Last updated: @Model.UpdatedAt.Value.ToString("MMMM dd, yyyy at hh:mm tt")</li>
+                        }
+                        <li>Views: @Model.ViewCount</li>
+                    </ul>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex gap-2 justify-content-between">
+                    <div>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                    </div>
+                    <div>
+                        <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" 
+                              method="post" class="d-inline"
+                              onsubmit="return confirm('Are you sure you want to delete this article? This action cannot be undone.');">
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="fas fa-trash me-1"></i>Delete Article
+                            </button>
+                        </form>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Character counters
+        document.getElementById('Title').addEventListener('input', function () {
+            document.getElementById('titleCount').textContent = this.value.length;
+        });
+
+        document.getElementById('Summary').addEventListener('input', function () {
+            document.getElementById('summaryCount').textContent = this.value.length;
+        });
+
+        document.getElementById('Content').addEventListener('input', function () {
+            document.getElementById('contentCount').textContent = this.value.length;
+        });
+
+        // Initialize counters
+        document.getElementById('titleCount').textContent = document.getElementById('Title').value.length;
+        document.getElementById('summaryCount').textContent = document.getElementById('Summary').value.length;
+        document.getElementById('contentCount').textContent = document.getElementById('Content').value.length;
+    </script>
+}
+
+<style>
+    .form-label {
+        color: #333;
+        font-size: 1.05rem;
+    }
+
+    textarea.form-control {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        resize: vertical;
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>

@@ -1,0 +1,146 @@
+@model ExpertPost
+
+@{
+    ViewData["Title"] = "Write New Article";
+}
+
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="h2 mb-2">
+            <i class="fas fa-pen me-2"></i>Write New Article
+        </h1>
+        <p class="text-muted">Share your expertise and insights with our community</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div asp-validation-message=""></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Title Field -->
+                <div class="mb-4">
+                    <label asp-for="Title" class="form-label fw-bold">
+                        <i class="fas fa-heading me-2"></i>Article Title <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Title" class="form-control form-control-lg" 
+                           placeholder="Enter article title..." 
+                           maxlength="300">
+                    <span asp-validation-for="Title" class="text-danger small d-block mt-1"></span>
+                    <small class="text-muted d-block mt-1">
+                        <span id="titleCount">0</span>/300 characters
+                    </small>
+                </div>
+
+                <!-- Summary Field -->
+                <div class="mb-4">
+                    <label asp-for="Summary" class="form-label fw-bold">
+                        <i class="fas fa-align-left me-2"></i>Summary
+                    </label>
+                    <textarea asp-for="Summary" class="form-control" 
+                              placeholder="Brief summary of your article (optional)..." 
+                              rows="2"
+                              maxlength="200"></textarea>
+                    <span asp-validation-for="Summary" class="text-danger small d-block mt-1"></span>
+                    <small class="text-muted d-block mt-1">
+                        <span id="summaryCount">0</span>/200 characters
+                    </small>
+                </div>
+
+                <!-- Category Field -->
+                <div class="mb-4">
+                    <label asp-for="Category" class="form-label fw-bold">
+                        <i class="fas fa-tag me-2"></i>Category
+                    </label>
+                    <input asp-for="Category" class="form-control" 
+                           placeholder="e.g., Sports Analysis, Betting Strategies, Team News" 
+                           maxlength="200">
+                    <span asp-validation-for="Category" class="text-danger small d-block mt-1"></span>
+                </div>
+
+                <!-- Content Field -->
+                <div class="mb-4">
+                    <label asp-for="Content" class="form-label fw-bold">
+                        <i class="fas fa-file-alt me-2"></i>Article Content <span class="text-danger">*</span>
+                    </label>
+                    <textarea asp-for="Content" class="form-control" 
+                              placeholder="Write your article content here... (Minimum 20 characters)" 
+                              rows="12"
+                              maxlength="5000"></textarea>
+                    <span asp-validation-for="Content" class="text-danger small d-block mt-1"></span>
+                    <small class="text-muted d-block mt-1">
+                        <span id="contentCount">0</span>/5000 characters
+                    </small>
+                </div>
+
+                <!-- Character Limit Warning -->
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Tips:</strong>
+                    <ul class="mb-0 ms-3 mt-2">
+                        <li>Be clear and concise in your writing</li>
+                        <li>Use line breaks to improve readability</li>
+                        <li>Focus on providing value to readers</li>
+                    </ul>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex gap-2 justify-content-between">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Publish Article
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Character counters
+        document.getElementById('Title').addEventListener('input', function () {
+            document.getElementById('titleCount').textContent = this.value.length;
+        });
+
+        document.getElementById('Summary').addEventListener('input', function () {
+            document.getElementById('summaryCount').textContent = this.value.length;
+        });
+
+        document.getElementById('Content').addEventListener('input', function () {
+            document.getElementById('contentCount').textContent = this.value.length;
+        });
+
+        // Initialize counters
+        document.getElementById('titleCount').textContent = document.getElementById('Title').value.length;
+        document.getElementById('summaryCount').textContent = document.getElementById('Summary').value.length;
+        document.getElementById('contentCount').textContent = document.getElementById('Content').value.length;
+    </script>
+}
+
+<style>
+    .form-label {
+        color: #333;
+        font-size: 1.05rem;
+    }
+
+    textarea.form-control {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        resize: vertical;
+    }
+
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+</style>

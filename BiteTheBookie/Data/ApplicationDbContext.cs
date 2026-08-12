@@ -14,6 +14,7 @@ namespace BiteTheBookie.Data
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<ExpertPick> ExpertPicks { get; set; }
+        public DbSet<ExpertPost> ExpertPosts { get; set; }
         public DbSet<GameSimulation> GameSimulations { get; set; }
         public DbSet<SiteVideo> SiteVideos { get; set; }
 
@@ -55,6 +56,20 @@ namespace BiteTheBookie.Data
                 entity.HasIndex(e => e.SortOrder);
                 entity.Property(e => e.CreatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            // Expert posts for our experts/authors
+            builder.Entity<ExpertPost>(entity =>
+            {
+                entity.HasIndex(e => e.IsPublished);
+                entity.HasIndex(e => e.AuthorId);
+                entity.HasOne(e => e.Author)
+                      .WithMany()
+                      .HasForeignKey(e => e.AuthorId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.Content).HasColumnType("nvarchar(max)");
             });
         }
     }
