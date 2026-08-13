@@ -26,7 +26,6 @@ public class ExpertPost
     /// <summary>
     /// User ID of the expert who created this post
     /// </summary>
-    [Required]
     public string AuthorId { get; set; } = string.Empty;
 
     /// <summary>
