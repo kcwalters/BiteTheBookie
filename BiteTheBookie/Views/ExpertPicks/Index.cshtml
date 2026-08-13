@@ -1,0 +1,107 @@
+@model BiteTheBookie.ViewModels.AdminPicksListViewModel
+
+@{
+    ViewData["Title"] = "Expert Picks";
+
+    string PickTypeBadgeClass(string pickType) => pickType switch
+    {
+        "Spread" => "bg-primary",
+        "Moneyline" => "bg-success",
+        "OverUnder" => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-star me-2"></i>Expert Picks
+            </h1>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <ul class="nav nav-pills mb-4">
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "NBA" ? "active" : "")"
+                   asp-action="Index" asp-route-league="NBA">NBA</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "MLB" ? "active" : "")"
+                   asp-action="Index" asp-route-league="MLB">MLB</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "NFL" ? "active" : "")"
+                   asp-action="Index" asp-route-league="NFL">NFL</a>
+            </li>
+        </ul>
+
+        @if (Model.Picks.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Game</th>
+                            <th>Game Time</th>
+                            <th>Pick Type</th>
+                            <th>Selection</th>
+                            <th class="text-center">Confidence</th>
+                            <th>Analysis</th>
+                            <th>Expert</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pick in Model.Picks)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold">@pick.AwayTeamName</span>
+                                    <span class="text-muted mx-1">@@</span>
+                                    <span class="fw-semibold">@pick.HomeTeamName</span>
+                                </td>
+                                <td class="text-muted">@pick.GameTime.ToLocalTime().ToString("MMM dd, h:mm tt")</td>
+                                <td>
+                                    <span class="badge @PickTypeBadgeClass(pick.PickType)">@pick.PickType</span>
+                                </td>
+                                <td class="fw-bold">@pick.PickSelection</td>
+                                <td class="text-center">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= pick.Confidence)
+                                        {
+                                            <i class="fas fa-star text-warning" style="font-size: 0.8rem;"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-star text-muted opacity-25" style="font-size: 0.8rem;"></i>
+                                        }
+                                    }
+                                </td>
+                                <td class="text-muted small">@pick.Analysis</td>
+                                <td class="text-muted small">@pick.EnteredBy</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No expert picks available for @Model.SelectedLeague yet.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+</style>

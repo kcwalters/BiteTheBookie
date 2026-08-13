@@ -6,6 +6,36 @@ namespace BiteTheBookie.Controllers
 {
     public class CollegeFootballController : Controller
     {
+        public IActionResult Index()
+        {
+            var teamsByGroup = CFBGamesService.GetTeamsByConference()
+                .SelectMany(g => g.Teams.Select(t => new NFLTeamListItem
+                {
+                    Code = t.Code,
+                    Name = t.Name,
+                    Division = g.Conference,
+                    Logo = t.Logo
+                }))
+                .OrderBy(t => t.Division)
+                .ThenBy(t => t.Name)
+                .GroupBy(t => t.Division)
+                .ToList();
+
+            var vm = new LeagueTeamGridViewModel
+            {
+                LeagueName = "CFB",
+                LogoUrl = "/img/NCAAMens_med.png",
+                Tagline = "Teams, matchups, odds, and expert picks",
+                TeamController = "CollegeFootball",
+                GameCenterAction = "CFB",
+                OddsAction = "CFB",
+                ExpertPicksLeague = "CFB",
+                TeamsByGroup = teamsByGroup
+            };
+
+            return View("LeagueTeamGrid", vm);
+        }
+
         // ESPN team IDs (same source as the CFB logo lookup) used to deep-link to each school's page.
         private static string BuildEspnUrl(string code, string name)
         {

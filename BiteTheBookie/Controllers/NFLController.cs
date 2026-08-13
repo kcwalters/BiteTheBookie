@@ -1,10 +1,23 @@
 using BiteTheBookie.ViewModels;
+using BiteTheBookie.Models;
+using BiteTheBookie.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BiteTheBookie.Controllers
 {
     public class NFLController : Controller
     {
+        private const string NflNewsFeedUrl = "https://www.espn.com/espn/rss/nfl/news";
+
+        private readonly INFLScoresService _scoresService;
+        private readonly INewsService _newsService;
+
+        public NFLController(INFLScoresService scoresService, INewsService newsService)
+        {
+            _scoresService = scoresService;
+            _newsService = newsService;
+        }
+
         // Codes MUST match wwwroot/js/nfl-team-modal.js nflTeams / nflColumns.
         // Tuple: (Name, Division) — logo/deep-link use the ESPN lowercase code.
         private static readonly Dictionary<string, (string Name, string Division)> Teams =
@@ -88,6 +101,61 @@ namespace BiteTheBookie.Controllers
                 .Replace(" ", "-");
 
             return $"https://www.espn.com/nfl/team/_/name/{espnCode}/{slug}";
+        }
+
+        public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
+        {
+            var model = new NFLLandingViewModel();
+
+            try
+            {
+                var games = await _scoresService.GetGamesAsync(cancellationToken);
+                model.Games = games.Select(g => new NBAGameMatchup
+                {
+                    GameId = g.EventId ?? string.Empty,
+                    AwayTeamName = g.AwayTeam,
+                    AwayTeamLogo = g.AwayLogo,
+                    AwayScore = g.AwayScore,
+                    HomeTeamName = g.HomeTeam,
+                    HomeTeamLogo = g.HomeLogo,
+                    HomeScore = g.HomeScore,
+                    StatusDetail = g.StatusText,
+                    Status = g.IsLive ? "Live" : g.IsFinal ? "Final" : "Scheduled"
+                }).ToList();
+            }
+            catch
+            {
+                model.ErrorMessage = "Live NFL scores are unavailable right now.";
+            }
+
+            try
+            {
+                model.Headlines = (await _newsService.GetLatestNewsAsync(NflNewsFeedUrl, 9)).ToList();
+            }
+            catch
+            {
+                // Headlines are optional; the view handles an empty list.
+            }
+
+            return View(model);
+        }
+
+        public IActionResult AllTeams()
+        {
+            var teamsByDivision = Teams
+                .Select(t => new NFLTeamListItem
+                {
+                    Code = t.Key.ToUpperInvariant(),
+                    Name = t.Value.Name,
+                    Division = t.Value.Division,
+                    Logo = $"https://a.espncdn.com/i/teamlogos/nfl/500/{EspnCode(t.Key)}.png"
+                })
+                .OrderBy(t => t.Division)
+                .ThenBy(t => t.Name)
+                .GroupBy(t => t.Division)
+                .ToList();
+
+            return View(teamsByDivision);
         }
     }
 }

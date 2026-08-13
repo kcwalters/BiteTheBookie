@@ -14,19 +14,19 @@ using Microsoft.EntityFrameworkCore;
 namespace BiteTheBookie.Controllers
 {
     [Authorize(Roles = "Admin")]
-    public class AdminPicksController : Controller
+    public class ExpertPicksController : Controller
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ILogger<AdminPicksController> _logger;
+        private readonly ILogger<ExpertPicksController> _logger;
         private readonly INBAGamesService _nbaGamesService;
         private readonly IMLBGamesService _mlbGamesService;
         private readonly TheOddsApiClient _oddsApiClient;
 
-        public AdminPicksController(
+        public ExpertPicksController(
             ApplicationDbContext db,
             UserManager<ApplicationUser> userManager,
-            ILogger<AdminPicksController> logger,
+            ILogger<ExpertPicksController> logger,
             INBAGamesService nbaGamesService,
             IMLBGamesService mlbGamesService,
             TheOddsApiClient oddsApiClient)
@@ -39,6 +39,7 @@ namespace BiteTheBookie.Controllers
             _oddsApiClient = oddsApiClient;
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index(string league = "NBA")
         {
             var picks = await _db.ExpertPicks

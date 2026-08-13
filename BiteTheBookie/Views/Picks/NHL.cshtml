@@ -18,4 +18,8 @@
         </div>
         <p class="text-muted mb-0">NHL scores, simulations, and picks are coming soon.</p>
     </div>
+
+    <div class="content-card mt-4">
+        @await Component.InvokeAsync("EspnNewsFeed", new { count = 8, league = "NHL" })
+    </div>
 </div>

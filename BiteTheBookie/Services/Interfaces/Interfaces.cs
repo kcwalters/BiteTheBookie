@@ -17,6 +17,7 @@ namespace BiteTheBookie.Services.Interfaces
     public interface INewsService
     {
         Task<IEnumerable<NewsItemViewModel>> GetLatestNewsAsync(int count = 5);
+        Task<IEnumerable<NewsItemViewModel>> GetLatestNewsAsync(string feedUrl, int count);
         Task<NewsItemViewModel> GetNewsByIdAsync(int id);
     }
 

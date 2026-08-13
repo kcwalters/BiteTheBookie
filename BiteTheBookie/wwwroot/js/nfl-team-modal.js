@@ -694,11 +694,7 @@
       showTicker(options.league);
     });
 
-    // Click: Show modal AND change ticker
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      show();
-    });
+    // Click: allow the link to navigate to the league landing page (no modal).
 
     modalEl.addEventListener('click', (e) => {
       const team = e.target.closest('.nfl-team-modal__team');

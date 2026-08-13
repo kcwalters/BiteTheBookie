@@ -16,6 +16,9 @@
 }
 
 <div class="container py-4">
+    <div class="content-card mb-4">
+        @await Component.InvokeAsync("EspnNewsFeed", new { count = 8, league = "CFB" })
+    </div>
     <div class="content-card">
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div class="d-flex align-items-center gap-3">

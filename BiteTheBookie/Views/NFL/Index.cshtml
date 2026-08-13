@@ -1,19 +1,6 @@
 @model BiteTheBookie.ViewModels.NFLLandingViewModel
-@using Microsoft.AspNetCore.Identity
-@using BiteTheBookie.Models
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
-
 @{
     ViewData["Title"] = "NFL - Scores, Schedule & Headlines";
-
-    var isPremiumOrVip = false;
-    if (SignInManager.IsSignedIn(User))
-    {
-        var currentUser = await UserManager.GetUserAsync(User);
-        isPremiumOrVip = currentUser?.IsPremium == true;
-    }
-
     var featured = Model.FeaturedHeadline;
 }
 
@@ -26,11 +13,11 @@
             <span class="nfl-landing__title">NFL</span>
         </div>
         <ul class="nfl-landing__subnav">
-            <li><a class="active" asp-controller="Picks" asp-action="NFL">Home</a></li>
-            <li><a asp-controller="Picks" asp-action="Index">Picks</a></li>
-            <li><a asp-controller="Odds" asp-action="Index">Odds</a></li>
+            <li><a class="active" asp-controller="NFL" asp-action="Index">Home</a></li>
+            <li><a asp-controller="NFL" asp-action="Teams">Teams</a></li>
+            <li><a asp-controller="Odds" asp-action="NFL">Odds</a></li>
             <li><a asp-controller="Scores" asp-action="Index">Scores</a></li>
-            <li><a asp-controller="Experts" asp-action="Index">Experts</a></li>
+            <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NFL">Experts</a></li>
         </ul>
     </div>
 
@@ -91,21 +78,6 @@
                                     </div>
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
-                                <div class="nfl-game-card__actions">
-                                    @if (isPremiumOrVip)
-                                    {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "NFL" })"
-                                           class="btn btn-sm btn-outline-primary w-100" data-sim-trigger>
-                                            <i class="fas fa-chart-line me-1"></i>Game Preview
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning w-100">
-                                            <i class="fas fa-lock me-1"></i>Preview &amp; Picks
-                                        </a>
-                                    }
-                                </div>
                             </div>
                         }
                     </div>
@@ -144,10 +116,10 @@
             <div class="nfl-quicklinks">
                 <div class="nfl-quicklinks__title">Quick Links</div>
                 <ul>
-                    <li><a asp-controller="Picks" asp-action="NFL"><i class="fas fa-football-ball"></i>NFL Picks</a></li>
-                    <li><a asp-controller="Odds" asp-action="Index"><i class="fas fa-percent"></i>NFL Odds</a></li>
-                    <li><a asp-controller="Picks" asp-action="AgainstTheSpread"><i class="fas fa-balance-scale"></i>Against the Spread</a></li>
-                    <li><a asp-controller="Experts" asp-action="Index"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
+                    <li><a asp-controller="NFL" asp-action="Teams"><i class="fas fa-football-ball"></i>NFL Teams</a></li>
+                    <li><a asp-controller="Odds" asp-action="NFL"><i class="fas fa-percent"></i>NFL Odds</a></li>
+                    <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NFL"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
+                    <li><a asp-controller="Scores" asp-action="Index"><i class="fas fa-list-ol"></i>Scores</a></li>
                     <li><a href="https://www.espn.com/nfl/schedule" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
                     <li><a href="https://www.espn.com/nfl/standings" target="_blank" rel="noopener"><i class="fas fa-list-ol"></i>Standings</a></li>
                 </ul>
@@ -215,7 +187,6 @@
         .nfl-game-card__team img { width: 28px; height: 28px; object-fit: contain; }
         .nfl-game-card__team span { font-weight: 600; color: #111; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .nfl-game-card__score { font-weight: 800; color: #111; font-size: 1.05rem; }
-        .nfl-game-card__actions { margin-top: 10px; }
         .nfl-games__empty { text-align: center; padding: 36px 16px; }
         .nfl-games__empty img { width: 54px; height: 54px; opacity: .4; margin-bottom: 10px; }
 

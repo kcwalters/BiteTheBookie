@@ -1,0 +1,46 @@
+@model List<IGrouping<string, BiteTheBookie.ViewModels.NFLTeamListItem>>
+@{
+    ViewData["Title"] = "NFL Teams";
+}
+
+<div class="nfl-hero" style="background: var(--primary-blue, #0b0c0d); color:#fff; padding:28px 0; margin-bottom:24px;">
+    <div class="container d-flex align-items-center gap-3">
+        <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="NFL" style="width:64px; height:64px; object-fit:contain;" />
+        <div>
+            <h1 class="mb-1" style="font-weight:800;">NFL Teams</h1>
+            <div class="opacity-75">Browse every team, matchup, odds, and expert picks</div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="content-card p-4 mb-4">
+        <h2 class="h5 mb-3">Quick Links</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" asp-controller="NFL" asp-action="Index">NFL Home</a>
+            <a class="btn btn-outline-primary" asp-controller="Odds" asp-action="NFL">NFL Odds</a>
+            <a class="btn btn-outline-primary" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NFL">Expert Picks</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        @foreach (var division in Model)
+        {
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="content-card p-4 h-100">
+                    <h2 class="h6 text-uppercase text-muted mb-3">@division.Key</h2>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var team in division)
+                        {
+                            <a class="d-flex align-items-center gap-2 text-decoration-none"
+                               asp-controller="NFL" asp-action="Team" asp-route-code="@team.Code">
+                                <img src="@team.Logo" alt="@team.Name" style="width:28px; height:28px; object-fit:contain;" />
+                                <span class="fw-semibold">@team.Name</span>
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

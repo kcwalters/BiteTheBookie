@@ -5,6 +5,36 @@ namespace BiteTheBookie.Controllers
 {
     public class CollegeBasketballController : Controller
     {
+        public IActionResult Index()
+        {
+            var teamsByGroup = Teams
+                .Select(t => new NFLTeamListItem
+                {
+                    Code = t.Key.ToUpperInvariant(),
+                    Name = t.Value.Name,
+                    Division = t.Value.Conference,
+                    Logo = $"https://a.espncdn.com/i/teamlogos/ncaa/500/{t.Value.EspnId}.png"
+                })
+                .OrderBy(t => t.Division)
+                .ThenBy(t => t.Name)
+                .GroupBy(t => t.Division)
+                .ToList();
+
+            var vm = new LeagueTeamGridViewModel
+            {
+                LeagueName = "CBB",
+                LogoUrl = "/img/NCAAMens_med.png",
+                Tagline = "Teams, matchups, odds, and expert picks",
+                TeamController = "CollegeBasketball",
+                GameCenterAction = "CBB",
+                OddsAction = "CBB",
+                ExpertPicksLeague = "CBB",
+                TeamsByGroup = teamsByGroup
+            };
+
+            return View("LeagueTeamGrid", vm);
+        }
+
         // Codes MUST match wwwroot/js/nfl-team-modal.js cbbTeams / cbbColumns.
         // Tuple: (Name, Conference, EspnId) — EspnId is the shared ESPN school id
         // used for both the logo (ncaa/500/{id}.png) and the team deep-link.

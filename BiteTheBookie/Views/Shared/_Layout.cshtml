@@ -97,47 +97,47 @@
                 <div class="collapse navbar-collapse" id="mainNav">
                     <!-- Primary section links (SportsLine-style flat nav) -->
                     <ul class="navbar-nav primary-nav">
-                        <li class="nav-item"><a class="nav-link" asp-controller="Picks" asp-action="Index">Picks</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="ExpertPicks" asp-action="Index">Picks</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Odds" asp-action="Index">Odds</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Fantasy</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Experts" asp-action="Index">Experts</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Expert Articles" asp-action="Index">Experts</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Analysis</a></li>
                     </ul>
 
                     <!-- League quick-links with icons; also drives the ticker switcher -->
                     <ul class="navbar-nav league-nav ms-auto">
                         <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="Picks" asp-action="NFL" data-league="nfl">
+                            <a class="nav-link league-link" asp-controller="NFL" asp-action="Index" data-league="nfl">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="" class="league-icon" />
                                 <span>NFL</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="Picks" asp-action="MLB" data-league="mlb">
+                            <a class="nav-link league-link" asp-controller="MLB" asp-action="Index" data-league="mlb">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png" alt="" class="league-icon" />
                                 <span>MLB</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="Picks" asp-action="NBA" data-league="nba">
+                            <a class="nav-link league-link" asp-controller="NBA" asp-action="Index" data-league="nba">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nba.png" alt="" class="league-icon" />
                                 <span>NBA</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="Picks" asp-action="NHL" data-league="nhl">
+                            <a class="nav-link league-link" asp-controller="NHL" asp-action="Index" data-league="nhl">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nhl.png" alt="" class="league-icon" />
                                 <span>NHL</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="Picks" asp-action="CBB" data-league="ncaa">
+                            <a class="nav-link league-link" asp-controller="CollegeBasketball" asp-action="Index" data-league="ncaa">
                                 <img src="~/img/NCAAMens_med.png" alt="" class="league-icon" />
                                 <span>CBB</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="Picks" asp-action="CFB" data-league="ncaaf">
+                            <a class="nav-link league-link" asp-controller="CollegeFootball" asp-action="Index" data-league="ncaaf">
                                 <img src="~/img/NCAAMens_med.png" alt="" class="league-icon" />
                                 <span>CFB</span>
                             </a>
