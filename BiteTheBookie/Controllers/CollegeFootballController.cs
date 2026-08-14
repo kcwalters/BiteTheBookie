@@ -1,4 +1,6 @@
+using BiteTheBookie.Models;
 using BiteTheBookie.Services.Implementations;
+using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,35 +8,65 @@ namespace BiteTheBookie.Controllers
 {
     public class CollegeFootballController : Controller
     {
-        public IActionResult Index()
-        {
-            var teamsByGroup = CFBGamesService.GetTeamsByConference()
-                .SelectMany(g => g.Teams.Select(t => new NFLTeamListItem
-                {
-                    Code = t.Code,
-                    Name = t.Name,
-                    Division = g.Conference,
-                    Logo = t.Logo
-                }))
-                .OrderBy(t => t.Division)
-                .ThenBy(t => t.Name)
-                .GroupBy(t => t.Division)
-                .ToList();
+        private const string NewsFeedUrl = "https://www.espn.com/espn/rss/ncf/news";
 
-            var vm = new LeagueTeamGridViewModel
+        private readonly ICFBScoresService _scoresService;
+        private readonly INewsService _newsService;
+
+        public CollegeFootballController(ICFBScoresService scoresService, INewsService newsService)
+        {
+            _scoresService = scoresService;
+            _newsService = newsService;
+        }
+
+        public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
+        {
+            var model = new LeagueHomeViewModel
             {
                 LeagueName = "CFB",
-                LogoUrl = "/img/NCAAMens_med.png",
-                Tagline = "Teams, matchups, odds, and expert picks",
+                LeagueLogo = "/img/NCAAMens_med.png",
                 TeamController = "CollegeFootball",
-                GameCenterAction = "CFB",
+                TeamsAction = "Teams",
+                OddsController = "Odds",
                 OddsAction = "CFB",
                 ExpertPicksLeague = "CFB",
-                TeamsByGroup = teamsByGroup
+                EspnScheduleUrl = "https://www.espn.com/college-football/schedule",
+                EspnStandingsUrl = "https://www.espn.com/college-football/standings"
             };
 
-            return View("LeagueTeamGrid", vm);
+            try
+            {
+                var games = await _scoresService.GetGamesAsync(cancellationToken);
+                model.Games = games.Select(g => new NBAGameMatchup
+                {
+                    GameId = g.EventId ?? string.Empty,
+                    AwayTeamName = g.AwayTeam,
+                    AwayTeamLogo = g.AwayLogo,
+                    AwayScore = g.AwayScore,
+                    HomeTeamName = g.HomeTeam,
+                    HomeTeamLogo = g.HomeLogo,
+                    HomeScore = g.HomeScore,
+                    StatusDetail = g.StatusText,
+                    Status = g.IsLive ? "Live" : g.IsFinal ? "Final" : "Scheduled"
+                }).ToList();
+            }
+            catch
+            {
+                model.ErrorMessage = "Live CFB scores are unavailable right now.";
+            }
+
+            try
+            {
+                model.Headlines = (await _newsService.GetLatestNewsAsync(NewsFeedUrl, 9)).ToList();
+            }
+            catch
+            {
+                // Headlines are optional; the view handles an empty list.
+            }
+
+            return View("LeagueHome", model);
         }
+
 
         // ESPN team IDs (same source as the CFB logo lookup) used to deep-link to each school's page.
         private static string BuildEspnUrl(string code, string name)

@@ -1,3 +1,5 @@
+using BiteTheBookie.Models;
+using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,6 +7,17 @@ namespace BiteTheBookie.Controllers
 {
     public class MLBController : Controller
     {
+        private const string NewsFeedUrl = "https://www.espn.com/espn/rss/mlb/news";
+
+        private readonly IMLBGamesService _gamesService;
+        private readonly INewsService _newsService;
+
+        public MLBController(IMLBGamesService gamesService, INewsService newsService)
+        {
+            _gamesService = gamesService;
+            _newsService = newsService;
+        }
+
         // Tuple: (Name, Division). Logo uses ESPN's lowercase abbreviation code.
         private static readonly Dictionary<string, (string Name, string Division)> Teams =
             new(StringComparer.OrdinalIgnoreCase)
@@ -50,7 +63,74 @@ namespace BiteTheBookie.Controllers
         private static string Logo(string code) =>
             $"https://a.espncdn.com/i/teamlogos/mlb/500/{code.ToLowerInvariant()}.png";
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
+        {
+            var model = new LeagueHomeViewModel
+            {
+                LeagueName = "MLB",
+                LeagueLogo = "https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png",
+                TeamController = "MLB",
+                OddsController = "Odds",
+                OddsAction = "MLB",
+                ExpertPicksLeague = "MLB",
+                TeamsAction = "AllTeams",
+                EspnScheduleUrl = "https://www.espn.com/mlb/schedule",
+                EspnStandingsUrl = "https://www.espn.com/mlb/standings"
+            };
+
+            try
+            {
+                var games = await _gamesService.GetTodayGamesAsync();
+                model.Games = games.Select(g => new NBAGameMatchup
+                {
+                    AwayTeamName = g.AwayTeam,
+                    AwayTeamLogo = g.AwayTeamLogoUrl ?? string.Empty,
+                    AwayScore = g.AwayScore,
+                    HomeTeamName = g.HomeTeam,
+                    HomeTeamLogo = g.HomeTeamLogoUrl ?? string.Empty,
+                    HomeScore = g.HomeScore,
+                    GameTime = g.GameTime,
+                    StatusDetail = g.Status,
+                    Status = MapStatus(g.Status)
+                }).ToList();
+            }
+            catch
+            {
+                model.ErrorMessage = "Live MLB scores are unavailable right now.";
+            }
+
+            try
+            {
+                model.Headlines = (await _newsService.GetLatestNewsAsync(NewsFeedUrl, 9)).ToList();
+            }
+            catch
+            {
+                // Headlines are optional; the view handles an empty list.
+            }
+
+            return View("LeagueHome", model);
+        }
+
+        // Normalizes the MLB provider status string into the shared Scheduled/Live/Final states.
+        private static string MapStatus(string status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+                return "Scheduled";
+
+            if (status.Contains("Final", StringComparison.OrdinalIgnoreCase))
+                return "Final";
+
+            if (status.Contains("In Progress", StringComparison.OrdinalIgnoreCase)
+                || status.Contains("Live", StringComparison.OrdinalIgnoreCase)
+                || status.Contains("Top", StringComparison.OrdinalIgnoreCase)
+                || status.Contains("Bottom", StringComparison.OrdinalIgnoreCase)
+                || status.Contains("Mid", StringComparison.OrdinalIgnoreCase))
+                return "Live";
+
+            return "Scheduled";
+        }
+
+        public IActionResult AllTeams()
         {
             var teamsByGroup = Teams
                 .Select(t => new NFLTeamListItem
@@ -78,6 +158,7 @@ namespace BiteTheBookie.Controllers
             };
 
             return View("LeagueTeamGrid", vm);
+
         }
 
         public IActionResult Team(string code)

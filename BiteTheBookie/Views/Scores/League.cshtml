@@ -1,0 +1,147 @@
+@model BiteTheBookie.ViewModels.ScoresPageViewModel
+@{
+    ViewData["Title"] = $"{Model.LeagueName} Scores";
+    var league = Model.LeagueName;
+}
+
+<div class="container scores-page py-3">
+
+    <!-- Section header -->
+    <div class="nfl-landing__header">
+        <div class="d-flex align-items-center gap-2">
+            <img src="@Model.LeagueLogo" alt="@league" class="nfl-landing__logo" />
+            <span class="nfl-landing__title">@league Scores</span>
+        </div>
+        <ul class="nfl-landing__subnav">
+            @if (!string.IsNullOrWhiteSpace(Model.TeamController))
+            {
+                <li><a asp-controller="@Model.TeamController" asp-action="Index">Home</a></li>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.OddsAction))
+            {
+                <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">Odds</a></li>
+            }
+            <li><a class="active" asp-controller="Scores" asp-action="League" asp-route-league="@Model.LeagueCode">Scores</a></li>
+            @if (!string.IsNullOrWhiteSpace(Model.ExpertPicksLeague))
+            {
+                <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
+            }
+        </ul>
+    </div>
+
+    <!-- League switcher -->
+    <ul class="scores-leagues">
+        @foreach (var lg in Model.AvailableLeagues)
+        {
+            <li>
+                <a class="@(string.Equals(lg.Code, Model.LeagueCode, StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+                   asp-controller="Scores" asp-action="League" asp-route-league="@lg.Code">@lg.Name</a>
+            </li>
+        }
+    </ul>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-warning">@Model.ErrorMessage</div>
+    }
+
+    <div class="nfl-games">
+        <div class="nfl-games__title">
+            <span>@league Scoreboard</span>
+            <small class="text-muted">@Model.SelectedDateDisplay</small>
+        </div>
+
+        @if (Model.Games.Any())
+        {
+            <div class="nfl-games__grid">
+                @foreach (var game in Model.Games)
+                {
+                    <div class="nfl-game-card">
+                        <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                            @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
+                        </div>
+                        <div class="nfl-game-card__row">
+                            <div class="nfl-game-card__team">
+                                @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
+                                {
+                                    <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                                }
+                                <span>@game.AwayTeamName</span>
+                            </div>
+                            <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
+                        </div>
+                        <div class="nfl-game-card__row">
+                            <div class="nfl-game-card__team">
+                                @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
+                                {
+                                    <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                                }
+                                <span>@game.HomeTeamName</span>
+                            </div>
+                            <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="nfl-games__empty">
+                <img src="@Model.LeagueLogo" alt="@league" />
+                <p class="mb-0 text-muted">No @league games scheduled for today. Check back on game day.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .nfl-landing__header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            border-bottom: 3px solid var(--primary-blue, #013369);
+            padding-bottom: 10px; margin-bottom: 18px;
+        }
+        .nfl-landing__logo { width: 40px; height: 40px; object-fit: contain; }
+        .nfl-landing__title { font-size: 1.9rem; font-weight: 800; color: #0b0c0d; letter-spacing: .5px; }
+        .nfl-landing__subnav { list-style: none; display: flex; gap: 4px; margin: 0; padding: 0; flex-wrap: wrap; }
+        .nfl-landing__subnav a {
+            display: inline-block; padding: 8px 14px; color: #444; font-weight: 600;
+            text-decoration: none; border-radius: 6px; font-size: .95rem;
+        }
+        .nfl-landing__subnav a:hover { background: #eef2f6; color: #013369; }
+        .nfl-landing__subnav a.active { color: #013369; border-bottom: 3px solid #d50a0a; border-radius: 0; }
+
+        /* League switcher */
+        .scores-leagues { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; padding: 0; }
+        .scores-leagues a {
+            display: inline-block; padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 20px;
+            color: #444; font-weight: 700; text-decoration: none; font-size: .9rem; background: #fff;
+        }
+        .scores-leagues a:hover { background: #f5f8fb; color: #013369; border-color: #013369; }
+        .scores-leagues a.active { background: var(--primary-blue, #013369); color: #fff; border-color: #013369; }
+
+        /* Games */
+        .nfl-games { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+        .nfl-games__title {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--primary-blue, #013369); color: #fff; padding: 12px 16px;
+            font-weight: 800; text-transform: uppercase; letter-spacing: .5px;
+        }
+        .nfl-games__title small { color: rgba(255,255,255,.75) !important; font-weight: 600; text-transform: none; }
+        .nfl-games__grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px; padding: 16px;
+        }
+        .nfl-game-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; background: #fbfcfe; }
+        .nfl-game-card__status { font-size: .78rem; font-weight: 700; color: #6b7280; text-transform: uppercase; margin-bottom: 8px; }
+        .nfl-game-card__status.is-live { color: #d50a0a; }
+        .nfl-game-card__row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+        .nfl-game-card__team { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .nfl-game-card__team img { width: 28px; height: 28px; object-fit: contain; }
+        .nfl-game-card__team span { font-weight: 600; color: #111; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nfl-game-card__score { font-weight: 800; color: #111; font-size: 1.05rem; }
+        .nfl-games__empty { text-align: center; padding: 36px 16px; }
+        .nfl-games__empty img { width: 54px; height: 54px; opacity: .4; margin-bottom: 10px; }
+    </style>
+}

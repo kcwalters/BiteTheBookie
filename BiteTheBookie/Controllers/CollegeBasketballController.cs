@@ -1,3 +1,5 @@
+using BiteTheBookie.Models;
+using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,7 +7,66 @@ namespace BiteTheBookie.Controllers
 {
     public class CollegeBasketballController : Controller
     {
-        public IActionResult Index()
+        private const string NewsFeedUrl = "https://www.espn.com/espn/rss/ncb/news";
+
+        private readonly INCAAScoresService _scoresService;
+        private readonly INewsService _newsService;
+
+        public CollegeBasketballController(INCAAScoresService scoresService, INewsService newsService)
+        {
+            _scoresService = scoresService;
+            _newsService = newsService;
+        }
+
+        public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
+        {
+            var model = new LeagueHomeViewModel
+            {
+                LeagueName = "CBB",
+                LeagueLogo = "/img/NCAAMens_med.png",
+                TeamController = "CollegeBasketball",
+                OddsController = "Odds",
+                OddsAction = "CBB",
+                ExpertPicksLeague = "CBB",
+                TeamsAction = "AllTeams",
+                EspnScheduleUrl = "https://www.espn.com/mens-college-basketball/schedule",
+                EspnStandingsUrl = "https://www.espn.com/mens-college-basketball/standings"
+            };
+
+            try
+            {
+                var games = await _scoresService.GetGamesAsync(cancellationToken);
+                model.Games = games.Select(g => new NBAGameMatchup
+                {
+                    GameId = g.EventId ?? string.Empty,
+                    AwayTeamName = g.AwayTeam,
+                    AwayTeamLogo = g.AwayLogo,
+                    AwayScore = g.AwayScore,
+                    HomeTeamName = g.HomeTeam,
+                    HomeTeamLogo = g.HomeLogo,
+                    HomeScore = g.HomeScore,
+                    StatusDetail = g.StatusText,
+                    Status = g.IsLive ? "Live" : g.IsFinal ? "Final" : "Scheduled"
+                }).ToList();
+            }
+            catch
+            {
+                model.ErrorMessage = "Live CBB scores are unavailable right now.";
+            }
+
+            try
+            {
+                model.Headlines = (await _newsService.GetLatestNewsAsync(NewsFeedUrl, 9)).ToList();
+            }
+            catch
+            {
+                // Headlines are optional; the view handles an empty list.
+            }
+
+            return View("LeagueHome", model);
+        }
+
+        public IActionResult AllTeams()
         {
             var teamsByGroup = Teams
                 .Select(t => new NFLTeamListItem

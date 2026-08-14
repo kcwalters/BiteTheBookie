@@ -1,20 +1,8 @@
-@model BiteTheBookie.ViewModels.NFLLandingViewModel
-@using Microsoft.AspNetCore.Identity
-@using BiteTheBookie.Models
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
-
+@model BiteTheBookie.ViewModels.LeagueHomeViewModel
 @{
-    ViewData["Title"] = "NFL - Scores, Schedule & Headlines";
-
-    var isPremiumOrVip = false;
-    if (SignInManager.IsSignedIn(User))
-    {
-        var currentUser = await UserManager.GetUserAsync(User);
-        isPremiumOrVip = currentUser?.IsPremium == true;
-    }
-
+    ViewData["Title"] = $"{Model.LeagueName} - Scores, Schedule & Headlines";
     var featured = Model.FeaturedHeadline;
+    var league = Model.LeagueName;
 }
 
 <div class="container nfl-landing py-3">
@@ -22,15 +10,15 @@
     <!-- Section header -->
     <div class="nfl-landing__header">
         <div class="d-flex align-items-center gap-2">
-            <img src="@Model.LeagueLogo" alt="NFL" class="nfl-landing__logo" />
-            <span class="nfl-landing__title">NFL</span>
+            <img src="@Model.LeagueLogo" alt="@league" class="nfl-landing__logo" />
+            <span class="nfl-landing__title">@league</span>
         </div>
         <ul class="nfl-landing__subnav">
-            <li><a class="active" asp-controller="Picks" asp-action="NFL">Home</a></li>
-            <li><a asp-controller="Picks" asp-action="Index">Picks</a></li>
-            <li><a asp-controller="Odds" asp-action="Index">Odds</a></li>
-            <li><a asp-controller="Scores" asp-action="League" asp-route-league="NFL">Scores</a></li>
-            <li><a asp-controller="Experts" asp-action="Index">Experts</a></li>
+            <li><a class="active" asp-controller="@Model.TeamController" asp-action="Index">Home</a></li>
+            <li><a asp-controller="@Model.TeamController" asp-action="@Model.TeamsAction">Teams</a></li>
+            <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">Odds</a></li>
+            <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague">Scores</a></li>
+            <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
         </ul>
     </div>
 
@@ -47,8 +35,8 @@
                 <a class="nfl-hero" href="@featured.ArticleUrl" target="_blank" rel="noopener"
                    style="@(string.IsNullOrWhiteSpace(featured.ImageUrl) ? "" : $"background-image:linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.85) 100%), url('{featured.ImageUrl}');")">
                     <div class="nfl-hero__badge">
-                        <img src="@Model.LeagueLogo" alt="NFL" />
-                        <span>NFL HEADLINE</span>
+                        <img src="@Model.LeagueLogo" alt="@league" />
+                        <span>@league.ToUpperInvariant() HEADLINE</span>
                     </div>
                     <div class="nfl-hero__content">
                         <h2 class="nfl-hero__title">@featured.Title</h2>
@@ -91,21 +79,6 @@
                                     </div>
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
-                                <div class="nfl-game-card__actions">
-                                    @if (isPremiumOrVip)
-                                    {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "NFL" })"
-                                           class="btn btn-sm btn-outline-primary w-100" data-sim-trigger>
-                                            <i class="fas fa-chart-line me-1"></i>Game Preview
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning w-100">
-                                            <i class="fas fa-lock me-1"></i>Preview &amp; Picks
-                                        </a>
-                                    }
-                                </div>
                             </div>
                         }
                     </div>
@@ -113,8 +86,8 @@
                 else
                 {
                     <div class="nfl-games__empty">
-                        <img src="@Model.LeagueLogo" alt="NFL" />
-                        <p class="mb-0 text-muted">No NFL games scheduled for today. Check back on game day.</p>
+                        <img src="@Model.LeagueLogo" alt="@league" />
+                        <p class="mb-0 text-muted">No @league games scheduled for today. Check back on game day.</p>
                     </div>
                 }
             </div>
@@ -144,12 +117,18 @@
             <div class="nfl-quicklinks">
                 <div class="nfl-quicklinks__title">Quick Links</div>
                 <ul>
-                    <li><a asp-controller="Picks" asp-action="NFL"><i class="fas fa-football-ball"></i>NFL Picks</a></li>
-                    <li><a asp-controller="Odds" asp-action="Index"><i class="fas fa-percent"></i>NFL Odds</a></li>
-                    <li><a asp-controller="Picks" asp-action="AgainstTheSpread"><i class="fas fa-balance-scale"></i>Against the Spread</a></li>
-                    <li><a asp-controller="Experts" asp-action="Index"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
-                    <li><a href="https://www.espn.com/nfl/schedule" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
-                    <li><a href="https://www.espn.com/nfl/standings" target="_blank" rel="noopener"><i class="fas fa-list-ol"></i>Standings</a></li>
+                    <li><a asp-controller="@Model.TeamController" asp-action="@Model.TeamsAction"><i class="fas fa-users"></i>@league Teams</a></li>
+                    <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction"><i class="fas fa-percent"></i>@league Odds</a></li>
+                    <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
+                    <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-list-ol"></i>Scores</a></li>
+                    @if (!string.IsNullOrWhiteSpace(Model.EspnScheduleUrl))
+                    {
+                        <li><a href="@Model.EspnScheduleUrl" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.EspnStandingsUrl))
+                    {
+                        <li><a href="@Model.EspnStandingsUrl" target="_blank" rel="noopener"><i class="fas fa-list-ol"></i>Standings</a></li>
+                    }
                 </ul>
             </div>
         </div>
@@ -215,7 +194,6 @@
         .nfl-game-card__team img { width: 28px; height: 28px; object-fit: contain; }
         .nfl-game-card__team span { font-weight: 600; color: #111; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .nfl-game-card__score { font-weight: 800; color: #111; font-size: 1.05rem; }
-        .nfl-game-card__actions { margin-top: 10px; }
         .nfl-games__empty { text-align: center; padding: 36px 16px; }
         .nfl-games__empty img { width: 54px; height: 54px; opacity: .4; margin-bottom: 10px; }
 

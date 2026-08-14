@@ -20,7 +20,7 @@
     <div class="content-card p-4 mb-4">
         <h2 class="h5 mb-3">Quick Links</h2>
         <div class="d-flex flex-wrap gap-2">
-            <a class="btn btn-primary" asp-controller="@Model.GameCenterController" asp-action="@Model.GameCenterAction">@Model.LeagueName Game Center</a>
+            <a class="btn btn-primary" asp-controller="@Model.TeamController" asp-action="Index">@Model.LeagueName Home</a>
             <a class="btn btn-outline-primary" asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">@Model.LeagueName Odds</a>
             <a class="btn btn-outline-primary" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Expert Picks</a>
         </div>
