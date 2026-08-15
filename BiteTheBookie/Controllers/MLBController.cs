@@ -89,7 +89,7 @@ namespace BiteTheBookie.Controllers
                     HomeTeamName = g.HomeTeam,
                     HomeTeamLogo = g.HomeTeamLogoUrl ?? string.Empty,
                     HomeScore = g.HomeScore,
-                    GameTime = g.GameTime,
+                    GameTime = g.GameTime ?? DateTime.MinValue,
                     StatusDetail = g.Status,
                     Status = MapStatus(g.Status)
                 }).ToList();

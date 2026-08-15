@@ -54,7 +54,9 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                model.Games = await LoadGamesAsync(code, cancellationToken);
+                model.LastDayGames = await LoadGamesAsync(code, cancellationToken, DateTime.Today.AddDays(-1));
+                model.TodayGames = await LoadGamesAsync(code, cancellationToken, DateTime.Today);
+                model.NextGameDayGames = await LoadGamesAsync(code, cancellationToken, DateTime.Today.AddDays(1));
             }
             catch
             {
@@ -64,28 +66,28 @@ namespace BiteTheBookie.Controllers
             return View("League", model);
         }
 
-        private async Task<List<NBAGameMatchup>> LoadGamesAsync(string code, CancellationToken cancellationToken)
+        private async Task<List<NBAGameMatchup>> LoadGamesAsync(string code, CancellationToken cancellationToken, DateTime gameDate)
         {
             switch (code)
             {
                 case "NFL":
-                    return MapTicker(await _nFlScoresService.GetGamesAsync(cancellationToken),
+                    return MapTicker(await _nFlScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
                         g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
                 case "NBA":
-                    return MapTicker(await _nBAScoresService.GetGamesAsync(cancellationToken),
+                    return MapTicker(await _nBAScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
                         g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
                 case "NHL":
-                    return MapTicker(await _nHLScoresService.GetGamesAsync(cancellationToken),
+                    return MapTicker(await _nHLScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
                         g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
                 case "CFB":
-                    return MapTicker(await _cFBScoresService.GetGamesAsync(cancellationToken),
+                    return MapTicker(await _cFBScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
                         g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
                 case "CBB":
-                    return MapTicker(await _nCAAScoresService.GetGamesAsync(cancellationToken),
+                    return MapTicker(await _nCAAScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
                         g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
                 case "MLB":
-                    var mlb = await _mLBGamesService.GetTodayGamesAsync();
-                    return mlb.Select(g => new NBAGameMatchup
+                    var mlbGames = await _mLBGamesService.GetGamesForDateAsync(gameDate, cancellationToken);
+                    return mlbGames.Select(g => new NBAGameMatchup
                     {
                         AwayTeamName = g.AwayTeam,
                         AwayTeamLogo = g.AwayTeamLogoUrl ?? string.Empty,
@@ -93,12 +95,12 @@ namespace BiteTheBookie.Controllers
                         HomeTeamName = g.HomeTeam,
                         HomeTeamLogo = g.HomeTeamLogoUrl ?? string.Empty,
                         HomeScore = g.HomeScore,
-                        GameTime = g.GameTime,
+                        GameTime = g.GameTime.HasValue ? g.GameTime.Value : default,
                         StatusDetail = g.Status,
                         Status = MapMlbStatus(g.Status)
                     }).ToList();
                 default:
-                    return MapTicker(await _nFlScoresService.GetGamesAsync(cancellationToken),
+                    return MapTicker(await _nFlScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
                         g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
             }
         }

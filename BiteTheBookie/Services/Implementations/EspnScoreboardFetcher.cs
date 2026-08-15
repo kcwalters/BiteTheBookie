@@ -47,6 +47,18 @@ namespace BiteTheBookie.Services.Implementations
                 .ToList();
         }
 
+        public static async Task<List<JsonElement>> GetEventsForDateAsync(
+            HttpClient http, string baseUrl, DateTime date, CancellationToken cancellationToken)
+        {
+            if (date.Date > DateTime.UtcNow.Date)
+            {
+                var nextDayUrl = baseUrl + $"?date={date:yyyyMMdd}";
+                return (await FetchEventsAsync(http, nextDayUrl, cancellationToken)).Select(e => e.Element).ToList();
+            }
+
+            return (await FetchEventsAsync(http, baseUrl, cancellationToken)).Select(e => e.Element).ToList();
+        }
+
         private static async Task<List<(JsonElement Element, DateTime Date)>> FetchEventsAsync(
             HttpClient http, string url, CancellationToken cancellationToken)
         {

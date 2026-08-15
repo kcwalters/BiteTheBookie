@@ -75,6 +75,27 @@ namespace BiteTheBookie.Services.Implementations
             }
         }
 
+        public async Task<IReadOnlyList<NFLTickerView>> GetGamesForDateAsync(DateTime date, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var events = await EspnScoreboardFetcher.GetEventsForDateAsync(
+                    _httpClient, _scoreboardUrl, date, cancellationToken);
+
+                var games = events.Select(MapEventToTickerGame)
+                                  .Where(game => game is not null)
+                                  .Select(game => game.Value)
+                                  .ToList();
+
+                return games;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching NFL scoreboard for date {Date}", date);
+                return Array.Empty<NFLTickerView>();
+            }
+        }
+
         private static NFLTickerView? MapEventToTickerGame(JsonElement ev)
         {
             if (!ev.TryGetProperty("competitions", out var compsElement) ||

@@ -219,7 +219,7 @@ namespace BiteTheBookie.Controllers
                 {
                     awayTeamName = mlbGame.AwayTeam,
                     homeTeamName = mlbGame.HomeTeam,
-                    gameTime = mlbGame.GameTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm")
+                    gameTime = mlbGame.GameTime?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm") ?? "Unavailable"
                 });
             }
 
@@ -525,7 +525,7 @@ namespace BiteTheBookie.Controllers
                         HomeCode = GetMlbTeamCode(g.HomeTeam ?? ""),
                         AwayName = g.AwayTeam ?? string.Empty,
                         HomeName = g.HomeTeam ?? string.Empty,
-                        GameTime = g.GameTime
+                        GameTime = g.GameTime.HasValue ? g.GameTime.Value : default
                     })
                     .ToList();
             }
@@ -544,7 +544,7 @@ namespace BiteTheBookie.Controllers
         {
             var awayCode = GetMlbTeamCode(game.AwayTeam ?? "");
             var homeCode = GetMlbTeamCode(game.HomeTeam ?? "");
-            var dateStr = game.GameTime.ToUniversalTime().ToString("yyyyMMdd");
+            var dateStr = game.GameTime?.ToUniversalTime().ToString("yyyyMMdd") ?? "TBD";
             return $"{awayCode}-{homeCode}-{dateStr}";
         }
 

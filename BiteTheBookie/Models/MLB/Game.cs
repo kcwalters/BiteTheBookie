@@ -9,7 +9,7 @@
         public int AwayTeamId { get; set; }
         public int? HomeScore { get; set; }
         public int? AwayScore { get; set; }
-        public DateTime GameTime { get; set; }
+        public DateTime? GameTime { get; set; }
         public string Status { get; set; } = string.Empty;
         public string? HomeTeamLogoUrl { get; set; }
         public string? AwayTeamLogoUrl { get; set; }
@@ -19,5 +19,7 @@
 
         /// <summary>Scheduled starting pitcher for the away team (e.g. "Corbin Burnes").</summary>
         public string? AwayProbablePitcher { get; set; }
+
+        public string GameTimeDisplay => GameTime.HasValue ? GameTime.Value.ToUniversalTime().AddHours(-3).ToString("h:mm tt") : "TBD";
     }
 }

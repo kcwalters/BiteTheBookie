@@ -73,7 +73,7 @@
         @foreach (var g in Model)
         {
             <tr>
-                <td>@g.GameTime.AddHours(-3).ToString("h:mm tt")</td>
+                <td>@g.GameTimeDisplay</td>
                 <td>@g.AwayTeam</td>
                 <td>
                     <img src="@g.AwayTeamLogoUrl" class="team-logo" alt="@g.AwayTeam" />

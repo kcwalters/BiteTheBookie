@@ -83,6 +83,25 @@ namespace BiteTheBookie.Services.Implementations
             }
         }
 
+        public async Task<IReadOnlyList<NHLTickerView>> GetGamesForDateAsync(DateTime date, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var events = await EspnScoreboardFetcher.GetEventsForDateAsync(
+                    _httpClient, _scoreboardUrl, date, cancellationToken);
+
+                return events.Select(MapEventToTickerGame)
+                             .Where(game => game is not null)
+                             .Select(game => game.Value)
+                             .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching NHL scoreboard for date {Date}", date);
+                return Array.Empty<NHLTickerView>();
+            }
+        }
+
         private static NHLTickerView? MapEventToTickerGame(JsonElement ev)
         {
             if (!ev.TryGetProperty("competitions", out var compsElement) ||

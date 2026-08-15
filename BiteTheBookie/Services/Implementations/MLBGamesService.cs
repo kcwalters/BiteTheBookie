@@ -45,6 +45,7 @@ namespace BiteTheBookie.Services
                         ? $"https://www.mlbstatic.com/team-logos/{awayTeamInfo.Id}.svg"
                         : null;
 
+                    // Correctly handling GameDate using null-check for g before accessing GameDate
                     var gameTime = g is not null ? g.GameDate.ToLocalTime() : DateTime.MinValue;
 
                     return new Game
@@ -66,6 +67,54 @@ namespace BiteTheBookie.Services
                 .ToList();
 
             return games;
+        }
+
+        public async Task<IReadOnlyList<Game>> GetGamesForDateAsync(DateTime date, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var dateStr = date.ToString("yyyy-MM-dd");
+                var url = $"schedule?sportId=1&date={dateStr}&hydrate=probablePitcher";
+                var schedule = await _http.GetFromJsonAsync<ScheduleResponse>(url);
+                var teamUrl = "https://statsapi.mlb.com/api/v1/teams?sportIds=1";
+                var teams = await _http.GetFromJsonAsync<TeamsResponse>(teamUrl);
+
+                if (schedule?.Dates == null) return new List<Game>();
+
+                return schedule.Dates
+                    .SelectMany(d => d.Games ?? Enumerable.Empty<GameDto>())
+                    .Select(g =>
+                    {
+                        var homeTeamInfo = teams?.Teams?.FirstOrDefault(s => s.Id == g?.Teams?.Home?.Team?.Id);
+                        var awayTeamInfo = teams?.Teams?.FirstOrDefault(s => s.Id == g?.Teams?.Away?.Team?.Id);
+
+                        string? homeTeamLogo = homeTeamInfo is not null
+                            ? $"https://www.mlbstatic.com/team-logos/{homeTeamInfo.Id}.svg"
+                            : null;
+
+                        string? awayTeamLogo = awayTeamInfo is not null
+                            ? $"https://www.mlbstatic.com/team-logos/{awayTeamInfo.Id}.svg"
+                            : null;
+
+                        // Correctly handling GameDate using null-coalescing operator
+                        return new Game
+                        {
+                            AwayTeam = g?.Teams?.Away?.Team?.Name ?? string.Empty,
+                            AwayTeamLogoUrl = awayTeamLogo,
+                            AwayScore = g?.Teams?.Away?.Score,
+                            HomeTeam = g?.Teams?.Home?.Team?.Name ?? string.Empty,
+                            HomeTeamLogoUrl = homeTeamLogo,
+                            HomeScore = g?.Teams?.Home?.Score,
+                            GameTime = g?.GameDate.ToLocalTime() ?? DateTime.MinValue,
+                            Status = g?.Status?.DetailedState ?? string.Empty
+                        };
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                return Array.Empty<Game>();
+            }
         }
     }
 }

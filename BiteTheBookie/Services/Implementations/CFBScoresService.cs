@@ -83,6 +83,11 @@ namespace BiteTheBookie.Services.Implementations
             }
         }
 
+        public async Task<IReadOnlyList<CFBTickerView>> GetGamesForDateAsync(DateTime date, CancellationToken cancellationToken = default)
+        {
+            return Array.Empty<CFBTickerView>();
+        }
+
         private static CFBTickerView? MapEventToTickerGame(JsonElement ev)
         {
             if (!ev.TryGetProperty("competitions", out var compsElement) ||

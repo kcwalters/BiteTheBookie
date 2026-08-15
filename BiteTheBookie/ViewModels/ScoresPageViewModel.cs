@@ -19,6 +19,9 @@ namespace BiteTheBookie.ViewModels
         public string ExpertPicksLeague { get; set; } = string.Empty;
 
         public List<NBAGameMatchup> Games { get; set; } = new();
+        public List<NBAGameMatchup> LastDayGames { get; set; } = new();
+        public List<NBAGameMatchup> TodayGames { get; set; } = new();
+        public List<NBAGameMatchup> NextGameDayGames { get; set; } = new();
         public string? ErrorMessage { get; set; }
 
         public DateTime SelectedDate { get; set; } = DateTime.Today;
@@ -35,8 +38,8 @@ namespace BiteTheBookie.ViewModels
             ("CBB", "College Basketball"),
         };
 
-        public IEnumerable<NBAGameMatchup> LiveGames => Games.Where(g => g.IsLive);
+        public IEnumerable<NBAGameMatchup> LiveGames => TodayGames.Where(g => g.IsLive);
         public IEnumerable<NBAGameMatchup> ScheduledGames => Games.Where(g => g.IsScheduled);
-        public IEnumerable<NBAGameMatchup> FinalGames => Games.Where(g => g.IsFinal);
+        public IEnumerable<NBAGameMatchup> FinalGames => LastDayGames.Where(g => g.IsFinal);
     }
 }

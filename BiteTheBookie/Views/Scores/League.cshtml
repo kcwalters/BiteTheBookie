@@ -92,6 +92,108 @@
             </div>
         }
     </div>
+
+    <section>
+        <h3>Last Day's Games</h3>
+        <div class="nfl-games__grid">
+            @foreach (var game in Model.LastDayGames)
+            {
+                <div class="nfl-game-card">
+                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
+                    </div>
+                    <div class="nfl-game-card__row">
+                        <div class="nfl-game-card__team">
+                            @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
+                            {
+                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                            }
+                            <span>@game.AwayTeamName</span>
+                        </div>
+                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
+                    </div>
+                    <div class="nfl-game-card__row">
+                        <div class="nfl-game-card__team">
+                            @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
+                            {
+                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                            }
+                            <span>@game.HomeTeamName</span>
+                        </div>
+                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section>
+        <h3>Today's Games</h3>
+        <div class="nfl-games__grid">
+            @foreach (var game in Model.TodayGames)
+            {
+                <div class="nfl-game-card">
+                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
+                    </div>
+                    <div class="nfl-game-card__row">
+                        <div class="nfl-game-card__team">
+                            @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
+                            {
+                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                            }
+                            <span>@game.AwayTeamName</span>
+                        </div>
+                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
+                    </div>
+                    <div class="nfl-game-card__row">
+                        <div class="nfl-game-card__team">
+                            @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
+                            {
+                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                            }
+                            <span>@game.HomeTeamName</span>
+                        </div>
+                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section>
+        <h3>Next Game Day's Games</h3>
+        <div class="nfl-games__grid">
+            @foreach (var game in Model.NextGameDayGames)
+            {
+                <div class="nfl-game-card">
+                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
+                    </div>
+                    <div class="nfl-game-card__row">
+                        <div class="nfl-game-card__team">
+                            @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
+                            {
+                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                            }
+                            <span>@game.AwayTeamName</span>
+                        </div>
+                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
+                    </div>
+                    <div class="nfl-game-card__row">
+                        <div class="nfl-game-card__team">
+                            @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
+                            {
+                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                            }
+                            <span>@game.HomeTeamName</span>
+                        </div>
+                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
 </div>
 
 @section Styles {
