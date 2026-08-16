@@ -14,18 +14,26 @@ namespace BiteTheBookie.Services.Implementations
         private readonly IHttpClientFactory _httpFactory;
         private readonly bool _useMockData;
         private readonly EspnApiClient _espnClient;
+        private readonly IMembershipService _membershipService;
 
         private static readonly Regex StrongNamePattern = new(
             @"<strong>([A-Z][a-zA-Z''-]+(?: [A-Z][a-zA-Z''-]+){1,2})</strong>",
             RegexOptions.Compiled);
 
-        public GameSimulationService(ChatClient? chatClient, ILogger<GameSimulationService> logger, IHttpClientFactory httpFactory, IConfiguration configuration, EspnApiClient espnClient)
+        public GameSimulationService(
+            ChatClient? chatClient,
+            ILogger<GameSimulationService> logger,
+            IHttpClientFactory httpFactory,
+            IConfiguration configuration,
+            EspnApiClient espnClient,
+            IMembershipService membershipService)
         {
             _logger = logger;
             _chatClient = chatClient;
             _httpFactory = httpFactory;
             _useMockData = configuration.GetValue<bool>("Simulation:UseMockData", true);
             _espnClient = espnClient;
+            _membershipService = membershipService;
 
             if (_chatClient == null)
                 _logger.LogWarning("Azure OpenAI ChatClient is not configured. Will use mock simulation.");
@@ -938,7 +946,8 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
                         $"Never use basketball stats (points, rebounds, assists) and never produce basketball-style scores. " +
                         $"(3) Final scores must be realistic college football totals and the game must have a winner. " +
                         $"(4) Wrap every player name in <strong> tags wherever it appears. " +
-                        $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
+                        $"(5) Each simulation must be entirely unique. This is #{simulationId}.",
+                        $""),
                     new UserChatMessage(prompt)
                 };
 
@@ -1009,7 +1018,7 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
 <h2>Betting Analysis</h2>
 <ul>
   <li><strong>Spread:</strong> {winner} wins by {margin}</li>
-  <li><strong>Over/Under:</strong> Combined {awayScore + homeScore} points</li>
+  <li><strong>Over/Under:</strong> Total of {awayScore + homeScore} points</li>
   <li><strong>Moneyline:</strong> {winner} wins outright</li>
 </ul>
 <p><em>Simulated game for entertainment purposes only.</em></p>";
@@ -1082,7 +1091,8 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic N
                         $"Never use basketball stats (points, rebounds, assists) and never produce basketball-style scores. " +
                         $"(3) Final scores must be realistic NFL totals and the game must have a winner. " +
                         $"(4) Wrap every player name in <strong> tags wherever it appears. " +
-                        $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
+                        $"(5) Each simulation must be entirely unique. This is #{simulationId}.",
+                        $""),
                     new UserChatMessage(prompt)
                 };
 
@@ -1171,7 +1181,8 @@ FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL
                         $"Never use basketball stats and never produce basketball-style scores. " +
                         $"(3) Final scores must be realistic NHL totals and the game must have a winner. " +
                         $"(4) Wrap every player name in <strong> tags wherever it appears. " +
-                        $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
+                        $"(5) Each simulation must be entirely unique. This is #{simulationId}.",
+                        $""),
                     new UserChatMessage(prompt)
                 };
 
@@ -1237,15 +1248,15 @@ FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL
 <h2>Betting Analysis</h2>
 <ul>
   <li><strong>Puck Line:</strong> {winner} covers</li>
-  <li><strong>Over/Under:</strong> Combined {awayScore + homeScore} goals</li>
+  <li><strong>Over/Under:</strong> Total of {awayScore + homeScore} goals</li>
   <li><strong>Moneyline:</strong> {winner} wins outright</li>
 </ul>
 <p><em>Simulated game for entertainment purposes only.</em></p>";
-}
+        }
 
-// ── Helpers ───────────────────────────────────────────────────────────
+        // ── Helpers ───────────────────────────────────────────────────────────
 
-private static string StripCodeFences(string text)
+        private static string StripCodeFences(string text)
         {
             text = text.Trim();
             if (text.StartsWith("```html", StringComparison.OrdinalIgnoreCase))
@@ -1536,7 +1547,7 @@ private static string StripCodeFences(string text)
 <h2>Betting Analysis</h2>
 <ul>
   <li><strong>Spread:</strong> {winner} wins by {margin} — {(margin > 5 ? "likely covers" : "near the line")}</li>
-  <li><strong>Over/Under:</strong> {awayScore + homeScore} total points</li>
+  <li><strong>Over/Under:</strong> Total of {awayScore + homeScore} points</li>
   <li><strong>Moneyline:</strong> {winner} wins outright</li>
 </ul>
 <p><em>Simulated game for entertainment purposes only.</em></p>";
@@ -1637,6 +1648,18 @@ private static string StripCodeFences(string text)
                 { "West Virginia","west-virginia" },{ "Wisconsin","wisconsin" },
             };
             return map.TryGetValue(teamName, out var code) ? code : string.Empty;
+        }
+
+        public bool CanUserRunSimulation(string userId)
+        {
+            if (!_membershipService.CanRunSimulation(userId))
+            {
+                _logger.LogInformation("User {UserId} exceeded simulation limits for membership level {Level}", userId, _membershipService.GetUserMembership(userId));
+                return false;
+            }
+
+            _membershipService.IncrementSimulationUsage(userId);
+            return true;
         }
     }
 }

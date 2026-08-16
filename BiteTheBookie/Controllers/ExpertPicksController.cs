@@ -42,6 +42,8 @@ namespace BiteTheBookie.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Index(string league = "NBA")
         {
+            league = league.ToUpper(); // Normalize the league string
+
             var picks = await _db.ExpertPicks
                 .Where(p => p.League == league)
                 .OrderByDescending(p => p.GameTime)
@@ -65,7 +67,7 @@ namespace BiteTheBookie.Controllers
 
             var vm = new AdminPicksListViewModel
             {
-                SelectedLeague = league,
+                SelectedLeague = league, // Assign properly validated league value
                 Picks = picks
             };
 

@@ -1,0 +1,93 @@
+@model BiteTheBookie.Controllers.ExpertPickViewModel
+@{
+    ViewData["Title"] = "Expert Picks";
+    var access = Model.Access;
+    var firstPick = Model.Picks.FirstOrDefault();
+    var matchup = firstPick != null
+        ? $"{firstPick.AwayTeamName} @ {firstPick.HomeTeamName}"
+        : "Game Picks";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            @if (!access.Unlimited && access.WeeklyLimit > 0)
+            {
+                <div class="alert @(access.WeeklyRemaining > 0 ? "alert-info" : "alert-warning") d-flex justify-content-between align-items-center">
+                    <span>
+                        <strong>Weekly Expert Picks:</strong>
+                        @access.WeeklyUsed of @access.WeeklyLimit used
+                    </span>
+                    <span class="badge bg-primary rounded-pill">@access.WeeklyRemaining left this week</span>
+                </div>
+            }
+
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">@matchup</span>
+                    @if (!string.IsNullOrWhiteSpace(Model.League))
+                    {
+                        <span class="badge bg-secondary">@Model.League</span>
+                    }
+                </div>
+                <div class="card-body">
+                    @if (firstPick != null)
+                    {
+                        <p class="text-muted mb-3">
+                            @firstPick.GameTime.ToLocalTime().ToString("dddd, MMM d, yyyy h:mm tt")
+                        </p>
+                    }
+
+                    @if (access.Granted)
+                    {
+                        @if (!Model.Picks.Any())
+                        {
+                            <div class="alert alert-secondary mb-0">
+                                No expert picks have been published for this game yet. Check back soon.
+                            </div>
+                        }
+                        else
+                        {
+                            foreach (var pick in Model.Picks)
+                            {
+                                <div class="border rounded p-3 mb-3">
+                                    <h5 class="mb-1">@pick.PickType: <span class="text-success">@pick.PickSelection</span></h5>
+                                    <p class="mb-2"><strong>Confidence:</strong> @pick.Confidence%</p>
+                                    @if (!string.IsNullOrWhiteSpace(pick.Analysis))
+                                    {
+                                        <p class="mb-1">@pick.Analysis</p>
+                                    }
+                                    <p class="text-muted small mb-0">By @pick.EnteredBy</p>
+                                </div>
+                            }
+                        }
+
+                        @if (access.AlreadyUnlocked && !access.Unlimited)
+                        {
+                            <p class="text-muted small mt-2 mb-0">
+                                You already unlocked this game this week &mdash; viewing it again doesn't use another slot.
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <div class="display-6 mb-3">&#128274;</div>
+                            <h5 class="mb-3">These picks are locked</h5>
+                            <p class="text-muted">@access.Reason</p>
+                            <a asp-controller="Membership" asp-action="Join" class="btn btn-primary mt-2">
+                                Upgrade Membership
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">&larr; Back</a>
+            </div>
+
+        </div>
+    </div>
+</div>

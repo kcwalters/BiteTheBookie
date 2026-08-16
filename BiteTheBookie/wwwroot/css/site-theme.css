@@ -212,7 +212,7 @@ a                          { color: var(--btb-primary); }
 /* =========================================================
    Home page (SportsLine-style 3-column layout)
    ========================================================= */
-.home-page .content-card { padding: 0; overflow: hidden; }
+.home-page .content-card { padding: 20px; overflow: hidden; }
 
 /* Sidebar panels with a heading bar */
 .home-panel__title {
@@ -271,7 +271,7 @@ a                          { color: var(--btb-primary); }
 
 .newsletter-card { background: #0b1a2b; }
 .newsletter-card__title { color: #fff; font-weight: 800; font-size: 1.05rem; margin-bottom: 6px; }
-.newsletter-card__text { color: #c7d2df; font-size: .85rem; margin-bottom: 12px; }
+.newsletter-card__text { color: #c7d2df; font-size: .85rem; margin-bottom: 12px; padding: 20px; }
 
 .discord-card__title { font-weight: 800; font-size: 1.05rem; margin-bottom: 6px; color: #5865F2; }
 .discord-card__text { font-size: .85rem; color: #555; margin-bottom: 12px; }

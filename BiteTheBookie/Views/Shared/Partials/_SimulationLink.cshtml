@@ -1,0 +1,42 @@
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@model BiteTheBookie.ViewModels.SimulationLinkViewModel
+@{
+    // Compute the member's premium status once per request and cache it so the
+    // partial can be rendered for every game in a schedule without repeated DB hits.
+    const string cacheKey = "__isPremiumOrVip";
+    bool isPremiumOrVip;
+    if (Context.Items.TryGetValue(cacheKey, out var cached) && cached is bool cachedValue)
+    {
+        isPremiumOrVip = cachedValue;
+    }
+    else
+    {
+        isPremiumOrVip = false;
+        if (SignInManager.IsSignedIn(User))
+        {
+            var currentUser = await UserManager.GetUserAsync(User);
+            isPremiumOrVip = currentUser?.IsPremium == true;
+        }
+        Context.Items[cacheKey] = isPremiumOrVip;
+    }
+}
+@if (!string.IsNullOrWhiteSpace(Model.GameId))
+{
+    if (isPremiumOrVip)
+    {
+        <a href="@Url.Action("Detail", "Picks", new { gameId = Model.GameId, league = Model.League, homeTeam = Model.HomeTeam, awayTeam = Model.AwayTeam, homeLogo = Model.HomeLogo, awayLogo = Model.AwayLogo })"
+           class="@Model.CssClass"
+           data-sim-trigger>@Model.LinkText</a>
+    }
+    else
+    {
+        <a asp-controller="Membership" asp-action="Join"
+           class="btn btn-sm btn-warning"
+           title="Upgrade to view simulation">
+            <i class="fas fa-dollar-sign"></i> @Model.LinkText
+        </a>
+    }
+}

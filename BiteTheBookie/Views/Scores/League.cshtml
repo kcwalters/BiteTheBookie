@@ -80,6 +80,19 @@
                             </div>
                             <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                         </div>
+                        <div class="nfl-game-card__actions mt-2">
+                            @await Html.PartialAsync("Partials/_SimulationLink", new BiteTheBookie.ViewModels.SimulationLinkViewModel
+                            {
+                                GameId = game.GameId,
+                                League = string.IsNullOrWhiteSpace(Model.ExpertPicksLeague) ? Model.LeagueCode : Model.ExpertPicksLeague,
+                                HomeTeam = game.HomeTeamName,
+                                AwayTeam = game.AwayTeamName,
+                                HomeLogo = game.HomeTeamLogo,
+                                AwayLogo = game.AwayTeamLogo,
+                                CssClass = "btn btn-sm btn-outline-primary w-100",
+                                LinkText = "Game Simulation"
+                            })
+                        </div>
                     </div>
                 }
             </div>
