@@ -1,5 +1,4 @@
-﻿
-@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @using BiteTheBookie.Models
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -61,7 +60,7 @@
                             @if (user?.IsPremium == true)
                             {
                                 <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">
-                                    @(user.SubscriptionTier == SubscriptionTier.VIP ? "VIP" : "PRO")
+                                    @(user.SubscriptionTier == SubscriptionTier.AllAccess ? "ALL ACCESS" : "PRO")
                                 </span>
                             }
                         </a>

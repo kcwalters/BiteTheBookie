@@ -41,11 +41,11 @@
                         <div class="col-sm-8">
                             @switch (Model.SubscriptionTier)
                             {
-                                case BiteTheBookie.Models.SubscriptionTier.VIP:
-                                    <span class="badge bg-dark fs-6">VIP</span>
+                                case BiteTheBookie.Models.SubscriptionTier.AllAccess:
+                                    <span class="badge bg-dark fs-6">All Access</span>
                                     break;
-                                case BiteTheBookie.Models.SubscriptionTier.Premium:
-                                    <span class="badge bg-primary fs-6">Premium</span>
+                                case BiteTheBookie.Models.SubscriptionTier.Pro:
+                                    <span class="badge bg-primary fs-6">Pro</span>
                                     break;
                                 default:
                                     <span class="badge bg-secondary fs-6">Free</span>

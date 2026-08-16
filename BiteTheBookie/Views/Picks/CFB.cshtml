@@ -100,21 +100,26 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (isPremiumOrVip)
-                                    {
-                                        <button class="btn btn-sm btn-outline-primary">View Picks</button>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning" title="Upgrade to view picks">
-                                            <i class="fas fa-dollar-sign"></i>
-                                        </a>
-                                    }
+                                    <div class="game-card__actions">
+                                        @if (isPremiumOrVip)
+                                        {
+                                            <a asp-controller="Picks" asp-action="ViewPick" asp-route-gameId="@game.GameId" asp-route-league="CFB"
+                                               class="btn btn-sm btn-outline-primary">
+                                                View Premium Picks
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning">
+                                                Upgrade to View Picks
+                                            </a>
+                                        }
+                                    </div>
                                 </td>
                                 <td>
                                     @if (isPremiumOrVip)
                                     {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "CFB" })"
+                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "CFB", homeTeam = game.HomeTeamName, awayTeam = game.AwayTeamName, homeLogo = game.HomeTeamLogo, awayLogo = game.AwayTeamLogo })"
                                            class="btn btn-sm btn-outline-secondary"
                                            data-sim-trigger>Simulation</a>
                                     }

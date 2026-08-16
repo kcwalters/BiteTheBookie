@@ -4,14 +4,14 @@
     ViewData["Title"] = "Create Account";
     var planName = Model.SelectedPlan?.ToLower() switch
     {
-        "premium" => "Premium",
-        "vip" => "VIP",
+        "pro" => "Pro",
+        "allaccess" => "All Access",
         _ => "Free"
     };
     var planColor = Model.SelectedPlan?.ToLower() switch
     {
-        "premium" => "primary",
-        "vip" => "dark",
+        "pro" => "primary",
+        "allaccess" => "dark",
         _ => "secondary"
     };
 }
