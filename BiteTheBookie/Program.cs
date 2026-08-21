@@ -101,7 +101,9 @@ builder.Services.AddSportsTickers(builder.Configuration);
 
 // Game services
 builder.Services.AddSingleton<IMembershipService, MembershipService>();
-builder.Services.AddScoped<IExpertPickAccessService, ExpertPickAccessService>();
+// PayPal subscriptions
+builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection(PayPalOptions.SectionName));
+builder.Services.AddHttpClient<IPayPalService, PayPalService>();
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddScoped<INBARosterService, NBARosterService>();
 builder.Services.AddScoped<INBAGamesService, NBAGamesService>();

@@ -28,6 +28,11 @@ namespace BiteTheBookie.Models
         /// When the paid subscription expires (null for free users)
         /// </summary>
         public DateTime? SubscriptionExpiry { get; set; }
+
+        /// <summary>
+        /// The PayPal subscription id (I-XXXXXXXXXXXX) for a paid recurring plan, if any.
+        /// </summary>
+        public string? PayPalSubscriptionId { get; set; }
         
         /// <summary>
         /// When the user first registered

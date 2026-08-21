@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "Complete Your Subscription";
+    var plan = ViewBag.Plan as string ?? "pro";
+    var clientId = ViewBag.PayPalClientId as string ?? string.Empty;
+    var planId = ViewBag.PayPalPlanId as string ?? string.Empty;
+    var isConfigured = ViewBag.IsConfigured is bool b && b;
+    var planName = plan == "allaccess" ? "All Access" : "Pro";
+    var planPrice = plan == "allaccess" ? "$19.99" : "$9.99";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <h1 class="fw-bold">Complete Your Subscription</h1>
+                    <p class="lead text-muted mb-1">@planName Membership</p>
+                    <div class="display-6 fw-bold">@planPrice <span class="fs-6 text-muted">/ month</span></div>
+                </div>
+
+                @if (!isConfigured)
+                {
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        PayPal is not configured yet. Add your <strong>ClientId</strong> and the
+                        <strong>@plan</strong> plan id under the <code>PayPal</code> section in
+                        <code>appsettings.json</code> to enable checkout.
+                    </div>
+                    <div class="text-center">
+                        <a asp-action="Join" class="btn btn-outline-secondary">Back to Plans</a>
+                    </div>
+                }
+                else
+                {
+                    <div id="paypal-status" class="alert d-none" role="alert"></div>
+                    <div id="paypal-button-container"></div>
+                    <p class="text-muted small text-center mt-3">
+                        <i class="fas fa-lock me-1"></i>
+                        You'll be charged @planPrice each month. Cancel anytime from My Account.
+                    </p>
+                }
+
+                <form id="antiforgery-form">@Html.AntiForgeryToken()</form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (isConfigured)
+{
+    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&vault=true&intent=subscription"
+            data-sdk-integration-source="button-factory"></script>
+    <script>
+        (function () {
+            const plan = @Html.Raw(Json.Serialize(plan));
+            const planId = @Html.Raw(Json.Serialize(planId));
+            const confirmUrl = @Html.Raw(Json.Serialize(Url.Action("ConfirmSubscription")));
+            const token = document.querySelector('#antiforgery-form input[name="__RequestVerificationToken"]').value;
+            const statusEl = document.getElementById('paypal-status');
+
+            function showStatus(message, cssClass) {
+                statusEl.textContent = message;
+                statusEl.className = 'alert ' + cssClass;
+            }
+
+            paypal.Buttons({
+                style: { shape: 'pill', color: 'gold', layout: 'vertical', label: 'subscribe' },
+                createSubscription: function (data, actions) {
+                    return actions.subscription.create({ plan_id: planId });
+                },
+                onApprove: function (data) {
+                    showStatus('Verifying your subscription...', 'alert-info');
+                    const body = new URLSearchParams();
+                    body.append('plan', plan);
+                    body.append('subscriptionId', data.subscriptionID);
+                    body.append('__RequestVerificationToken', token);
+
+                    fetch(confirmUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body.toString()
+                    })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return response.json().then(function (err) { throw new Error(err.message || 'Verification failed.'); });
+                        }
+                        return response.json();
+                    })
+                    .then(function (result) {
+                        window.location.href = result.redirectUrl;
+                    })
+                    .catch(function (error) {
+                        showStatus(error.message || 'Something went wrong verifying your payment.', 'alert-danger');
+                    });
+                },
+                onError: function () {
+                    showStatus('A PayPal error occurred. Please try again.', 'alert-danger');
+                }
+            }).render('#paypal-button-container');
+        })();
+    </script>
+}
