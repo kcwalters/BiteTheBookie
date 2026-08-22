@@ -170,8 +170,8 @@
                                                 }
                                                 else if (isPremiumOrVip)
                                                 {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" asp-route-league="MLB"
-                                                       class="btn btn-sm @(game.Status == "Final" ? "btn-outline-secondary" : "btn-primary")" data-sim-trigger>
+                                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "MLB", homeTeam = game.HomeTeamName, awayTeam = game.AwayTeamName, homeLogo = game.HomeTeamLogo, awayLogo = game.AwayTeamLogo })"
+                                                       class="btn btn-sm btn-outline-primary" data-sim-trigger>
                                                         <i class="fas fa-baseball-ball me-1"></i> Game Simulation
                                                     </a>
                                                 }
@@ -283,7 +283,7 @@
                                             <div class="col-auto">
                                                 @if (isPremiumOrVip)
                                                 {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" asp-route-league="MLB"
+                                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "MLB", homeTeam = game.HomeTeamName, awayTeam = game.AwayTeamName, homeLogo = game.HomeTeamLogo, awayLogo = game.AwayTeamLogo })"
                                                        class="btn btn-outline-primary btn-sm" data-sim-trigger>
                                                         <i class="fas fa-baseball-ball me-1"></i> Game Simulation
                                                     </a>

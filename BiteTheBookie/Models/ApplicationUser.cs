@@ -20,7 +20,7 @@ namespace BiteTheBookie.Models
 
         
         /// <summary>
-        /// Free, Premium, or VIP
+        /// Free, Pro, or All Access
         /// </summary>
         public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
         
@@ -28,7 +28,17 @@ namespace BiteTheBookie.Models
         /// When the paid subscription expires (null for free users)
         /// </summary>
         public DateTime? SubscriptionExpiry { get; set; }
-        
+
+        /// <summary>
+        /// The PayPal subscription id (I-XXXXXXXXXXXX) for a paid recurring plan, if any.
+        /// </summary>
+        public string? PayPalSubscriptionId { get; set; }
+
+        /// <summary>
+        /// The Stripe subscription id (sub_XXXXXXXX) for a paid recurring plan, if any.
+        /// </summary>
+        public string? StripeSubscriptionId { get; set; }
+
         /// <summary>
         /// When the user first registered
         /// </summary>
@@ -45,7 +55,7 @@ namespace BiteTheBookie.Models
     public enum SubscriptionTier
     {
         Free = 0,
-        Premium = 1,
-        VIP = 2
+        Pro = 1,
+        AllAccess = 2
     }
 }

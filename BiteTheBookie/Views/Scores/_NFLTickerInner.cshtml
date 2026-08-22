@@ -6,7 +6,9 @@
         <div class="nfl-ticker-track">
             @foreach (var g in Model)
             {
-                <div class="nfl-ticker-item">
+                <a class="nfl-ticker-item"
+                   href="@(string.IsNullOrWhiteSpace(g.EventId) ? "#" : Url.Action("Detail", "Picks", new { gameId = g.EventId, league = "NFL", homeTeam = g.HomeTeam, awayTeam = g.AwayTeam, homeLogo = g.HomeLogo, awayLogo = g.AwayLogo }))"
+                   data-sim-trigger="@(string.IsNullOrWhiteSpace(g.EventId) ? null : "true")">
                     @if (!string.IsNullOrWhiteSpace(g.AwayLogo))
                     {
                         <img class="team-logo" src="@g.AwayLogo" alt="@g.AwayTeam" decoding="async" />
@@ -24,7 +26,7 @@
                     <span class="team-score">@((g.HomeScore?.ToString()) ?? "-")</span>
 
                     <span class="game-date">@g.StatusText</span>
-                </div>
+                </a>
             }
         </div>
     </div>

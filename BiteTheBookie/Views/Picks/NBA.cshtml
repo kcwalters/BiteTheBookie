@@ -174,8 +174,8 @@
                                             <div class="col-auto">
                                                 @if (game.Status == "Scheduled")
                                                 {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
-                                                       class="btn btn-primary btn-sm">
+                                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "NBA", homeTeam = game.HomeTeamName, awayTeam = game.AwayTeamName, homeLogo = game.HomeTeamLogo, awayLogo = game.AwayTeamLogo })"
+                                                       class="btn btn-primary btn-sm" data-sim-trigger>
                                                         <i class="fas fa-chart-line me-1"></i> Analysis
                                                     </a>
                                                 }
@@ -288,8 +288,8 @@
 
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
-                                                <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId"
-                                                   class="btn btn-outline-primary btn-sm">
+                                                <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "NBA", homeTeam = game.HomeTeamName, awayTeam = game.AwayTeamName, homeLogo = game.HomeTeamLogo, awayLogo = game.AwayTeamLogo })"
+                                                   class="btn btn-outline-primary btn-sm" data-sim-trigger>
                                                     <i class="fas fa-chart-line me-1"></i> Analysis
                                                 </a>
                                             </div>
