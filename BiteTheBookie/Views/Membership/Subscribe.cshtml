@@ -4,6 +4,7 @@
     var clientId = ViewBag.PayPalClientId as string ?? string.Empty;
     var planId = ViewBag.PayPalPlanId as string ?? string.Empty;
     var isConfigured = ViewBag.IsConfigured is bool b && b;
+    var stripeConfigured = ViewBag.StripeConfigured is bool sc && sc;
     var planName = plan == "allaccess" ? "All Access" : "Pro";
     var planPrice = plan == "allaccess" ? "$19.99" : "$9.99";
 }
@@ -18,13 +19,20 @@
                     <div class="display-6 fw-bold">@planPrice <span class="fs-6 text-muted">/ month</span></div>
                 </div>
 
-                @if (!isConfigured)
+                @if (TempData["StripeError"] is string stripeError)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>@stripeError
+                    </div>
+                }
+
+                @if (!isConfigured && !stripeConfigured)
                 {
                     <div class="alert alert-warning" role="alert">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        PayPal is not configured yet. Add your <strong>ClientId</strong> and the
-                        <strong>@plan</strong> plan id under the <code>PayPal</code> section in
-                        <code>appsettings.json</code> to enable checkout.
+                        No payment provider is configured yet. Add your <code>PayPal</code> ClientId + plan id,
+                        and/or your <code>Stripe</code> keys + price id for the
+                        <strong>@plan</strong> plan in <code>appsettings.json</code> to enable checkout.
                     </div>
                     <div class="text-center">
                         <a asp-action="Join" class="btn btn-outline-secondary">Back to Plans</a>
@@ -32,8 +40,32 @@
                 }
                 else
                 {
-                    <div id="paypal-status" class="alert d-none" role="alert"></div>
-                    <div id="paypal-button-container"></div>
+                    @if (isConfigured)
+                    {
+                        <div id="paypal-status" class="alert d-none" role="alert"></div>
+                        <div id="paypal-button-container"></div>
+                    }
+
+                    @if (isConfigured && stripeConfigured)
+                    {
+                        <div class="d-flex align-items-center my-3">
+                            <hr class="flex-grow-1" />
+                            <span class="px-3 text-muted small">OR</span>
+                            <hr class="flex-grow-1" />
+                        </div>
+                    }
+
+                    @if (stripeConfigured)
+                    {
+                        <form asp-action="CreateStripeCheckout" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="plan" value="@plan" />
+                            <button type="submit" class="btn btn-dark btn-lg w-100">
+                                <i class="fas fa-credit-card me-2"></i>Pay with Credit Card
+                            </button>
+                        </form>
+                    }
+
                     <p class="text-muted small text-center mt-3">
                         <i class="fas fa-lock me-1"></i>
                         You'll be charged @planPrice each month. Cancel anytime from My Account.

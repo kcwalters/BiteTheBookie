@@ -104,6 +104,9 @@ builder.Services.AddSingleton<IMembershipService, MembershipService>();
 // PayPal subscriptions
 builder.Services.Configure<PayPalOptions>(builder.Configuration.GetSection(PayPalOptions.SectionName));
 builder.Services.AddHttpClient<IPayPalService, PayPalService>();
+// Stripe subscriptions
+builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
+builder.Services.AddScoped<IStripeService, StripeService>();
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddScoped<INBARosterService, NBARosterService>();
 builder.Services.AddScoped<INBAGamesService, NBAGamesService>();

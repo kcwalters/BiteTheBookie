@@ -14,19 +14,22 @@ namespace BiteTheBookie.Controllers
         private readonly ILogger<MembershipController> _logger;
         private readonly IMembershipService _membershipService;
         private readonly IPayPalService _payPalService;
+        private readonly IStripeService _stripeService;
 
         public MembershipController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             ILogger<MembershipController> logger,
             IMembershipService membershipService,
-            IPayPalService payPalService)
+            IPayPalService payPalService,
+            IStripeService stripeService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
             _membershipService = membershipService;
             _payPalService = payPalService;
+            _stripeService = stripeService;
         }
 
         /// <summary>
@@ -141,6 +144,10 @@ namespace BiteTheBookie.Controllers
             ViewBag.PayPalPlanId = planId;
             ViewBag.IsConfigured = !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(planId);
 
+            // Stripe (credit card) checkout availability for this plan.
+            ViewBag.StripeConfigured = _stripeService.IsConfigured
+                && !string.IsNullOrWhiteSpace(_stripeService.GetPriceId(normalizedPlan));
+
             return View();
         }
 
@@ -179,7 +186,7 @@ namespace BiteTheBookie.Controllers
                 return BadRequest(new { message = "We could not verify your PayPal subscription. Please try again." });
             }
 
-            await GrantTierAsync(user, newTier, subscription);
+            await GrantTierAsync(user, newTier, subscription.Id, subscription.NextBillingTime, PaymentProvider.PayPal);
 
             _logger.LogInformation("User {Email} activated {Tier} via PayPal subscription {SubscriptionId}.",
                 user.Email, newTier, subscriptionId);
@@ -188,9 +195,92 @@ namespace BiteTheBookie.Controllers
         }
 
         /// <summary>
+        /// Creates a Stripe Checkout session for a paid plan and redirects the user to
+        /// Stripe's hosted card-payment page.
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateStripeCheckout(string plan)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Join");
+            }
+
+            var normalizedPlan = plan?.ToLower();
+            if (normalizedPlan != "pro" && normalizedPlan != "allaccess")
+            {
+                return RedirectToAction("Join");
+            }
+
+            var successUrl = Url.Action("StripeSuccess", "Membership",
+                new { plan = normalizedPlan, sessionId = "{CHECKOUT_SESSION_ID}" },
+                Request.Scheme)!;
+            // Stripe replaces the literal {CHECKOUT_SESSION_ID} placeholder itself, so undo URL-encoding.
+            successUrl = successUrl.Replace("%7BCHECKOUT_SESSION_ID%7D", "{CHECKOUT_SESSION_ID}");
+            var cancelUrl = Url.Action("Subscribe", "Membership", new { plan = normalizedPlan }, Request.Scheme)!;
+
+            var checkoutUrl = await _stripeService.CreateCheckoutSessionAsync(
+                normalizedPlan, user.Email ?? string.Empty, successUrl, cancelUrl);
+
+            if (string.IsNullOrWhiteSpace(checkoutUrl))
+            {
+                TempData["StripeError"] = "Card checkout is not available right now. Please try PayPal or contact support.";
+                return RedirectToAction("Subscribe", new { plan = normalizedPlan });
+            }
+
+            return Redirect(checkoutUrl);
+        }
+
+        /// <summary>
+        /// Stripe hosted checkout success callback. Verifies the subscription and, if
+        /// active, grants the paid tier.
+        /// </summary>
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> StripeSuccess(string plan, string sessionId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Join");
+            }
+
+            var newTier = plan?.ToLower() switch
+            {
+                "pro" => SubscriptionTier.Pro,
+                "allaccess" => SubscriptionTier.AllAccess,
+                _ => SubscriptionTier.Free
+            };
+
+            if (newTier == SubscriptionTier.Free || string.IsNullOrWhiteSpace(sessionId))
+            {
+                return RedirectToAction("Subscribe", new { plan });
+            }
+
+            var subscription = await _stripeService.GetSubscriptionFromSessionAsync(sessionId);
+            if (subscription == null || !subscription.IsActive)
+            {
+                _logger.LogWarning("Stripe session {SessionId} could not be verified for user {Email}.",
+                    sessionId, user.Email);
+                TempData["StripeError"] = "We could not verify your card payment. Please try again.";
+                return RedirectToAction("Subscribe", new { plan });
+            }
+
+            await GrantTierAsync(user, newTier, subscription.Id, subscription.CurrentPeriodEnd, PaymentProvider.Stripe);
+
+            _logger.LogInformation("User {Email} activated {Tier} via Stripe subscription {SubscriptionId}.",
+                user.Email, newTier, subscription.Id);
+
+            return RedirectToAction("PaymentConfirmation", new { plan });
+        }
+
+        /// <summary>
         /// Persists a paid tier, updates roles/claims and refreshes sign-in.
         /// </summary>
-        private async Task GrantTierAsync(ApplicationUser user, SubscriptionTier newTier, PayPalSubscriptionResult subscription)
+        private async Task GrantTierAsync(ApplicationUser user, SubscriptionTier newTier, string subscriptionId, DateTime? nextBillingTime, PaymentProvider provider)
         {
             var previousRole = user.SubscriptionTier switch
             {
@@ -200,8 +290,15 @@ namespace BiteTheBookie.Controllers
             };
 
             user.SubscriptionTier = newTier;
-            user.SubscriptionExpiry = subscription.NextBillingTime ?? DateTime.UtcNow.AddMonths(1);
-            user.PayPalSubscriptionId = subscription.Id;
+            user.SubscriptionExpiry = nextBillingTime ?? DateTime.UtcNow.AddMonths(1);
+            if (provider == PaymentProvider.Stripe)
+            {
+                user.StripeSubscriptionId = subscriptionId;
+            }
+            else
+            {
+                user.PayPalSubscriptionId = subscriptionId;
+            }
             await _userManager.UpdateAsync(user);
 
             var newRole = newTier switch
@@ -294,11 +391,7 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("Subscribe", new { plan });
             }
 
-            await GrantTierAsync(user, newTier, new PayPalSubscriptionResult
-            {
-                Id = user.PayPalSubscriptionId ?? string.Empty,
-                Status = "ACTIVE"
-            });
+            await GrantTierAsync(user, newTier, user.PayPalSubscriptionId ?? string.Empty, null, PaymentProvider.PayPal);
 
             return RedirectToAction("MyAccount");
         }
@@ -326,5 +419,14 @@ namespace BiteTheBookie.Controllers
 
             return BadRequest("Upgrade failed.");
         }
+    }
+
+    /// <summary>
+    /// Payment provider used to activate a paid membership.
+    /// </summary>
+    public enum PaymentProvider
+    {
+        PayPal = 0,
+        Stripe = 1
     }
 }
