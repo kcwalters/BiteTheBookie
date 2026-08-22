@@ -182,6 +182,22 @@ namespace BiteTheBookie.Controllers
             { "XAV",  ("Xavier", "Big East", "2752") },
         };
 
+        // Grouped team data (by conference) used to build the shared league nav dropdown.
+        public static List<LeagueMenuGroup> GetMenuGroups() =>
+            Teams
+                .GroupBy(t => t.Value.Conference)
+                .Select(g => new LeagueMenuGroup
+                {
+                    Title = g.Key,
+                    Teams = g.Select(t => new LeagueMenuTeam
+                    {
+                        Name = t.Value.Name,
+                        Code = t.Key.ToUpperInvariant(),
+                        Logo = $"https://a.espncdn.com/i/teamlogos/ncaa/500/{t.Value.EspnId}.png"
+                    }).ToList()
+                })
+                .ToList();
+
         public IActionResult Team(string code)
         {
             if (string.IsNullOrWhiteSpace(code) || !Teams.TryGetValue(code, out var info))
