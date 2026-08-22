@@ -63,6 +63,22 @@ namespace BiteTheBookie.Controllers
         private static string Logo(string code) =>
             $"https://a.espncdn.com/i/teamlogos/nba/500/{code.ToLowerInvariant()}.png";
 
+        // Grouped team data (by division) used to build the shared league nav dropdown.
+        public static List<LeagueMenuGroup> GetMenuGroups() =>
+            Teams
+                .GroupBy(t => t.Value.Division)
+                .Select(g => new LeagueMenuGroup
+                {
+                    Title = g.Key,
+                    Teams = g.Select(t => new LeagueMenuTeam
+                    {
+                        Name = t.Value.Name,
+                        Code = t.Key.ToUpperInvariant(),
+                        Logo = Logo(t.Key)
+                    }).ToList()
+                })
+                .ToList();
+
         public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
         {
             var model = new LeagueHomeViewModel

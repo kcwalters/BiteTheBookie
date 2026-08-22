@@ -1,0 +1,30 @@
+@model BiteTheBookie.ViewModels.LeagueMenuViewModel
+
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle league-link"
+       asp-controller="@Model.Controller" asp-action="Index"
+       data-league="@Model.LeagueKey" id="@(Model.LeagueKey)Dropdown"
+       role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <img src="@Model.LeagueIcon" alt="" class="league-icon" />
+        <span>@Model.DisplayName</span>
+    </a>
+    <div class="dropdown-menu league-mega-menu" aria-labelledby="@(Model.LeagueKey)Dropdown">
+        <div class="league-mega-grid">
+            @foreach (var group in Model.Groups)
+            {
+                <div class="league-mega-col">
+                    <h6 class="dropdown-header">@group.Title</h6>
+                    @foreach (var team in group.Teams)
+                    {
+                        <a class="dropdown-item"
+                           asp-controller="@Model.Controller" asp-action="Team"
+                           asp-route-code="@team.Code">
+                            <img class="team-logo-sm" src="@team.Logo" alt="" loading="lazy" />
+                            <span>@team.Name</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</li>

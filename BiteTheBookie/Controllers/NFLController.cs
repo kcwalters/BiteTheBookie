@@ -65,6 +65,22 @@ namespace BiteTheBookie.Controllers
             { "SF",  ("San Francisco 49ers", "NFC West") },
         };
 
+        // Grouped team data (by division) used to build the shared league nav dropdown.
+        public static List<LeagueMenuGroup> GetMenuGroups() =>
+            Teams
+                .GroupBy(t => t.Value.Division)
+                .Select(g => new LeagueMenuGroup
+                {
+                    Title = g.Key,
+                    Teams = g.Select(t => new LeagueMenuTeam
+                    {
+                        Name = t.Value.Name,
+                        Code = t.Key.ToUpperInvariant(),
+                        Logo = $"https://a.espncdn.com/i/teamlogos/nfl/500/{EspnCode(t.Key)}.png"
+                    }).ToList()
+                })
+                .ToList();
+
         public IActionResult Team(string code)
         {
             if (string.IsNullOrWhiteSpace(code) || !Teams.TryGetValue(code, out var info))
