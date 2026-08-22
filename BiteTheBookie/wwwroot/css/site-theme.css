@@ -400,3 +400,52 @@ a                          { color: var(--btb-primary); }
     overflow: hidden;
 }
 .video-strip__item:hover .video-strip__title { color: var(--btb-primary); }
+
+
+
+
+/* ===== League mega-menu dropdown fix (NFL / MLB / NBA) ===== */
+.league-nav .dropdown-menu {
+    width: min(800px, 95vw) !important;
+    max-width: 95vw !important;
+    padding: 1rem 1.25rem !important;
+    left: auto;
+    right: 0;
+}
+
+    /* Force the inner Bootstrap row into a real 4-column grid */
+    .league-nav .dropdown-menu .row {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 0.25rem 1.5rem !important;
+        margin: 0 !important;
+    }
+
+        /* Neutralize Bootstrap column sizing so each division = one grid cell */
+        .league-nav .dropdown-menu .row > [class*="col-"] {
+            flex: none !important;
+            width: auto !important;
+            max-width: none !important;
+            padding: 0 !important;
+        }
+
+    /* Let team names wrap instead of overlapping */
+    .league-nav .dropdown-menu .dropdown-item {
+        white-space: normal !important;
+        padding: 0.2rem 0.4rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .league-nav .dropdown-menu .dropdown-header {
+        white-space: normal !important;
+        font-weight: 700 !important;
+        padding: 0.5rem 0.4rem 0.2rem !important;
+    }
+
+    /* Team logos inside the league dropdowns */
+    .league-nav .dropdown-menu .team-logo-sm {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        flex: 0 0 20px;
+    }
