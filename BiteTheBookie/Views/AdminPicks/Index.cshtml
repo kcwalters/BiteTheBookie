@@ -41,9 +41,34 @@
                 <a class="nav-link @(Model.SelectedLeague == "MLB" ? "active" : "")"
                    asp-action="Index" asp-route-league="MLB">MLB</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link @(Model.SelectedLeague == "NFL" ? "active" : "")"
-                   asp-action="Index" asp-route-league="NFL">NFL</a> 
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle @(Model.SelectedLeague == "NFL" ? "active" : "")" 
+                   id="nflDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">NFL</a>
+                <div class="dropdown-menu" aria-labelledby="nflDropdown">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="dropdown-header">AFC East</h6>
+                            <a class="dropdown-item" href="#">Buffalo Bills</a>
+                            <a class="dropdown-item" href="#">Miami Dolphins</a>
+                            <a class="dropdown-item" href="#">New England Patriots</a>
+                            <a class="dropdown-item" href="#">New York Jets</a>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="dropdown-header">AFC North</h6>
+                            <a class="dropdown-item" href="#">Baltimore Ravens</a>
+                            <a class="dropdown-item" href="#">Cincinnati Bengals</a>
+                            <a class="dropdown-item" href="#">Cleveland Browns</a>
+                            <a class="dropdown-item" href="#">Pittsburgh Steelers</a>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="dropdown-header">AFC South</h6>
+                            <a class="dropdown-item" href="#">Houston Texans</a>
+                            <a class="dropdown-item" href="#">Indianapolis Colts</a>
+                            <a class="dropdown-item" href="#">Jacksonville Jaguars</a>
+                            <a class="dropdown-item" href="#">Tennessee Titans</a>
+                        </div>
+                    </div>
+                </div>
             </li>
         </ul>
 

@@ -1,5 +1,4 @@
-﻿
-@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @using BiteTheBookie.Models
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -61,7 +60,7 @@
                             @if (user?.IsPremium == true)
                             {
                                 <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">
-                                    @(user.SubscriptionTier == SubscriptionTier.VIP ? "VIP" : "PRO")
+                                    @(user.SubscriptionTier == SubscriptionTier.AllAccess ? "ALL ACCESS" : "PRO")
                                 </span>
                             }
                         </a>
@@ -105,23 +104,179 @@
 
                     <!-- League quick-links with icons; also drives the ticker switcher -->
                     <ul class="navbar-nav league-nav ms-auto">
-                        <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="NFL" asp-action="Index" data-league="nfl">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle league-link" asp-controller="NFL" asp-action="Index" data-league="nfl" id="nflDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png" alt="" class="league-icon" />
                                 <span>NFL</span>
                             </a>
+                            <div class="dropdown-menu" aria-labelledby="nflDropdown">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AFC East</h6>
+                                        <a class="dropdown-item" href="#">Buffalo Bills</a>
+                                        <a class="dropdown-item" href="#">Miami Dolphins</a>
+                                        <a class="dropdown-item" href="#">New England Patriots</a>
+                                        <a class="dropdown-item" href="#">New York Jets</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AFC North</h6>
+                                        <a class="dropdown-item" href="#">Baltimore Ravens</a>
+                                        <a class="dropdown-item" href="#">Cincinnati Bengals</a>
+                                        <a class="dropdown-item" href="#">Cleveland Browns</a>
+                                        <a class="dropdown-item" href="#">Pittsburgh Steelers</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AFC South</h6>
+                                        <a class="dropdown-item" href="#">Houston Texans</a>
+                                        <a class="dropdown-item" href="#">Indianapolis Colts</a>
+                                        <a class="dropdown-item" href="#">Jacksonville Jaguars</a>
+                                        <a class="dropdown-item" href="#">Tennessee Titans</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AFC West</h6>
+                                        <a class="dropdown-item" href="#">Denver Broncos</a>
+                                        <a class="dropdown-item" href="#">Kansas City Chiefs</a>
+                                        <a class="dropdown-item" href="#">Las Vegas Raiders</a>
+                                        <a class="dropdown-item" href="#">Los Angeles Chargers</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NFC East</h6>
+                                        <a class="dropdown-item" href="#">Dallas Cowboys</a>
+                                        <a class="dropdown-item" href="#">New York Giants</a>
+                                        <a class="dropdown-item" href="#">Philadelphia Eagles</a>
+                                        <a class="dropdown-item" href="#">Washington Commanders</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NFC North</h6>
+                                        <a class="dropdown-item" href="#">Chicago Bears</a>
+                                        <a class="dropdown-item" href="#">Detroit Lions</a>
+                                        <a class="dropdown-item" href="#">Green Bay Packers</a>
+                                        <a class="dropdown-item" href="#">Minnesota Vikings</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NFC South</h6>
+                                        <a class="dropdown-item" href="#">Atlanta Falcons</a>
+                                        <a class="dropdown-item" href="#">Carolina Panthers</a>
+                                        <a class="dropdown-item" href="#">New Orleans Saints</a>
+                                        <a class="dropdown-item" href="#">Tampa Bay Buccaneers</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NFC West</h6>
+                                        <a class="dropdown-item" href="#">Arizona Cardinals</a>
+                                        <a class="dropdown-item" href="#">Los Angeles Rams</a>
+                                        <a class="dropdown-item" href="#">San Francisco 49ers</a>
+                                        <a class="dropdown-item" href="#">Seattle Seahawks</a>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="MLB" asp-action="Index" data-league="mlb">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle league-link" asp-controller="MLB" asp-action="Index" data-league="mlb" id="mlbDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/mlb.png" alt="" class="league-icon" />
                                 <span>MLB</span>
                             </a>
+                            <div class="dropdown-menu" aria-labelledby="mlbDropdown">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AL East</h6>
+                                        <a class="dropdown-item" href="#">Baltimore Orioles</a>
+                                        <a class="dropdown-item" href="#">Boston Red Sox</a>
+                                        <a class="dropdown-item" href="#">New York Yankees</a>
+                                        <a class="dropdown-item" href="#">Tampa Bay Rays</a>
+                                        <a class="dropdown-item" href="#">Toronto Blue Jays</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AL Central</h6>
+                                        <a class="dropdown-item" href="#">Chicago White Sox</a>
+                                        <a class="dropdown-item" href="#">Cleveland Guardians</a>
+                                        <a class="dropdown-item" href="#">Detroit Tigers</a>
+                                        <a class="dropdown-item" href="#">Kansas City Royals</a>
+                                        <a class="dropdown-item" href="#">Minnesota Twins</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">AL West</h6>
+                                        <a class="dropdown-item" href="#">Houston Astros</a>
+                                        <a class="dropdown-item" href="#">Los Angeles Angels</a>
+                                        <a class="dropdown-item" href="#">Oakland Athletics</a>
+                                        <a class="dropdown-item" href="#">Seattle Mariners</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NL East</h6>
+                                        <a class="dropdown-item" href="#">Atlanta Braves</a>
+                                        <a class="dropdown-item" href="#">Miami Marlins</a>
+                                        <a class="dropdown-item" href="#">New York Mets</a>
+                                        <a class="dropdown-item" href="#">Philadelphia Phillies</a>
+                                        <a class="dropdown-item" href="#">Washington Nationals</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NL Central</h6>
+                                        <a class="dropdown-item" href="#">Chicago Cubs</a>
+                                        <a class="dropdown-item" href="#">Cincinnati Reds</a>
+                                        <a class="dropdown-item" href="#">Milwaukee Brewers</a>
+                                        <a class="dropdown-item" href="#">Pittsburgh Pirates</a>
+                                        <a class="dropdown-item" href="#">St. Louis Cardinals</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">NL West</h6>
+                                        <a class="dropdown-item" href="#">Arizona Diamondbacks</a>
+                                        <a class="dropdown-item" href="#">Colorado Rockies</a>
+                                        <a class="dropdown-item" href="#">Los Angeles Dodgers</a>
+                                        <a class="dropdown-item" href="#">San Diego Padres</a>
+                                        <a class="dropdown-item" href="#">San Francisco Giants</a>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link league-link" asp-controller="NBA" asp-action="Index" data-league="nba">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle league-link" asp-controller="NBA" asp-action="Index" data-league="nba" id="nbaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <img src="https://a.espncdn.com/i/teamlogos/leagues/500/nba.png" alt="" class="league-icon" />
                                 <span>NBA</span>
                             </a>
+                            <div class="dropdown-menu" aria-labelledby="nbaDropdown">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">Eastern Conference - Atlantic Division</h6>
+                                        <a class="dropdown-item" href="#">Boston Celtics</a>
+                                        <a class="dropdown-item" href="#">Brooklyn Nets</a>
+                                        <a class="dropdown-item" href="#">New York Knicks</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">Eastern Conference - Central Division</h6>
+                                        <a class="dropdown-item" href="#">Chicago Bulls</a>
+                                        <a class="dropdown-item" href="#">Cleveland Cavaliers</a>
+                                        <a class="dropdown-item" href="#">Detroit Pistons</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">Eastern Conference - Southeast Division</h6>
+                                        <a class="dropdown-item" href="#">Atlanta Hawks</a>
+                                        <a class="dropdown-item" href="#">Charlotte Hornets</a>
+                                        <a class="dropdown-item" href="#">Miami Heat</a>
+                                        <a class="dropdown-item" href="#">Orlando Magic</a>
+                                        <a class="dropdown-item" href="#">Washington Wizards</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">Western Conference - Northwest Division</h6>
+                                        <a class="dropdown-item" href="#">Denver Nuggets</a>
+                                        <a class="dropdown-item" href="#">Minnesota Timberwolves</a>
+                                        <a class="dropdown-item" href="#">Oklahoma City Thunder</a>
+                                        <a class="dropdown-item" href="#">Portland Trail Blazers</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">Western Conference - Pacific Division</h6>
+                                        <a class="dropdown-item" href="#">Golden State Warriors</a>
+                                        <a class="dropdown-item" href="#">Los Angeles Lakers</a>
+                                        <a class="dropdown-item" href="#">Phoenix Suns</a>
+                                        <a class="dropdown-item" href="#">Sacramento Kings</a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="dropdown-header">Western Conference - Southwest Division</h6>
+                                        <a class="dropdown-item" href="#">Dallas Mavericks</a>
+                                        <a class="dropdown-item" href="#">Houston Rockets</a>
+                                        <a class="dropdown-item" href="#">Memphis Grizzlies</a>
+                                        <a class="dropdown-item" href="#">New Orleans Pelicans</a>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link league-link" asp-controller="NHL" asp-action="Index" data-league="nhl">
@@ -265,7 +420,7 @@
     </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-qQ963F4P9FoiywKkIBtxmQ≠"></script>
     <script src="~/js/tickers.js" asp-append-version="true"></script>
     <script src="~/js/picks-dropdown.js" asp-append-version="true"></script>
     <script src="~/js/nfl-team-modal.js" asp-append-version="true"></script>

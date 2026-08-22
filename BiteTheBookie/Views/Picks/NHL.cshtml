@@ -1,15 +1,19 @@
-@{
-    ViewData["Title"] = "NHL";
-}
+@model BiteTheBookie.ViewModels.NHLLandingViewModel
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
-<nav aria-label="breadcrumb" class="container mb-4">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item">
-            <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
-        </li>
-        <li class="breadcrumb-item active" aria-current="page">NHL</li>
-    </ol>
-</nav>
+@{
+    ViewData["Title"] = "NHL - Headlines & Picks";
+
+    var isPremiumOrVip = false;
+    if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+        isPremiumOrVip = currentUser?.IsPremium == true;
+    }
+}
 
 <div class="container py-4">
     <div class="content-card">
@@ -21,5 +25,21 @@
 
     <div class="content-card mt-4">
         @await Component.InvokeAsync("EspnNewsFeed", new { count = 8, league = "NHL" })
+    </div>
+
+    <div class="game-card__actions">
+        @if (isPremiumOrVip)
+        {
+            <a asp-controller="Picks" asp-action="ViewPick" asp-route-league="NHL"
+               class="btn btn-sm btn-outline-primary">
+                View Premium Picks
+            </a>
+        }
+        else
+        {
+            <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning">
+                Upgrade to View Picks
+            </a>
+        }
     </div>
 </div>

@@ -45,10 +45,10 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("PremiumOnly", policy =>
-        policy.RequireClaim("SubscriptionTier", "Premium", "VIP"));
+        policy.RequireClaim("SubscriptionTier", "Pro", "AllAccess"));
 
     options.AddPolicy("VIPOnly", policy =>
-        policy.RequireClaim("SubscriptionTier", "VIP"));
+        policy.RequireClaim("SubscriptionTier", "AllAccess"));
 
     options.AddPolicy("RegisteredUser", policy =>
         policy.RequireAuthenticatedUser());
@@ -100,6 +100,8 @@ builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection
 builder.Services.AddSportsTickers(builder.Configuration);
 
 // Game services
+builder.Services.AddSingleton<IMembershipService, MembershipService>();
+builder.Services.AddScoped<IExpertPickAccessService, ExpertPickAccessService>();
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddScoped<INBARosterService, NBARosterService>();
 builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
@@ -142,7 +144,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var configuration = services.GetRequiredService<IConfiguration>();
 
-        string[] roles = { "Admin", "Premium", "VIP", "Free" };
+        string[] roles = { "Admin", "Pro", "AllAccess", "Free" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))

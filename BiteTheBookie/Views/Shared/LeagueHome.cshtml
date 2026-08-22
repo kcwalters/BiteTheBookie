@@ -15,7 +15,37 @@
         </div>
         <ul class="nfl-landing__subnav">
             <li><a class="active" asp-controller="@Model.TeamController" asp-action="Index">Home</a></li>
-            <li><a asp-controller="@Model.TeamController" asp-action="@Model.TeamsAction">Teams</a></li>
+            <li class="dropdown">
+                <a class="dropdown-toggle" href="#" id="teamsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Teams
+                </a>
+                <div class="dropdown-menu" aria-labelledby="teamsDropdown">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="dropdown-header">AFC East</h6>
+                            <a class="dropdown-item" href="#">Buffalo Bills</a>
+                            <a class="dropdown-item" href="#">Miami Dolphins</a>
+                            <a class="dropdown-item" href="#">New England Patriots</a>
+                            <a class="dropdown-item" href="#">New York Jets</a>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="dropdown-header">AFC North</h6>
+                            <a class="dropdown-item" href="#">Baltimore Ravens</a>
+                            <a class="dropdown-item" href="#">Cincinnati Bengals</a>
+                            <a class="dropdown-item" href="#">Cleveland Browns</a>
+                            <a class="dropdown-item" href="#">Pittsburgh Steelers</a>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="dropdown-header">AFC South</h6>
+                            <a class="dropdown-item" href="#">Houston Texans</a>
+                            <a class="dropdown-item" href="#">Indianapolis Colts</a>
+                            <a class="dropdown-item" href="#">Jacksonville Jaguars</a>
+                            <a class="dropdown-item" href="#">Tennessee Titans</a>
+                        </div>
+                        <!-- Add more divisions here -->
+                    </div>
+                </div>
+            </li>
             <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">Odds</a></li>
             <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague">Scores</a></li>
             <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
@@ -78,6 +108,19 @@
                                         <span>@game.HomeTeamName</span>
                                     </div>
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                                </div>
+                                <div class="nfl-game-card__actions mt-2">
+                                    @await Html.PartialAsync("Partials/_SimulationLink", new BiteTheBookie.ViewModels.SimulationLinkViewModel
+                                    {
+                                        GameId = game.GameId,
+                                        League = Model.ExpertPicksLeague,
+                                        HomeTeam = game.HomeTeamName,
+                                        AwayTeam = game.AwayTeamName,
+                                        HomeLogo = game.HomeTeamLogo,
+                                        AwayLogo = game.AwayTeamLogo,
+                                        CssClass = "btn btn-sm btn-outline-primary w-100",
+                                        LinkText = "Game Simulation"
+                                    })
                                 </div>
                             </div>
                         }

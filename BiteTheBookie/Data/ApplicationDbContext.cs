@@ -14,6 +14,7 @@ namespace BiteTheBookie.Data
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<ExpertPick> ExpertPicks { get; set; }
+        public DbSet<ExpertPickView> ExpertPickViews { get; set; }
         public DbSet<ExpertPost> ExpertPosts { get; set; }
         public DbSet<GameSimulation> GameSimulations { get; set; }
         public DbSet<SiteVideo> SiteVideos { get; set; }
@@ -38,6 +39,14 @@ namespace BiteTheBookie.Data
                 entity.HasIndex(e => e.GameId);
                 entity.HasIndex(e => e.League);
                 entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            builder.Entity<ExpertPickView>(entity =>
+            {
+                entity.HasIndex(e => new { e.UserId, e.WeekStartUtc });
+                entity.HasIndex(e => new { e.UserId, e.GameId, e.WeekStartUtc }).IsUnique();
+                entity.Property(e => e.ViewedAtUtc)
                       .HasDefaultValueSql("GETUTCDATE()");
             });
 

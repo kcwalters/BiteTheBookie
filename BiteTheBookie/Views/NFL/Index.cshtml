@@ -78,6 +78,19 @@
                                     </div>
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
+                                <div class="nfl-game-card__actions mt-2">
+                                    @await Html.PartialAsync("Partials/_SimulationLink", new BiteTheBookie.ViewModels.SimulationLinkViewModel
+                                    {
+                                        GameId = game.GameId,
+                                        League = "NFL",
+                                        HomeTeam = game.HomeTeamName,
+                                        AwayTeam = game.AwayTeamName,
+                                        HomeLogo = game.HomeTeamLogo,
+                                        AwayLogo = game.AwayTeamLogo,
+                                        CssClass = "btn btn-sm btn-outline-primary w-100",
+                                        LinkText = "Game Simulation"
+                                    })
+                                </div>
                             </div>
                         }
                     </div>
@@ -161,7 +174,14 @@
             border-radius: 20px; font-size: .72rem; font-weight: 800; letter-spacing: 1px;
         }
         .nfl-hero__badge img { width: 18px; height: 18px; object-fit: contain; }
-        .nfl-hero__content { position: absolute; left: 0; right: 0; bottom: 0; padding: 24px 26px; z-index: 2; }
+        .nfl-hero__content {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 24px 26px;
+            z-index: 2;
+        }
         .nfl-hero__title { color: #fff; font-size: 1.75rem; font-weight: 800; line-height: 1.2; margin-bottom: 10px; }
         .nfl-hero__excerpt { color: rgba(255,255,255,.9); font-size: 1rem; line-height: 1.45; margin-bottom: 8px;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

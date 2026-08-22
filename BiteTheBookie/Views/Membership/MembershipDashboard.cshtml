@@ -1,0 +1,22 @@
+@using System.Security.Claims
+
+@model dynamic
+
+<div class="membership-dashboard container py-4">
+    <h1>Membership Dashboard</h1>
+    <p>Current membership level: <strong>@Model.MembershipLevel</strong></p>
+    <h2>Features:</h2>
+    <ul>
+        <li>@Model.Features</li>
+    </ul>
+
+    <h2>Upgrade Membership</h2>
+    <form method="post" asp-controller="Membership" asp-action="UpgradeLevel">
+        <input type="hidden" name="userId" value="@User.FindFirstValue(ClaimTypes.NameIdentifier)" />
+        <select name="newLevel">
+            <option value="Pro">Pro - $9.99/month</option>
+            <option value="AllAccess">All Access - $19.99/month</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Upgrade</button>
+    </form>
+</div>

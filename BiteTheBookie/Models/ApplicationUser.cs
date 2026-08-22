@@ -20,7 +20,7 @@ namespace BiteTheBookie.Models
 
         
         /// <summary>
-        /// Free, Premium, or VIP
+        /// Free, Pro, or All Access
         /// </summary>
         public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
         
@@ -45,7 +45,7 @@ namespace BiteTheBookie.Models
     public enum SubscriptionTier
     {
         Free = 0,
-        Premium = 1,
-        VIP = 2
+        Pro = 1,
+        AllAccess = 2
     }
 }

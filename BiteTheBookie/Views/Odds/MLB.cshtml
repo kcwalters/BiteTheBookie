@@ -89,6 +89,7 @@
                         <th class="col-odds odds-column">Spread</th>
                         <th class="col-odds odds-column">Total</th>
                         <th class="col-source">Source</th>
+                        <th class="text-end">Simulation</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -152,6 +153,15 @@
                             </td>
                             <td class="col-source">
                                 <small class="text-muted">@game.Bookmaker</small>
+                            </td>
+                            <td>
+                                @await Html.PartialAsync("Partials/_SimulationLink", new BiteTheBookie.ViewModels.SimulationLinkViewModel
+                                {
+                                    GameId = game.GameId,
+                                    League = "MLB",
+                                    HomeTeam = game.HomeTeam,
+                                    AwayTeam = game.AwayTeam
+                                })
                             </td>
                         </tr>
                     }
