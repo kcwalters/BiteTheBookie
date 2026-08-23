@@ -1,18 +1,16 @@
 ﻿using BiteTheBookie.Models;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BiteTheBookie.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionKeyContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
 
-        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<ExpertPick> ExpertPicks { get; set; }
         public DbSet<ExpertPickView> ExpertPickViews { get; set; }
         public DbSet<ExpertPost> ExpertPosts { get; set; }

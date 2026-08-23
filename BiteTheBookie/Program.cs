@@ -8,13 +8,36 @@ using BiteTheBookie.Services;
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
 
+<<<<<<< HEAD
 var builder = WebApplication.CreateBuilder(args); 
  
+=======
+var builder = WebApplication.CreateBuilder(args);
+
+// The Key Vault URI (set as a non-secret environment variable in the container app).
+///var kvUri = Environment.GetEnvironmentVariable("KEY_VAULT_URI");
+///if (string.IsNullOrEmpty(kvUri))
+//{
+///    throw new InvalidOperationException("KEY_VAULT_URI is not set");
+///}
+
+//var secretName = "SqlPassword"; // Name of the secret in Key Vault
+
+//var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
+//KeyVaultSecret secret = await client.GetSecretAsync(secretName);
+//var sqlPassword = secret.Value;
+
+//// Example: build connection string using password retrieved from Key Vault
+//var sqlServer = Environment.GetEnvironmentVariable("SQL_SERVER") ?? "your-sql-server.database.windows.net";
+//var sqlUser = Environment.GetEnvironmentVariable("SQL_USER") ?? "dbuser";
+//var connString = $"Server=tcp:{sqlServer},1433;Initial Catalog=YourDatabase;Persist Security Info=False;User ID={sqlUser};Password={sqlPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
+
+>>>>>>> parent of 40032e0 (Updates fixes)
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -24,14 +47,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorNumbersToAdd: null)));
 
-// Persist Data Protection keys to the database so they survive container restarts
-builder.Services.AddDataProtection()
-    .PersistKeysToDbContext<ApplicationDbContext>();
-
 // Identity with ApplicationUser and Roles
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedAccount = false; // Set to true for production with email confirmation
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
@@ -132,16 +151,41 @@ builder.Services.AddRazorPages();
 // Caching
 builder.Services.AddMemoryCache();
 
+// Register tickers services and typed HttpClients with resilience policies
+builder.Services.AddSportsTickers(builder.Configuration);
+
+// Register services
+builder.Services.AddScoped<INBAGamesService, NBAGamesService>();
+builder.Services.AddScoped<INBARosterService, NBARosterService>();
+builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
+builder.Services.AddScoped<ISpreadAnalysisService, SpreadAnalysisService>();
+builder.Services.AddScoped<IInjuryReportService, InjuryReportService>();
+builder.Services.AddHttpClient<TheOddsApiClient>();
+builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
+builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
+
+// NBA Scores Service
+builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
+
 var app = builder.Build();
 
 // Apply pending migrations and seed roles on startup
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    var logger = services.GetRequiredService<ILogger<Program>>();
 
-    try
+    // Auto-apply any pending EF Core migrations (safe in containers)
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+    var configuration = services.GetRequiredService<IConfiguration>();
+
+    string[] roles = { "Admin", "Premium", "VIP", "Free" };
+    foreach (var role in roles)
     {
+<<<<<<< HEAD
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
         await dbContext.Database.MigrateAsync();
 
@@ -151,44 +195,35 @@ using (var scope = app.Services.CreateScope())
 
         string[] roles = { "Admin", "Pro", "AllAccess", "Free" };
         foreach (var role in roles)
+=======
+        if (!await roleManager.RoleExistsAsync(role))
+>>>>>>> parent of 40032e0 (Updates fixes)
         {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                await roleManager.CreateAsync(new IdentityRole(role));
-            }
-        }
-
-        var adminEmail = configuration["SeedAdmin:Email"];
-        if (!string.IsNullOrWhiteSpace(adminEmail))
-        {
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-            var adminPassword = configuration["SeedAdmin:Password"];
-
-            if (adminUser is null && !string.IsNullOrWhiteSpace(adminPassword))
-            {
-                adminUser = new ApplicationUser
-                {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    EmailConfirmed = true
-                };
-                await userManager.CreateAsync(adminUser, adminPassword);
-            }
-
-            if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
-            {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
-            }
+            await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Database migration/seeding failed. The app will still start.");
 
-        // In Development, surface migration failures immediately rather than
-        // letting the app start in a broken state (e.g. missing DataProtectionKeys table).
-        if (app.Environment.IsDevelopment())
-            throw;
+    var adminEmail = configuration["SeedAdmin:Email"];
+    if (!string.IsNullOrWhiteSpace(adminEmail))
+    {
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        var adminPassword = configuration["SeedAdmin:Password"];
+
+        if (adminUser is null && !string.IsNullOrWhiteSpace(adminPassword))
+        {
+            adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+            await userManager.CreateAsync(adminUser, adminPassword);
+        }
+
+        if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+        }
     }
 }
 
@@ -200,6 +235,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

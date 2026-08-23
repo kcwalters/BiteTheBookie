@@ -179,170 +179,207 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        function updateStars(val) {
-            let stars = '';
-            for (let i = 1; i <= 5; i++) {
-                stars += i <= val ? '★' : '☆';
-            }
-            document.getElementById('confidenceDisplay').textContent = stars;
-        }
-        updateStars(document.querySelector('[name="Confidence"]').value);
-
-        var leagueSelect = document.getElementById('leagueSelect');
-        var nbaDropdownContainer = document.getElementById('nbaGameDropdownContainer');
-        var mlbDropdownContainer = document.getElementById('mlbGameDropdownContainer');
-        var gameIdTextContainer = document.getElementById('gameIdTextContainer');
-        var nbaGameDropdownBtn = document.getElementById('nbaGameDropdownBtn');
-        var nbaGameDropdownMenu = document.getElementById('nbaGameDropdownMenu');
-        var nbaGameDropdown = document.getElementById('nbaGameDropdown');
-        var mlbGameDropdownBtn = document.getElementById('mlbGameDropdownBtn');
-        var mlbGameDropdownMenu = document.getElementById('mlbGameDropdownMenu');
-        var gameIdInput = document.getElementById('gameIdInput');
-        var gameIdTextInput = document.getElementById('gameIdTextInput');
-        var awayTeamInput = document.getElementById('awayTeamInput');
-        var homeTeamInput = document.getElementById('homeTeamInput');
-        var gameTimeInput = document.getElementById('gameTimeInput');
-        var analysisInput = document.getElementById('analysisInput');
-        var summarySpinner = document.getElementById('summarySpinner');
-
-        function toggleGameIdField() {
-            var league = leagueSelect.value;
-            var nbaHasGames = nbaGameDropdownMenu && nbaGameDropdownMenu.querySelectorAll('.nba-game-item').length > 0;
-            var mlbHasGames = mlbGameDropdownMenu && mlbGameDropdownMenu.querySelectorAll('.mlb-game-item').length > 0;
-
-            nbaDropdownContainer.style.display = 'none';
-            mlbDropdownContainer.style.display = 'none';
-            gameIdTextContainer.style.display = 'none';
-
-            if (league === 'NBA' && nbaHasGames) {
-                nbaDropdownContainer.style.display = 'block';
-            } else if (league === 'MLB' && mlbHasGames) {
-                mlbDropdownContainer.style.display = 'block';
-            } else {
-                gameIdTextContainer.style.display = 'block';
-            }
-        }
-
-        gameIdTextInput.addEventListener('input', function () {
-            gameIdInput.value = this.value;
-        });
-
-        toggleGameIdField();
-
-        leagueSelect.addEventListener('change', function () {
-            toggleGameIdField();
-            gameIdInput.value = '';
-            gameIdTextInput.value = '';
-            if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = '-- Select an NBA Game --';
-            if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = '-- Select an MLB Game --';
-            awayTeamInput.value = '';
-            homeTeamInput.value = '';
-            gameTimeInput.value = '';
-            analysisInput.value = '';
-        });
-
-        function onGameSelected(league, selectedGameId) {
-            gameIdInput.value = selectedGameId;
-            if (!selectedGameId) {
-                awayTeamInput.value = '';
-                homeTeamInput.value = '';
-                gameTimeInput.value = '';
-                return;
-            }
-            var url = '@Url.Action("GetGameDetails", "AdminPicks")'
-                + '?league=' + encodeURIComponent(league)
-                + '&gameId=' + encodeURIComponent(selectedGameId);
-            fetch(url)
-                .then(function (response) {
-                    if (!response.ok) throw new Error('Game not found');
-                    return response.json();
-                })
-                .then(function (data) {
-                    awayTeamInput.value = data.awayTeamName;
-                    homeTeamInput.value = data.homeTeamName;
-                    gameTimeInput.value = data.gameTime;
-                })
-                .catch(function (err) {
-                    console.warn('Could not load game details:', err);
-                });
-        }
-
-        function loadMlbPregameSummary(gameId) {
-            if (!gameId) return;
-            summarySpinner.style.display = 'inline';
-            analysisInput.value = '';
-            var url = '@Url.Action("GetMlbPregameSummary", "AdminPicks")'
-                + '?gameId=' + encodeURIComponent(gameId);
-            fetch(url)
-                .then(function (response) {
-                    if (!response.ok) throw new Error('Summary unavailable');
-                    return response.json();
-                })
-                .then(function (data) {
-                    analysisInput.value = data.summary;
-                })
-                .catch(function (err) {
-                    console.warn('Could not load pregame summary:', err);
-                    analysisInput.value = '';
-                })
-                .finally(function () {
-                    summarySpinner.style.display = 'none';
-                });
-        }
-
-        nbaGameDropdown.addEventListener('change', function () {
-            onGameSelected('NBA', this.value);
-        });
-
-        if (nbaGameDropdownMenu) {
-            nbaGameDropdownMenu.addEventListener('click', function (e) {
-                var a = e.target.closest('.nba-game-item');
-                if (!a) return;
-                e.preventDefault();
-                var val = a.getAttribute('data-value');
-                var away = a.getAttribute('data-away-name') || a.getAttribute('data-away');
-                var home = a.getAttribute('data-home-name') || a.getAttribute('data-home');
-                var gtime = a.getAttribute('data-gametime');
-
-                if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = a.textContent.trim();
-                gameIdInput.value = val || '';
-                awayTeamInput.value = away || '';
-                homeTeamInput.value = home || '';
-
-                if (gtime) {
-                    try { gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { gameTimeInput.value = ''; }
-                } else {
-                    gameTimeInput.value = '';
+        document.addEventListener('DOMContentLoaded', function () {
+            function updateStars(val) {
+                let stars = '';
+                for (let i = 1; i <= 5; i++) {
+                    stars += i <= val ? '★' : '☆';
                 }
+                var confEl = document.getElementById('confidenceDisplay');
+                if (confEl) confEl.textContent = stars;
+            }
 
-                onGameSelected('NBA', val);
-            });
-        }
+            var confidenceEl = document.querySelector('[name="Confidence"]');
+            if (confidenceEl) updateStars(confidenceEl.value);
 
-        if (mlbGameDropdownMenu) {
-            mlbGameDropdownMenu.addEventListener('click', function (e) {
-                var a = e.target.closest('.mlb-game-item');
-                if (!a) return;
-                e.preventDefault();
-                var val = a.getAttribute('data-value');
-                var away = a.getAttribute('data-away-name') || a.getAttribute('data-away');
-                var home = a.getAttribute('data-home-name') || a.getAttribute('data-home');
-                var gtime = a.getAttribute('data-gametime');
+            var leagueSelect = document.getElementById('leagueSelect');
+            var nbaDropdownContainer = document.getElementById('nbaGameDropdownContainer');
+            var mlbDropdownContainer = document.getElementById('mlbGameDropdownContainer');
+            var gameIdTextContainer = document.getElementById('gameIdTextContainer');
+            var nbaGameDropdownBtn = document.getElementById('nbaGameDropdownBtn');
+            var nbaGameDropdownMenu = document.getElementById('nbaGameDropdownMenu');
+            var nbaGameDropdown = document.getElementById('nbaGameDropdown');
+            var mlbGameDropdownBtn = document.getElementById('mlbGameDropdownBtn');
+            var mlbGameDropdownMenu = document.getElementById('mlbGameDropdownMenu');
+            var gameIdInput = document.getElementById('gameIdInput');
+            var gameIdTextInput = document.getElementById('gameIdTextInput');
+            var awayTeamInput = document.getElementById('awayTeamInput');
+            var homeTeamInput = document.getElementById('homeTeamInput');
+            var gameTimeInput = document.getElementById('gameTimeInput');
+            var analysisInput = document.getElementById('analysisInput');
+            var summarySpinner = document.getElementById('summarySpinner');
 
-                if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = a.textContent.trim();
-                gameIdInput.value = val || '';
-                awayTeamInput.value = away || '';
-                homeTeamInput.value = home || '';
+            function toggleGameIdField() {
+                var league = leagueSelect ? leagueSelect.value : null;
+                var nbaHasGames = nbaGameDropdownMenu && nbaGameDropdownMenu.querySelectorAll('.nba-game-item').length > 0;
+                var mlbHasGames = mlbGameDropdownMenu && mlbGameDropdownMenu.querySelectorAll('.mlb-game-item').length > 0;
 
-                if (gtime) {
-                    try { gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { gameTimeInput.value = ''; }
+                if (nbaDropdownContainer) nbaDropdownContainer.style.display = 'none';
+                if (mlbDropdownContainer) mlbDropdownContainer.style.display = 'none';
+                if (gameIdTextContainer) gameIdTextContainer.style.display = 'none';
+
+                if (league === 'NBA' && nbaHasGames) {
+                    if (nbaDropdownContainer) nbaDropdownContainer.style.display = 'block';
+                } else if (league === 'MLB' && mlbHasGames) {
+                    if (mlbDropdownContainer) mlbDropdownContainer.style.display = 'block';
                 } else {
-                    gameTimeInput.value = '';
+                    if (gameIdTextContainer) gameIdTextContainer.style.display = 'block';
                 }
+            }
 
-                onGameSelected('MLB', val);
-                loadMlbPregameSummary(val);
-            });
-        }
+            if (gameIdTextInput && gameIdInput) {
+                gameIdTextInput.addEventListener('input', function () {
+                    gameIdInput.value = this.value;
+                });
+            }
+
+            if (leagueSelect) {
+                toggleGameIdField();
+
+                leagueSelect.addEventListener('change', function () {
+                    toggleGameIdField();
+                    if (gameIdInput) gameIdInput.value = '';
+                    if (gameIdTextInput) gameIdTextInput.value = '';
+                    if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = '-- Select an NBA Game --';
+                    if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = '-- Select an MLB Game --';
+                    if (awayTeamInput) awayTeamInput.value = '';
+                    if (homeTeamInput) homeTeamInput.value = '';
+                    if (gameTimeInput) gameTimeInput.value = '';
+                    if (analysisInput) analysisInput.value = '';
+                });
+            }
+
+            function onGameSelected(league, selectedGameId) {
+                if (gameIdInput) gameIdInput.value = selectedGameId;
+                if (!selectedGameId) {
+                    if (awayTeamInput) awayTeamInput.value = '';
+                    if (homeTeamInput) homeTeamInput.value = '';
+                    if (gameTimeInput) gameTimeInput.value = '';
+                    return;
+                }
+                var url = '@Url.Action("GetGameDetails", "AdminPicks")'
+                    + '?league=' + encodeURIComponent(league)
+                    + '&gameId=' + encodeURIComponent(selectedGameId);
+                fetch(url)
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Game not found');
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (awayTeamInput) awayTeamInput.value = data.awayTeamName;
+                        if (homeTeamInput) homeTeamInput.value = data.homeTeamName;
+                        if (gameTimeInput) gameTimeInput.value = data.gameTime;
+                    })
+                    .catch(function (err) {
+                        console.warn('Could not load game details:', err);
+                    });
+            }
+
+            function loadMlbPregameSummary(gameId) {
+                if (!gameId) return;
+                if (summarySpinner) summarySpinner.style.display = 'inline';
+                if (analysisInput) analysisInput.value = '';
+                var url = '@Url.Action("GetMlbPregameSummary", "AdminPicks")'
+                    + '?gameId=' + encodeURIComponent(gameId);
+                fetch(url)
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Summary unavailable');
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (analysisInput) analysisInput.value = data.summary;
+                    })
+                    .catch(function (err) {
+                        console.warn('Could not load pregame summary:', err);
+                        if (analysisInput) analysisInput.value = '';
+                    })
+                    .finally(function () {
+                        if (summarySpinner) summarySpinner.style.display = 'none';
+                    });
+            }
+
+            if (nbaGameDropdown) {
+                nbaGameDropdown.addEventListener('change', function () {
+                    onGameSelected('NBA', this.value);
+                });
+            }
+
+            if (nbaGameDropdownMenu) {
+                nbaGameDropdownMenu.addEventListener('click', function (e) {
+                    var a = e.target.closest('.nba-game-item');
+                    if (!a) return;
+                    e.preventDefault();
+                    var val = a.getAttribute('data-value');
+                    var away = a.getAttribute('data-away-name') || a.getAttribute('data-away');
+                    var home = a.getAttribute('data-home-name') || a.getAttribute('data-home');
+                    var gtime = a.getAttribute('data-gametime');
+
+                    if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = a.textContent.trim();
+                    if (gameIdInput) gameIdInput.value = val || '';
+                    if (awayTeamInput) awayTeamInput.value = away || '';
+                    if (homeTeamInput) homeTeamInput.value = home || '';
+
+                    if (gtime) {
+                        try { if (gameTimeInput) gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { if (gameTimeInput) gameTimeInput.value = ''; }
+                    } else {
+                        if (gameTimeInput) gameTimeInput.value = '';
+                    }
+
+                    onGameSelected('NBA', val);
+                });
+            }
+
+            if (mlbGameDropdownMenu) {
+                mlbGameDropdownMenu.addEventListener('click', function (e) {
+                    var a = e.target.closest('.mlb-game-item');
+                    if (!a) return;
+                    e.preventDefault();
+                    var val = a.getAttribute('data-value');
+                    var away = a.getAttribute('data-away-name') || a.getAttribute('data-away');
+                    var home = a.getAttribute('data-home-name') || a.getAttribute('data-home');
+                    var gtime = a.getAttribute('data-gametime');
+
+                    if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = a.textContent.trim();
+                    if (gameIdInput) gameIdInput.value = val || '';
+                    if (awayTeamInput) awayTeamInput.value = away || '';
+                    if (homeTeamInput) homeTeamInput.value = home || '';
+
+                    if (gtime) {
+                        try { if (gameTimeInput) gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { if (gameTimeInput) gameTimeInput.value = ''; }
+                    } else {
+                        if (gameTimeInput) gameTimeInput.value = '';
+                    }
+
+                    onGameSelected('MLB', val);
+                    loadMlbPregameSummary(val);
+                });
+            }
+        });
+    </script>
+
+    <script>
+        // Diagnostic self-check: logs presence of key elements and (if supported) their event listeners.
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                var ids = ['leagueSelect','nbaGameDropdown','nbaGameDropdownMenu','mlbGameDropdown','mlbGameDropdownMenu','gameIdInput','gameIdTextInput','awayTeamInput','homeTeamInput','gameTimeInput','analysisInput','summarySpinner','confidenceDisplay'];
+                var present = {};
+                ids.forEach(function(id){ present[id] = !!document.getElementById(id); });
+                console.info('AdminPicks/Create element presence:');
+                console.table(present);
+
+                if (typeof getEventListeners === 'function') {
+                    ids.forEach(function(id){
+                        var el = document.getElementById(id);
+                        if (!el) return;
+                        var ev = getEventListeners(el);
+                        if (ev && Object.keys(ev).length) console.info('Event listeners on', id, ev);
+                    });
+                } else {
+                    console.info('getEventListeners() not available in this browser. Use Chrome DevTools for listener inspection.');
+                }
+            } catch (ex) {
+                console.warn('AdminPicks diagnostic script failed:', ex);
+            }
+        });
     </script>
 }

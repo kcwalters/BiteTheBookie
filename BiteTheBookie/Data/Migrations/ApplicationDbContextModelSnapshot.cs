@@ -17,7 +17,7 @@ namespace BiteTheBookie.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "8.0.20")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -330,6 +330,7 @@ namespace BiteTheBookie.Data.Migrations
                     b.ToTable("GameSimulations");
                 });
 
+<<<<<<< HEAD
             modelBuilder.Entity("BiteTheBookie.Models.SiteVideo", b =>
                 {
                     b.Property<int>("Id")
@@ -412,6 +413,8 @@ namespace BiteTheBookie.Data.Migrations
                     b.ToTable("DataProtectionKeys");
                 });
 
+=======
+>>>>>>> parent of 40032e0 (Updates fixes)
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
