@@ -330,7 +330,7 @@ namespace BiteTheBookie.Data.Migrations
                     b.ToTable("GameSimulations");
                 });
 
-<<<<<<< HEAD
+
             modelBuilder.Entity("BiteTheBookie.Models.SiteVideo", b =>
                 {
                     b.Property<int>("Id")
@@ -413,8 +413,7 @@ namespace BiteTheBookie.Data.Migrations
                     b.ToTable("DataProtectionKeys");
                 });
 
-=======
->>>>>>> parent of 40032e0 (Updates fixes)
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -613,7 +612,7 @@ namespace BiteTheBookie.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
-#pragma warning restore 612, 618
+
         }
     }
 }
