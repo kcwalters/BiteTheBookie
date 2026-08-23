@@ -12,11 +12,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
 
-<<<<<<< HEAD
+
 var builder = WebApplication.CreateBuilder(args); 
- 
-=======
-var builder = WebApplication.CreateBuilder(args);
 
 // The Key Vault URI (set as a non-secret environment variable in the container app).
 ///var kvUri = Environment.GetEnvironmentVariable("KEY_VAULT_URI");
@@ -37,7 +34,6 @@ var builder = WebApplication.CreateBuilder(args);
 //var connString = $"Server=tcp:{sqlServer},1433;Initial Catalog=YourDatabase;Persist Security Info=False;User ID={sqlUser};Password={sqlPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
 
->>>>>>> parent of 40032e0 (Updates fixes)
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -180,34 +176,22 @@ using (var scope = app.Services.CreateScope())
 
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-    var configuration = services.GetRequiredService<IConfiguration>();
+    var appConfiguration = services.GetRequiredService<IConfiguration>(); // Renamed to 'appConfiguration'
 
     string[] roles = { "Admin", "Premium", "VIP", "Free" };
     foreach (var role in roles)
     {
-<<<<<<< HEAD
-        var dbContext = services.GetRequiredService<ApplicationDbContext>();
-        await dbContext.Database.MigrateAsync();
-
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var configuration = services.GetRequiredService<IConfiguration>();
-
-        string[] roles = { "Admin", "Pro", "AllAccess", "Free" };
-        foreach (var role in roles)
-=======
         if (!await roleManager.RoleExistsAsync(role))
->>>>>>> parent of 40032e0 (Updates fixes)
         {
             await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
 
-    var adminEmail = configuration["SeedAdmin:Email"];
+    var adminEmail = appConfiguration["SeedAdmin:Email"];
     if (!string.IsNullOrWhiteSpace(adminEmail))
     {
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
-        var adminPassword = configuration["SeedAdmin:Password"];
+        var adminPassword = appConfiguration["SeedAdmin:Password"];
 
         if (adminUser is null && !string.IsNullOrWhiteSpace(adminPassword))
         {
