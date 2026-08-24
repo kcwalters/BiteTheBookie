@@ -35,15 +35,15 @@
         <ul class="nav nav-pills mb-4">
             <li class="nav-item">
                 <a class="nav-link @(Model.SelectedLeague == "NBA" ? "active" : "")"
-                   asp-action="Index" asp-route-league="NBA">NBA</a>
+                   asp-action="Manage" asp-route-league="NBA">NBA</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link @(Model.SelectedLeague == "MLB" ? "active" : "")"
-                   asp-action="Index" asp-route-league="MLB">MLB</a>
+                   asp-action="Manage" asp-route-league="MLB">MLB</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link @(Model.SelectedLeague == "NFL" ? "active" : "")"
-                   asp-action="Index" asp-route-league="NFL">NFL</a> 
+                   asp-action="Manage" asp-route-league="NFL">NFL</a>
             </li>
         </ul>
 

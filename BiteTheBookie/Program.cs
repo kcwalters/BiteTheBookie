@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
-
 var builder = WebApplication.CreateBuilder(args); 
  
 // Add services to the container.
@@ -127,62 +126,10 @@ builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
-// Apply pending migrations and seed roles on startup
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var logger = services.GetRequiredService<ILogger<Program>>();
-
-    try
-    {
-        var dbContext = services.GetRequiredService<ApplicationDbContext>();
-        await dbContext.Database.MigrateAsync();
-
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-        var configuration = services.GetRequiredService<IConfiguration>();
-
-        string[] roles = { "Admin", "Premium", "VIP", "Free" };
-        foreach (var role in roles)
-        {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                await roleManager.CreateAsync(new IdentityRole(role));
-            }
-        }
-
-        var adminEmail = configuration["SeedAdmin:Email"];
-        if (!string.IsNullOrWhiteSpace(adminEmail))
-        {
-            var adminUser = await userManager.FindByEmailAsync(adminEmail);
-            var adminPassword = configuration["SeedAdmin:Password"];
-
-            if (adminUser is null && !string.IsNullOrWhiteSpace(adminPassword))
-            {
-                adminUser = new ApplicationUser
-                {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    EmailConfirmed = true
-                };
-                await userManager.CreateAsync(adminUser, adminPassword);
-            }
-
-            if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
-            {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Database migration/seeding failed. The app will still start.");
-
-        // In Development, surface migration failures immediately rather than
-        // letting the app start in a broken state (e.g. missing DataProtectionKeys table).
-        if (app.Environment.IsDevelopment())
-            throw;
-    }
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
 }
 
 // Configure the HTTP request pipeline.

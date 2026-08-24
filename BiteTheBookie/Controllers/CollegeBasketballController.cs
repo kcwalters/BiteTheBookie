@@ -96,6 +96,25 @@ namespace BiteTheBookie.Controllers
             return View("LeagueTeamGrid", vm);
         }
 
+        // Lightweight JSON feed used by the nav hover dropdown.
+        [ResponseCache(Duration = 3600)]
+        public IActionResult NavTeams()
+        {
+            var teams = Teams
+                .Select(t => new
+                {
+                    code = t.Key.ToUpperInvariant(),
+                    name = t.Value.Name,
+                    division = t.Value.Conference,
+                    logo = $"https://a.espncdn.com/i/teamlogos/ncaa/500/{t.Value.EspnId}.png"
+                })
+                .OrderBy(t => t.division)
+                .ThenBy(t => t.name)
+                .ToList();
+
+            return Json(teams);
+        }
+
         // Codes MUST match wwwroot/js/nfl-team-modal.js cbbTeams / cbbColumns.
         // Tuple: (Name, Conference, EspnId) — EspnId is the shared ESPN school id
         // used for both the logo (ncaa/500/{id}.png) and the team deep-link.

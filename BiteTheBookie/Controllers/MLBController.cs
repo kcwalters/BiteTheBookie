@@ -161,6 +161,25 @@ namespace BiteTheBookie.Controllers
 
         }
 
+        // Lightweight JSON feed used by the nav hover dropdown.
+        [ResponseCache(Duration = 3600)]
+        public IActionResult NavTeams()
+        {
+            var teams = Teams
+                .Select(t => new
+                {
+                    code = t.Key.ToUpperInvariant(),
+                    name = t.Value.Name,
+                    division = t.Value.Division,
+                    logo = Logo(t.Key)
+                })
+                .OrderBy(t => t.division)
+                .ThenBy(t => t.name)
+                .ToList();
+
+            return Json(teams);
+        }
+
         public IActionResult Team(string code)
         {
             if (string.IsNullOrWhiteSpace(code) || !Teams.TryGetValue(code, out var info))

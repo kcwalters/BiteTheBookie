@@ -157,5 +157,24 @@ namespace BiteTheBookie.Controllers
 
             return View(teamsByDivision);
         }
+
+        // Lightweight JSON feed used by the nav hover dropdown.
+        [ResponseCache(Duration = 3600)]
+        public IActionResult NavTeams()
+        {
+            var teams = Teams
+                .Select(t => new
+                {
+                    code = t.Key.ToUpperInvariant(),
+                    name = t.Value.Name,
+                    division = t.Value.Division,
+                    logo = $"https://a.espncdn.com/i/teamlogos/nfl/500/{EspnCode(t.Key)}.png"
+                })
+                .OrderBy(t => t.division)
+                .ThenBy(t => t.name)
+                .ToList();
+
+            return Json(teams);
+        }
     }
 }

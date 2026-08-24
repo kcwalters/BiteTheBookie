@@ -145,5 +145,24 @@ namespace BiteTheBookie.Controllers
 
             return View(viewModel);
         }
+
+        // Lightweight JSON feed used by the nav hover dropdown.
+        [ResponseCache(Duration = 3600)]
+        public IActionResult NavTeams()
+        {
+            var teams = CFBGamesService.GetTeamsByConference()
+                .SelectMany(g => g.Teams.Select(t => new
+                {
+                    code = t.Code,
+                    name = t.Name,
+                    division = g.Conference,
+                    logo = t.Logo
+                }))
+                .OrderBy(t => t.division)
+                .ThenBy(t => t.name)
+                .ToList();
+
+            return Json(teams);
+        }
     }
 }

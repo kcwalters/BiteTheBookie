@@ -7,7 +7,7 @@
 <div class="container py-4">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-action="Index" asp-route-league="@Model.League">Admin Picks</a></li>
+            <li class="breadcrumb-item"><a asp-action="Manage" asp-route-league="@Model.League">Admin Picks</a></li>
             <li class="breadcrumb-item active">Edit Pick</li>
         </ol>
     </nav>
@@ -67,7 +67,7 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save me-1"></i>Update Pick
                         </button>
-                        <a asp-action="Index" asp-route-league="@Model.League" class="btn btn-outline-secondary">Cancel</a>
+                        <a asp-action="Manage" asp-route-league="@Model.League" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
             </div>

@@ -73,6 +73,39 @@ namespace BiteTheBookie.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> Manage(string league = "NBA")
+        {
+            var picks = await _db.ExpertPicks
+                .Where(p => p.League == league)
+                .OrderByDescending(p => p.GameTime)
+                .ThenByDescending(p => p.CreatedAt)
+                .Select(p => new ExpertPickSummary
+                {
+                    Id = p.Id,
+                    GameId = p.GameId,
+                    League = p.League,
+                    AwayTeamName = p.AwayTeamName,
+                    HomeTeamName = p.HomeTeamName,
+                    GameTime = p.GameTime,
+                    PickType = p.PickType,
+                    PickSelection = p.PickSelection,
+                    Confidence = p.Confidence,
+                    Analysis = p.Analysis,
+                    EnteredBy = p.EnteredBy,
+                    CreatedAt = p.CreatedAt
+                })
+                .ToListAsync();
+
+            var vm = new AdminPicksListViewModel
+            {
+                SelectedLeague = league,
+                Picks = picks
+            };
+
+            return View("~/Views/AdminPicks/Index.cshtml", vm);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> Create(string league = "NBA", string? gameId = null,
             string? awayTeam = null, string? homeTeam = null, string? gameTime = null)
         {
@@ -87,7 +120,7 @@ namespace BiteTheBookie.Controllers
 
             await PopulateAvailableGamesAsync(vm);
 
-            return View(vm);
+            return View("~/Views/AdminPicks/Create.cshtml", vm);
         }
 
         [HttpPost]
@@ -97,7 +130,7 @@ namespace BiteTheBookie.Controllers
             if (!ModelState.IsValid)
             {
                 await PopulateAvailableGamesAsync(vm);
-                return View(vm);
+                return View("~/Views/AdminPicks/Create.cshtml", vm);
             }
 
             var user = await _userManager.GetUserAsync(User);
@@ -124,7 +157,7 @@ namespace BiteTheBookie.Controllers
                 pick.EnteredBy, pick.GameId, pick.League);
 
             TempData["SuccessMessage"] = $"Pick saved for {vm.AwayTeamName} @ {vm.HomeTeamName}";
-            return RedirectToAction("Index", new { league = vm.League });
+            return RedirectToAction("Manage", new { league = vm.League });
         }
 
         [HttpGet]
@@ -147,7 +180,7 @@ namespace BiteTheBookie.Controllers
                 Analysis = pick.Analysis
             };
 
-            return View(vm);
+            return View("~/Views/AdminPicks/Edit.cshtml", vm);
         }
 
         [HttpPost]
@@ -156,7 +189,7 @@ namespace BiteTheBookie.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return View(vm);
+                return View("~/Views/AdminPicks/Edit.cshtml", vm);
             }
 
             var pick = await _db.ExpertPicks.FindAsync(vm.Id);
@@ -171,7 +204,7 @@ namespace BiteTheBookie.Controllers
             await _db.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Pick updated successfully";
-            return RedirectToAction("Index", new { league = vm.League });
+            return RedirectToAction("Manage", new { league = vm.League });
         }
 
         [HttpPost]

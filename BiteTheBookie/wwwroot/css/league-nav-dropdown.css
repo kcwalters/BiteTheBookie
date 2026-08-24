@@ -1,0 +1,84 @@
+/* Hover dropdown menus for the league nav (progressive enhancement). */
+
+.league-nav .league-dropdown {
+    position: relative;
+}
+
+.league-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1050;
+    display: none;
+    min-width: 240px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 6px 0;
+    margin-top: 0; /* keep flush so the hover gap doesn't close the menu */
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Open on hover and keyboard focus. A small pseudo-bridge keeps the menu open
+   while the pointer travels from the link to the menu. */
+.league-nav .league-dropdown:hover > .league-dropdown-menu,
+.league-nav .league-dropdown:focus-within > .league-dropdown-menu {
+    display: block;
+}
+
+.league-nav .league-dropdown::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 8px;
+}
+
+.league-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    color: #1a1a1a;
+    text-decoration: none;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.league-dropdown-item:hover,
+.league-dropdown-item:focus {
+    background: #f1f3f5;
+    color: #0077cc;
+}
+
+.league-dropdown-logo {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.league-dropdown-empty {
+    padding: 8px 14px;
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+/* Dark / cash theme adjustments. */
+.theme-cash .league-dropdown-menu {
+    background: #1b1f24;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.theme-cash .league-dropdown-item {
+    color: #e9ecef;
+}
+
+.theme-cash .league-dropdown-item:hover,
+.theme-cash .league-dropdown-item:focus {
+    background: #2a2f36;
+    color: #ffd54a;
+}
