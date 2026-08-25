@@ -29,15 +29,25 @@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="content-card p-4 h-100">
                     <h2 class="h6 text-uppercase text-muted mb-3">@division.Key</h2>
-                    <div class="d-flex flex-column gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary w-100 d-flex justify-content-between align-items-center"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            <span class="fw-semibold">Select Team</span>
+                        </button>
+                        <ul class="dropdown-menu w-100">
                         @foreach (var team in division)
                         {
-                            <a class="d-flex align-items-center gap-2 text-decoration-none"
-                               asp-controller="NFL" asp-action="Team" asp-route-code="@team.Code">
-                                <img src="@team.Logo" alt="@team.Name" style="width:28px; height:28px; object-fit:contain;" />
-                                <span class="fw-semibold">@team.Name</span>
-                            </a>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center gap-2"
+                                   asp-controller="NFL" asp-action="Team" asp-route-code="@team.Code">
+                                    <img src="@team.Logo" alt="@team.Name" style="width:22px; height:22px; object-fit:contain;" />
+                                    <span>@team.Name</span>
+                                </a>
+                            </li>
                         }
+                        </ul>
                     </div>
                 </div>
             </div>

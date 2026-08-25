@@ -53,27 +53,57 @@
             return menu;
         }
 
+        // Group teams by division/conference, preserving first-seen order.
+        var groups = [];
+        var groupsByName = {};
         teams.forEach(function (team) {
-            var a = document.createElement("a");
-            a.className = "league-dropdown-item";
-            a.href = "/" + controller + "/Team?code=" + encodeURIComponent(team.code);
-
-            if (team.logo) {
-                var img = document.createElement("img");
-                img.src = team.logo;
-                img.alt = "";
-                img.className = "league-dropdown-logo";
-                img.loading = "lazy";
-                a.appendChild(img);
+            var division = (team.division || "Other");
+            var group = groupsByName[division];
+            if (!group) {
+                group = { name: division, teams: [] };
+                groupsByName[division] = group;
+                groups.push(group);
             }
-
-            var span = document.createElement("span");
-            span.textContent = team.name;
-            a.appendChild(span);
-
-            menu.appendChild(a);
+            group.teams.push(team);
         });
 
+        var columns = document.createElement("div");
+        columns.className = "league-dropdown-columns";
+
+        groups.forEach(function (group) {
+            var column = document.createElement("div");
+            column.className = "league-dropdown-column";
+
+            var header = document.createElement("div");
+            header.className = "league-dropdown-header";
+            header.textContent = group.name;
+            column.appendChild(header);
+
+            group.teams.forEach(function (team) {
+                var a = document.createElement("a");
+                a.className = "league-dropdown-item";
+                a.href = "/" + controller + "/Team?code=" + encodeURIComponent(team.code);
+
+                if (team.logo) {
+                    var img = document.createElement("img");
+                    img.src = team.logo;
+                    img.alt = "";
+                    img.className = "league-dropdown-logo";
+                    img.loading = "lazy";
+                    a.appendChild(img);
+                }
+
+                var span = document.createElement("span");
+                span.textContent = team.name;
+                a.appendChild(span);
+
+                column.appendChild(a);
+            });
+
+            columns.appendChild(column);
+        });
+
+        menu.appendChild(columns);
         return menu;
     }
 

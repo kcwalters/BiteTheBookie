@@ -98,7 +98,17 @@
                 <div class="collapse navbar-collapse" id="mainNav">
                     <!-- Primary section links (SportsLine-style flat nav) -->
                     <ul class="navbar-nav primary-nav">
-                        <li class="nav-item"><a class="nav-link" asp-controller="ExpertPicks" asp-action="Index">Picks</a></li>
+                        <li class="nav-item dropdown picks-dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Picks</a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" asp-controller="Picks" asp-action="NFL">NFL Picks</a>
+                                <a class="dropdown-item" asp-controller="Picks" asp-action="NBA">NBA Picks</a>
+                                <a class="dropdown-item" asp-controller="Picks" asp-action="MLB">MLB Picks</a>
+                                <a class="dropdown-item" asp-controller="Picks" asp-action="NHL">NHL Picks</a>
+                                <a class="dropdown-item" asp-controller="Picks" asp-action="CFB">CFB Picks</a>
+                                <a class="dropdown-item" asp-controller="Picks" asp-action="CBB">CBB Picks</a>
+                            </div>
+                        </li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Odds" asp-action="Index">Odds</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Fantasy</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Experts" asp-action="Index">Experts</a></li>

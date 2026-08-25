@@ -7,10 +7,12 @@
 .league-dropdown-menu {
     position: absolute;
     top: 100%;
-    left: 0;
+    right: 0;
+    left: auto;
     z-index: 1050;
     display: none;
     min-width: 240px;
+    max-width: 90vw;
     max-height: 70vh;
     overflow-y: auto;
     padding: 6px 0;
@@ -67,6 +69,31 @@
     font-size: 0.85rem;
 }
 
+/* Multi-column layout: one column per division/conference. */
+.league-dropdown-columns {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px 18px;
+    padding: 4px 6px;
+}
+
+.league-dropdown-column {
+    flex: 0 0 auto;
+    min-width: 190px;
+}
+
+.league-dropdown-header {
+    padding: 8px 14px 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    margin-bottom: 2px;
+}
+
 /* Dark / cash theme adjustments. */
 .theme-cash .league-dropdown-menu {
     background: #1b1f24;
@@ -81,4 +108,9 @@
 .theme-cash .league-dropdown-item:focus {
     background: #2a2f36;
     color: #ffd54a;
+}
+
+.theme-cash .league-dropdown-header {
+    color: #adb5bd;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
 }

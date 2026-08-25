@@ -2,6 +2,7 @@
   "name": "bitethebookie-assets",
   "private": true,
   "devDependencies": {
+    "eslint": "^10.9.1",
     "sass": "^1.70.0"
   },
   "scripts": {

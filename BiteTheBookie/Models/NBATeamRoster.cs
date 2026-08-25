@@ -4,6 +4,7 @@ namespace BiteTheBookie.Models
     {
         public string TeamCode { get; set; } = string.Empty;
         public string TeamName { get; set; } = string.Empty;
+        public string Division { get; set; } = string.Empty;
         public List<NBAPlayer> Players { get; set; } = new();
     }
 
