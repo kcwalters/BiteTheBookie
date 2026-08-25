@@ -32,6 +32,17 @@ a                          { color: var(--btb-primary); }
     margin-bottom: 0;
 }
 
+/* Team list links inherit the card's text color for proper contrast
+   against the card background in both light and dark (cash) themes. */
+.content-card .team-grid-link {
+    color: inherit;
+}
+
+.content-card .team-grid-link:hover,
+.content-card .team-grid-link:focus {
+    color: var(--btb-primary);
+}
+
 /* ── Tables ─────────────────────────────────────────────── */
 .table               { color: var(--btb-body); }
 .table thead th       { background-color: var(--btb-primary); color: #fff; font-weight: 600; border: none; }

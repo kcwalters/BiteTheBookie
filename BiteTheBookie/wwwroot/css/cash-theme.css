@@ -471,3 +471,63 @@ html.theme-cash .video-strip__item,
 html.theme-cash .video-strip__title { color: var(--cp-text) !important; }
 html.theme-cash .video-strip__item:hover .video-strip__title { color: var(--cp-primary) !important; }
 
+/* ?? College Football Teams grid ?????????????????????????? */
+html.theme-cash .cfb-team-grid {
+    background: var(--cp-bg-elevated) !important;
+    border-color: var(--cp-border) !important;
+}
+html.theme-cash .cfb-conference__title {
+    background: var(--cp-bg-row) !important;
+    color: var(--cp-text) !important;
+}
+html.theme-cash .cfb-team,
+html.theme-cash .cfb-team__name {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .cfb-team:hover {
+    background: var(--cp-bg-hover) !important;
+    color: var(--cp-primary) !important;
+}
+
+/* ?? NFL / League landing page (scoreboard, headlines, quick links) ?????? */
+html.theme-cash .nfl-games,
+html.theme-cash .nfl-headlines,
+html.theme-cash .nfl-quicklinks {
+    background: var(--cp-bg-elevated) !important;
+    border-color: var(--cp-border) !important;
+}
+html.theme-cash .nfl-game-card {
+    background: var(--cp-bg-row) !important;
+    border-color: var(--cp-border) !important;
+}
+html.theme-cash .nfl-game-card__team span,
+html.theme-cash .nfl-game-card__score {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .nfl-game-card__status {
+    color: var(--cp-text-muted) !important;
+}
+html.theme-cash .nfl-headlines__list li,
+html.theme-cash .nfl-quicklinks li {
+    border-bottom-color: var(--cp-border) !important;
+}
+html.theme-cash .nfl-headlines__list a,
+html.theme-cash .nfl-quicklinks a {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .nfl-headlines__list a:hover,
+html.theme-cash .nfl-quicklinks a:hover {
+    background: var(--cp-bg-hover) !important;
+    color: var(--cp-primary) !important;
+}
+html.theme-cash .nfl-landing__title {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .nfl-landing__subnav a {
+    color: var(--cp-text-muted) !important;
+}
+html.theme-cash .nfl-landing__subnav a:hover {
+    background: var(--cp-bg-hover) !important;
+    color: var(--cp-primary) !important;
+}
+

@@ -39,7 +39,7 @@
                     <div class="d-flex flex-column gap-2">
                         @foreach (var team in group)
                         {
-                            <a class="d-flex align-items-center gap-2 text-decoration-none"
+                            <a class="team-grid-link d-flex align-items-center gap-2 text-decoration-none"
                                asp-controller="@Model.TeamController" asp-action="Team" asp-route-code="@team.Code">
                                 <img src="@team.Logo" alt="@team.Name" style="width:28px; height:28px; object-fit:contain;" />
                                 <span class="fw-semibold">@team.Name</span>

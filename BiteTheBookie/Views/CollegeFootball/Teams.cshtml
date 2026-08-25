@@ -37,10 +37,10 @@
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 4px 24px;
         padding: 16px;
-        border: 1px solid rgba(0, 0, 0, .08);
+        border: 1px solid var(--btb-border, rgba(0, 0, 0, .08));
         border-top: 0;
         border-radius: 0 0 8px 8px;
-        background: #fff;
+        background: var(--btb-bg, #fff);
     }
 
     @@media (max-width: 991px) {
@@ -57,7 +57,7 @@
         gap: 12px;
         padding: 8px 10px;
         border-radius: 8px;
-        color: #111;
+        color: var(--btb-body, #111);
         text-decoration: none;
         transition: background-color .15s ease;
     }
@@ -65,7 +65,7 @@
     .cfb-team:hover {
         background: rgba(13, 110, 253, .08);
         text-decoration: none;
-        color: #0b5ed7;
+        color: var(--btb-primary, #0b5ed7);
     }
 
     .cfb-team__logo {
@@ -78,6 +78,7 @@
     .cfb-team__name {
         font-size: .95rem;
         font-weight: 600;
+        color: inherit;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
