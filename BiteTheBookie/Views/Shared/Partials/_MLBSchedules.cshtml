@@ -1,4 +1,6 @@
 ﻿@model IEnumerable<BiteTheBookie.Models.MLB.Game>
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<BiteTheBookie.Models.ApplicationUser> SignInManager
 
 <style>
     .mlb-schedule {
@@ -87,6 +89,50 @@
                     @(g.HomeScore.HasValue ? g.HomeScore : "-")
                 </td>
                 <td>@g.Status</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>MLB Game Simulations</h2>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Teams</th>
+            <th>Status</th>
+            <th>Simulation</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var game in Model)
+        {
+            <tr>
+                <td>
+                    <div class="team-cell">
+                        <img src="@game.AwayTeamLogoUrl" alt="@game.AwayTeam" />
+                        <span>@game.AwayTeam</span>
+                    </div>
+                    <div class="team-cell">
+                        <img src="@game.HomeTeamLogoUrl" alt="@game.HomeTeam" />
+                        <span>@game.HomeTeam</span>
+                    </div>
+                </td>
+                <td class="status">@game.Status</td>
+                <td class="text-center">
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-gameId="@game.GameTimeDisplay">
+                            <i class="fa-solid fa-dollar-sign"></i> Simulate
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                            <i class="fa fa-user-plus"></i> Join to Simulate
+                        </a>
+                    }
+                </td>
             </tr>
         }
     </tbody>
