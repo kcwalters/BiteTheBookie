@@ -8,6 +8,7 @@
     --accent-2: #34d399;
     --border: #1f2937;
     --row-alt: #0b1220;
+    --padding-default: 1.5rem;
 }
 
 body {
@@ -119,4 +120,180 @@ tbody tr:nth-child(even) {
 }
 .site-logo img {
     border-radius: 12px;
+}
+
+.home-page {
+    padding: var(--padding-default);
+}
+
+.home-panel {
+    padding: var(--padding-default);
+}
+
+.matchup-list {
+    padding-left: var(--padding-default);
+}
+
+.matchup-item {
+    padding: calc(var(--padding-default) * 0.5);
+}
+
+.text-muted {
+    padding: calc(var(--padding-default) * 0.5) var(--padding-default);
+}
+
+.newsletter-panel {
+    padding: var(--padding-default);
+}
+
+.newsletter-panel .home-panel__title {
+    margin-bottom: 0.5rem;
+}
+
+.newsletter-panel input {
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    width: calc(100% - 1.6rem);
+}
+
+.newsletter-panel button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    background-color: var(--accent);
+}
+
+.newsletter-panel button:hover {
+    background-color: var(--accent-2);
+    color: var(--bg);
+}
+
+.newsletter-card {
+    padding: var(--padding-default);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+
+.newsletter-card__title {
+    font-weight: bold;
+    margin-bottom: var(--padding-default);
+}
+
+.newsletter-card__text {
+    margin-bottom: calc(var(--padding-default) * 0.75);
+    color: var(--muted);
+}
+
+.newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--padding-default);
+}
+
+.newsletter-form .form-control {
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.newsletter-form .btn {
+    padding: 0.75rem 1.5rem;
+}
+
+.col-12.col-lg-3 {
+    margin-top: var(--padding-default);
+}
+
+/* Forcing padding and spacing for newsletter-card and its elements */
+.col-12.col-lg-3 .newsletter-card {
+    padding: var(--padding-default) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    background: var(--panel) !important;
+}
+
+.col-12.col-lg-3 .newsletter-card .newsletter-card__title {
+    font-weight: bold !important;
+    margin-bottom: var(--padding-default) !important;
+    color: var(--text) !important;
+}
+
+.col-12.col-lg-3 .newsletter-card .newsletter-card__text {
+    margin-bottom: calc(var(--padding-default) * 0.75) !important;
+    color: var(--muted) !important;
+}
+
+.col-12.col-lg-3 .newsletter-card .newsletter-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--padding-default) !important;
+}
+
+.col-12.col-lg-3 .newsletter-card .newsletter-form .form-control {
+    padding: 0.75rem !important;
+    border-radius: 6px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+}
+
+.col-12.col-lg-3 .newsletter-card .newsletter-form .btn {
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 8px !important;
+    background-color: var(--accent) !important;
+}
+
+.col-12.col-lg-3 .newsletter-card .newsletter-form .btn:hover {
+    background-color: var(--accent-2) !important;
+    color: var(--bg) !important;
+}
+
+/* General content-card rules */
+.content-card {
+    padding: var(--padding-default) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    background: var(--panel) !important;
+    margin-bottom: var(--padding-default);
+}
+
+.content-card .promo-card__eyebrow {
+    text-transform: uppercase !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.05rem !important;
+    color: var(--muted) !important;
+    margin-bottom: calc(var(--padding-default) * 0.5) !important;
+}
+
+.content-card .promo-card__title {
+    font-weight: bold !important;
+    font-size: 1.25rem !important;
+    margin-bottom: calc(var(--padding-default) * 0.5) !important;
+    color: var(--text) !important;
+}
+
+.content-card .promo-card__text {
+    font-size: 1rem !important;
+    color: var(--muted) !important;
+    margin-bottom: var(--padding-default) !important;
+}
+
+.content-card .promo-card__price {
+    font-weight: bold !important;
+    font-size: 1rem !important;
+    color: var(--accent) !important;
+    margin-bottom: var(--padding-default) !important;
+}
+
+.content-card .btn {
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 700 !important;
+    background-color: var(--accent) !important;
+    border-radius: 8px !important;
+}
+
+.content-card .btn:hover {
+    background-color: var(--accent-2) !important;
+    color: var(--bg) !important;
 }
