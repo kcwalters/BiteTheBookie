@@ -2,126 +2,290 @@
     ViewData["Title"] = "Join BiteTheBookie";
 }
 
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold">Join BiteTheBookie</h1>
-        <p class="lead text-muted">Get expert picks, simulations, and analysis to beat the bookies</p>
+<section class="join-hero">
+    <div class="container">
+        <div class="text-center mx-auto join-hero__inner">
+            <span class="join-hero__eyebrow"><i class="fas fa-bolt me-2"></i>Membership Plans</span>
+            <h1 class="join-hero__title">Beat the Bookies with an Edge</h1>
+            <p class="join-hero__subtitle">
+                Expert picks, AI-powered simulations, and pro-grade spread analysis &mdash;
+                all in one place. Choose the plan that fits your game.
+            </p>
+            <div class="join-hero__reassurance">
+                <span><i class="fas fa-lock me-2"></i>Secure checkout via PayPal</span>
+                <span><i class="fas fa-rotate-left me-2"></i>Cancel anytime</span>
+                <span><i class="fas fa-star me-2"></i>No hidden fees</span>
+            </div>
+        </div>
     </div>
+</section>
 
+<div class="container pb-5 join-pricing">
     <div class="row g-4 justify-content-center">
-        <div class="col-12 col-md-4">
-            <div class="card h-100 pricing-card">
-                <div class="card-header text-center py-4">
-                    <h3 class="mb-0">Free</h3>
-                    <div class="display-5 fw-bold mt-2">$0</div>
-                    <div class="text-muted">Forever</div>
+
+        <div class="col-12 col-lg-4 col-md-6">
+            <div class="pricing-card h-100">
+                <div class="pricing-card__head">
+                    <h3 class="pricing-card__name">Free</h3>
+                    <div class="pricing-card__price">$0<span class="pricing-card__period">/forever</span></div>
+                    <p class="pricing-card__tagline">Follow the action &amp; get a feel for the platform.</p>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>View game schedules</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Basic odds display</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Live score tickers</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>News &amp; headlines</li>
-                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>Expert picks</li>
-                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>AI simulations</li>
-                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>Spread analysis</li>
+                <div class="pricing-card__body">
+                    <ul class="feature-list">
+                        <li class="is-on"><i class="fas fa-check"></i>View game schedules</li>
+                        <li class="is-on"><i class="fas fa-check"></i>Basic odds display</li>
+                        <li class="is-on"><i class="fas fa-check"></i>Live score tickers</li>
+                        <li class="is-on"><i class="fas fa-check"></i>News &amp; headlines</li>
+                        <li class="is-off"><i class="fas fa-xmark"></i>Expert picks</li>
+                        <li class="is-off"><i class="fas fa-xmark"></i>AI simulations</li>
+                        <li class="is-off"><i class="fas fa-xmark"></i>Spread analysis</li>
                     </ul>
                 </div>
-                <div class="card-footer text-center py-3">
+                <div class="pricing-card__foot">
                     <a asp-controller="Membership" asp-action="Register" asp-route-plan="free"
-                       class="btn btn-outline-primary btn-lg w-100">
+                       class="btn btn-outline-light btn-lg w-100 fw-bold">
                         Sign Up Free
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-4">
-            <div class="card h-100 pricing-card pricing-card-featured">
-                <div class="card-header text-center py-4 bg-primary text-white">
-                    <span class="badge bg-warning text-dark mb-2">MOST POPULAR</span>
-                    <h3 class="mb-0 text-white">Premium</h3>
-                    <div class="display-5 fw-bold mt-2">$19.99</div>
-                    <div class="opacity-75">per month</div>
+        <div class="col-12 col-lg-4 col-md-6">
+            <div class="pricing-card pricing-card--featured h-100">
+                <div class="pricing-card__ribbon">Most Popular</div>
+                <div class="pricing-card__head">
+                    <h3 class="pricing-card__name">Pro</h3>
+                    <div class="pricing-card__price">$9.99<span class="pricing-card__period">/month</span></div>
+                    <p class="pricing-card__tagline">The complete toolkit for serious handicappers.</p>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Everything in Free</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Expert picks (all sports)</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>AI game simulations</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Spread analysis tools</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Injury impact reports</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Against the spread picks</li>
-                        <li class="mb-3 text-muted"><i class="fas fa-times text-danger me-2"></i>VIP Discord access</li>
+                <div class="pricing-card__body">
+                    <ul class="feature-list">
+                        <li class="is-on"><i class="fas fa-check"></i>Everything in Free</li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>Expert picks (all sports)</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>AI game simulations</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>Spread analysis tools</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i>Injury impact reports</li>
+                        <li class="is-on"><i class="fas fa-check"></i>Against the spread picks</li>
+                        <li class="is-off"><i class="fas fa-xmark"></i>VIP Discord access</li>
                     </ul>
                 </div>
-                <div class="card-footer text-center py-3">
-                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="premium"
-                       class="btn btn-primary btn-lg w-100">
-                        Get Premium
+                <div class="pricing-card__foot">
+                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="pro"
+                       class="btn btn-primary btn-lg w-100 fw-bold">
+                        Get Pro
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-md-4">
-            <div class="card h-100 pricing-card">
-                <div class="card-header text-center py-4">
-                    <h3 class="mb-0">VIP</h3>
-                    <div class="display-5 fw-bold mt-2">$49.99</div>
-                    <div class="text-muted">per month</div>
+        <div class="col-12 col-lg-4 col-md-6">
+            <div class="pricing-card h-100">
+                <div class="pricing-card__head">
+                    <h3 class="pricing-card__name">All Access</h3>
+                    <div class="pricing-card__price">$19.99<span class="pricing-card__period">/month</span></div>
+                    <p class="pricing-card__tagline">Everything we offer, plus VIP-only perks.</p>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Everything in Premium</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>VIP Discord community</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Early access to picks</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>Custom bet builder</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i><strong>1-on-1 expert chat</strong></li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Priority support</li>
-                        <li class="mb-3"><i class="fas fa-check text-success me-2"></i>Bankroll tracker</li>
+                <div class="pricing-card__body">
+                    <ul class="feature-list">
+                        <li class="is-on"><i class="fas fa-check"></i>Everything in Pro</li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>VIP Discord community</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>Early access to picks</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>Custom bet builder</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i><strong>1-on-1 expert chat</strong></li>
+                        <li class="is-on"><i class="fas fa-check"></i>Priority support</li>
+                        <li class="is-on"><i class="fas fa-check"></i>Bankroll tracker</li>
                     </ul>
                 </div>
-                <div class="card-footer text-center py-3">
-                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="vip"
-                       class="btn btn-dark btn-lg w-100">
-                        Go VIP
+                <div class="pricing-card__foot">
+                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="allaccess"
+                       class="btn btn-warning btn-lg w-100 fw-bold">
+                        Get All Access
                     </a>
                 </div>
             </div>
         </div>
     </div>
+
+    <p class="text-center join-footnote">
+        <i class="fas fa-shield-halved me-2"></i>
+        Paid plans are billed monthly and unlock instantly once your payment is confirmed. Cancel anytime from My Account.
+    </p>
 </div>
 
 <style>
+    .join-hero {
+        background: radial-gradient(1200px 400px at 50% -10%, rgba(56, 189, 248, 0.18), transparent 60%),
+                    linear-gradient(180deg, rgba(13, 110, 253, 0.10), transparent);
+        padding: 3.5rem 0 2.5rem;
+    }
+
+    .join-hero__inner {
+        max-width: 720px;
+    }
+
+    .join-hero__eyebrow {
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .join-hero__title {
+        font-weight: 800;
+        font-size: clamp(2rem, 4vw, 3rem);
+        margin-bottom: 0.75rem;
+    }
+
+    .join-hero__subtitle {
+        color: #9ca3af;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .join-hero__reassurance {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1.5rem;
+        color: #cbd5e1;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .join-pricing {
+        padding-top: 2.5rem;
+    }
+
     .pricing-card {
-        border-radius: 16px;
-        border: 2px solid #dee2e6;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        min-height: 620px;
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 18px;
+        padding: 2rem 1.75rem;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
 
     .pricing-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        transform: translateY(-6px);
+        border-color: #334155;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
     }
 
-    .pricing-card-featured {
+    .pricing-card--featured {
         border-color: #0d6efd;
-        transform: scale(1.05);
-        box-shadow: 0 8px 30px rgba(13, 110, 253, 0.2);
+        padding-top: 3rem;
+        box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.4), 0 20px 45px rgba(13, 110, 253, 0.25);
     }
 
-    .pricing-card-featured:hover {
-        transform: scale(1.05) translateY(-8px);
+    .pricing-card--featured:hover {
+        box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.6), 0 24px 55px rgba(13, 110, 253, 0.35);
     }
 
-    .pricing-card .card-header {
+    .pricing-card__ribbon {
+        position: absolute;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #f3c623;
+        color: #111827;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.3rem 0.9rem;
+        border-radius: 999px;
+        box-shadow: 0 6px 16px rgba(243, 198, 35, 0.35);
+        white-space: nowrap;
+    }
+
+    .pricing-card__head {
+        text-align: center;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #1f2937;
+        margin-bottom: 1.25rem;
+    }
+
+    .pricing-card__name {
+        font-weight: 700;
+        font-size: 1.35rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .pricing-card__price {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .pricing-card__period {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #9ca3af;
+    }
+
+    .pricing-card__tagline {
+        color: #9ca3af;
+        font-size: 0.9rem;
+        margin: 0.75rem 0 0;
+    }
+
+    .pricing-card__body {
+        flex: 1 1 auto;
+    }
+
+    .feature-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.55rem 0;
+        font-size: 0.95rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .feature-list li:last-child {
         border-bottom: none;
     }
 
-    .pricing-card .card-footer {
-        background: transparent;
-        border-top: none;
+    .feature-list li i {
+        flex: 0 0 1.1rem;
+        text-align: center;
+    }
+
+    .feature-list li.is-on i {
+        color: #34d399;
+    }
+
+    .feature-list li.is-off {
+        color: #6b7280;
+    }
+
+    .feature-list li.is-off i {
+        color: #ef4444;
+    }
+
+    .pricing-card__foot {
+        margin-top: 1.5rem;
+    }
+
+    .join-footnote {
+        color: #9ca3af;
+        font-size: 0.9rem;
+        margin-top: 2.5rem;
     }
 </style>
