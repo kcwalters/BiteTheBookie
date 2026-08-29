@@ -1,6 +1,7 @@
 @model BiteTheBookie.ViewModels.ScoresPageViewModel
 @using Microsoft.AspNetCore.Identity
 @inject SignInManager<BiteTheBookie.Models.ApplicationUser> SignInManager
+@inject UserManager<BiteTheBookie.Models.ApplicationUser> UserManager
 @{
     ViewData["Title"] = $"{Model.LeagueName} Scores";
     var league = Model.LeagueName;
@@ -28,6 +29,7 @@
             {
                 <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
             }
+            <li><a href="/GameSimulation?league=@league">$ Game Simulation</a></li>
         </ul>
     </div>
 
@@ -86,9 +88,24 @@
                         <div class="mt-2 text-end">
                             @if (SignInManager.IsSignedIn(User))
                             {
-                                <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-gameId="@game.GameId">
-                                    <i class="fa-solid fa-dollar-sign"></i> Simulate
-                                </a>
+                                var currentUser = await UserManager.GetUserAsync(User);
+                                if (currentUser == null)
+                                {
+                                    <p class="text-danger">[Error: Unable to load user details]</p>
+                                }
+                                else if (currentUser.SubscriptionTier == SubscriptionTier.Premium || currentUser.SubscriptionTier == SubscriptionTier.VIP)
+                                {
+                                    <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
+                                        <i class="fa-solid fa-computer"></i> Game Simulation
+                                    </a>
+                                }
+                                else
+                                {
+                                    <p class="text-warning">[Debug: User subscription tier: @currentUser.SubscriptionTier]</p>
+                                    <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                                        <i class="fa-solid fa-dollar-sign"></i> $ Game Simulation
+                                    </a>
+                                }
                             }
                             else
                             {

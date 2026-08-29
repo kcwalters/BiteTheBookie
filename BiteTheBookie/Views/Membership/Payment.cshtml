@@ -4,6 +4,7 @@
     var planId = (string)ViewBag.PlanId;
     var clientId = (string)ViewBag.ClientId;
     var clientToken = (string)ViewBag.ClientToken;
+    var sdkToken = (string)ViewBag.SdkToken;
     var planName = (string)ViewBag.PlanName;
     var planPrice = (string)ViewBag.PlanPrice;
 }
@@ -34,39 +35,6 @@
                     <!-- PayPal button (account or guest) -->
                     <div id="paypal-button-container" class="mb-3"></div>
 
-                    <!-- Card fields (pay with debit/credit card, no PayPal account required) -->
-                    <div id="card-fields-section">
-                        <div class="d-flex align-items-center my-3">
-                            <hr class="flex-grow-1" />
-                            <span class="px-2 text-muted small">or pay with card</span>
-                            <hr class="flex-grow-1" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Name on card</label>
-                            <div id="card-name-field-container"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Card number</label>
-                            <div id="card-number-field-container"></div>
-                        </div>
-                        <div class="row g-3 mb-3">
-                            <div class="col-6">
-                                <label class="form-label">Expiry</label>
-                                <div id="card-expiry-field-container"></div>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">CVV</label>
-                                <div id="card-cvv-field-container"></div>
-                            </div>
-                        </div>
-
-                        <button id="card-submit" type="button" class="btn btn-primary w-100">
-                            <span id="card-submit-text">Pay @planPrice / month</span>
-                            <span id="card-submit-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        </button>
-                    </div>
-
                     <div class="text-center mt-3">
                         <a asp-controller="Membership" asp-action="Join" class="selected-tier__change">
                             <i class="fas fa-arrow-left me-1"></i>Cancel
@@ -86,7 +54,7 @@
 </form>
 
 @section Scripts {
-    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons,card-fields&intent=subscription&vault=true"
+    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons&intent=subscription&vault=true"
             data-client-token="@clientToken"
             data-sdk-integration-source="integrationbuilder_sc"></script>
     <script>
@@ -110,7 +78,7 @@
                 return;
             }
 
-            // PayPal branded button (also offers guest card checkout when enabled on the account)
+            // Use PayPal Buttons only (no hosted card fields)
             paypal.Buttons({
                 style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
                 createSubscription: function (data, actions) {
@@ -125,54 +93,6 @@
                 }
             }).render('#paypal-button-container');
 
-            // Advanced hosted card fields (on-site card entry, no PayPal account needed)
-            if (paypal.CardFields) {
-                const cardFields = paypal.CardFields({
-                    createSubscription: function (data, actions) {
-                        return actions.subscription.create({ plan_id: planId });
-                    },
-                    onApprove: function (data) {
-                        completeSubscription(data.subscriptionID);
-                    },
-                    onError: function (err) {
-                        console.error(err);
-                        setSubmitting(false);
-                        showError('Your card could not be processed. Please check the details and try again.');
-                    }
-                });
-
-                if (cardFields.isEligible()) {
-                    cardFields.NameField().render('#card-name-field-container');
-                    cardFields.NumberField().render('#card-number-field-container');
-                    cardFields.ExpiryField().render('#card-expiry-field-container');
-                    cardFields.CVVField().render('#card-cvv-field-container');
-
-                    const submitBtn = document.getElementById('card-submit');
-                    submitBtn.addEventListener('click', function () {
-                        setSubmitting(true);
-                        cardFields.submit().catch(function (err) {
-                            console.error(err);
-                            setSubmitting(false);
-                            showError('Your card could not be processed. Please check the details and try again.');
-                        });
-                    });
-                } else {
-                    // Card fields not available for this account/region; hide them and keep the button.
-                    document.getElementById('card-fields-section').classList.add('d-none');
-                }
-            } else {
-                document.getElementById('card-fields-section').classList.add('d-none');
-            }
-
-            function setSubmitting(isSubmitting) {
-                const btn = document.getElementById('card-submit');
-                const text = document.getElementById('card-submit-text');
-                const spinner = document.getElementById('card-submit-spinner');
-                if (!btn) return;
-                btn.disabled = isSubmitting;
-                text.classList.toggle('d-none', isSubmitting);
-                spinner.classList.toggle('d-none', !isSubmitting);
-            }
         })();
     </script>
 }

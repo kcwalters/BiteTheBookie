@@ -15,15 +15,23 @@ namespace BiteTheBookie.Controllers
             _simulationService = simulationService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Start(string gameId)
+        [HttpGet]
+        public async Task<IActionResult> Start(string homeTeam, string awayTeam, string league)
         {
-            // Lookup game details, validate input...
+            if (string.IsNullOrWhiteSpace(homeTeam)
+                || string.IsNullOrWhiteSpace(awayTeam)
+                || string.IsNullOrWhiteSpace(league))
+            {
+                return Content(
+                    "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2>" +
+                    "<p>Missing game details. Please try again from the scoreboard.</p></section>",
+                    "text/html");
+            }
 
             var simulationResult = await _simulationService.GenerateGameSimulationAsync(
-                homeTeam: "HomeTeamExample",  // Replace with actual team data
-                awayTeam: "AwayTeamExample",  // Replace with actual team data
-                league: "NFL"                 // Replace with actual league
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                league: league
             );
 
             // Return simulation output.

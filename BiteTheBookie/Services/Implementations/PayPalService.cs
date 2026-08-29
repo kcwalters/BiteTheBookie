@@ -36,6 +36,26 @@ namespace BiteTheBookie.Services.Implementations
             _baseUrl = string.Equals(configuration["PayPal:Environment"], "live", StringComparison.OrdinalIgnoreCase)
                 ? "https://api-m.paypal.com"
                 : "https://api-m.sandbox.paypal.com";
+
+            if (!_clientId.StartsWith("YOUR-", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Loaded valid PayPal ClientId: {ClientIdPrefix}", _clientId.Substring(0, 6) + "***");
+            }
+            else
+            {
+                _logger.LogWarning("The PayPal ClientId in the configuration appears to be a placeholder.");
+            }
+            
+            if (string.IsNullOrWhiteSpace(_clientSecret))
+            {
+                _logger.LogWarning("PayPal ClientSecret is missing from configuration.");
+            }
+            else
+            {
+                _logger.LogInformation("PayPal ClientSecret successfully loaded (hidden for security). Length: {Length}", _clientSecret.Length);
+            }
+            
+            _logger.LogInformation("Setting PayPal API Base URL: {BaseUrl}", _baseUrl);
         }
 
         /// <summary>
@@ -92,9 +112,6 @@ namespace BiteTheBookie.Services.Implementations
             _ => null
         };
 
-        /// <summary>
-        /// Pulls a human-readable message out of a PayPal error JSON response body.
-        /// </summary>
         private static string ExtractErrorDetail(string body)
         {
             if (string.IsNullOrWhiteSpace(body)) return string.Empty;

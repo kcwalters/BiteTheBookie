@@ -19,6 +19,7 @@
             <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">Odds</a></li>
             <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague">Scores</a></li>
             <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
+            <li><a href="/GameSimulation?league=@league">$ Game Simulation</a></li>
         </ul>
     </div>
 

@@ -122,7 +122,7 @@
                 <td class="text-center">
                     @if (SignInManager.IsSignedIn(User))
                     {
-                        <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-gameId="@game.GameTimeDisplay">
+                        <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-homeTeam="@game.HomeTeam" asp-route-awayTeam="@game.AwayTeam" asp-route-league="MLB">
                             <i class="fa-solid fa-dollar-sign"></i> Simulate
                         </a>
                     }
