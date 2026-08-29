@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BiteTheBookie.Services.Interfaces;
+using BiteTheBookie.ViewModels;
 using System.Threading.Tasks;
 
 namespace BiteTheBookie.Controllers
@@ -15,19 +16,31 @@ namespace BiteTheBookie.Controllers
             _simulationService = simulationService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Start(string gameId)
+        [HttpGet]
+        public async Task<IActionResult> Start(string homeTeam, string awayTeam, string league)
         {
-            // Lookup game details, validate input...
+            if (string.IsNullOrWhiteSpace(homeTeam) || string.IsNullOrWhiteSpace(awayTeam) || string.IsNullOrWhiteSpace(league))
+            {
+                return BadRequest("Missing game information for the simulation.");
+            }
 
             var simulationResult = await _simulationService.GenerateGameSimulationAsync(
-                homeTeam: "HomeTeamExample",  // Replace with actual team data
-                awayTeam: "AwayTeamExample",  // Replace with actual team data
-                league: "NFL"                 // Replace with actual league
+                homeTeam: homeTeam,
+                awayTeam: awayTeam,
+                league: league
             );
 
-            // Return simulation output.
-            return Content(simulationResult, "text/html");
+            var model = new GameSimulationViewModel
+            {
+                GameId = $"{awayTeam}-at-{homeTeam}-{league}".ToLowerInvariant(),
+                HomeTeam = homeTeam,
+                AwayTeam = awayTeam,
+                League = league,
+                SimulationContent = simulationResult,
+                IsLoading = false
+            };
+
+            return View(model);
         }
     }
 }

@@ -1,9 +1,13 @@
 @model BiteTheBookie.ViewModels.ScoresPageViewModel
+@using BiteTheBookie.Models
 @using Microsoft.AspNetCore.Identity
-@inject SignInManager<BiteTheBookie.Models.ApplicationUser> SignInManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 @{
     ViewData["Title"] = $"{Model.LeagueName} Scores";
     var league = Model.LeagueName;
+    var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
 }
 
 <div class="container scores-page py-3">
@@ -82,18 +86,24 @@
                             </div>
                             <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                         </div>
-                        <!-- Simulation link/button -->
                         <div class="mt-2 text-end">
-                            @if (SignInManager.IsSignedIn(User))
+                            @if (hasGameSimulationAccess)
                             {
-                                <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-gameId="@game.GameId">
-                                    <i class="fa-solid fa-dollar-sign"></i> Simulate
+                                <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
+                                   asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
+                                    Simulate Game
+                                </a>
+                            }
+                            else if (SignInManager.IsSignedIn(User))
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                                    $ Game Simulation
                                 </a>
                             }
                             else
                             {
-                                <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                    <i class="fa fa-user-plus"></i> Join to Simulate
+                                <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                                    $ Game Simulation
                                 </a>
                             }
                         </div>
@@ -139,6 +149,27 @@
                         </div>
                         <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                     </div>
+                    <div class="mt-2 text-end">
+                        @if (hasGameSimulationAccess)
+                        {
+                            <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
+                               asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
+                                Simulate Game
+                            </a>
+                        }
+                        else if (SignInManager.IsSignedIn(User))
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                                $ Game Simulation
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                                $ Game Simulation
+                            </a>
+                        }
+                    </div>
                 </div>
             }
         </div>
@@ -173,6 +204,27 @@
                         </div>
                         <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                     </div>
+                    <div class="mt-2 text-end">
+                        @if (hasGameSimulationAccess)
+                        {
+                            <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
+                               asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
+                                Simulate Game
+                            </a>
+                        }
+                        else if (SignInManager.IsSignedIn(User))
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                                $ Game Simulation
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                                $ Game Simulation
+                            </a>
+                        }
+                    </div>
                 </div>
             }
         </div>
@@ -206,6 +258,27 @@
                             <span>@game.HomeTeamName</span>
                         </div>
                         <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                    </div>
+                    <div class="mt-2 text-end">
+                        @if (hasGameSimulationAccess)
+                        {
+                            <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
+                               asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
+                                Simulate Game
+                            </a>
+                        }
+                        else if (SignInManager.IsSignedIn(User))
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                                $ Game Simulation
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                                $ Game Simulation
+                            </a>
+                        }
                     </div>
                 </div>
             }
