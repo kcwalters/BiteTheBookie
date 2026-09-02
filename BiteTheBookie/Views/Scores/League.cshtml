@@ -7,7 +7,7 @@
     ViewData["Title"] = $"{Model.LeagueName} Scores";
     var league = Model.LeagueName;
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
+    var hasGameSimulationAccess = currentUser?.IsPro == true || currentUser?.AllAccessUser == true;
 }
 
 <div class="container scores-page py-3">

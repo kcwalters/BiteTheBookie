@@ -11,7 +11,7 @@
     if (SignInManager.IsSignedIn(User))
     {
         var currentUser = await UserManager.GetUserAsync(User);
-        isPremiumOrVip = currentUser?.IsPremium == true;
+        isPremiumOrVip = currentUser?.IsPro == true;
     }
 
     var today = DateTime.UtcNow.Date;
