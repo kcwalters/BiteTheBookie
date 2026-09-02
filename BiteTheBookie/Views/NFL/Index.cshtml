@@ -85,25 +85,7 @@
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
                                 <div class="mt-2 text-end">
-                                    @if (hasGameSimulationAccess)
-                                    {
-                                        <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                                           asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="NFL">
-                                            Simulate Game
-                                        </a>
-                                    }
-                                    else if (SignInManager.IsSignedIn(User))
-                                    {
-                                        <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                            $ Game Simulation
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
-                                            $ Game Simulation
-                                        </a>
-                                    }
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL" }' />
                                 </div>
                             </div>
                         }

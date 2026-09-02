@@ -87,6 +87,7 @@ builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNews
 
 // Bet slip
 builder.Services.AddScoped<IBetSlipService, BetSlipService>();
+builder.Services.AddHttpClient<PayPalService>();
 
 // MLB
 builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
@@ -130,6 +131,11 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
+
+    // Diagnostic: validate configured PayPal billing plans exist and are ACTIVE.
+    // Never throws; only logs warnings so misconfiguration is caught at startup, not at checkout.
+    var payPalService = scope.ServiceProvider.GetRequiredService<PayPalService>();
+    await payPalService.ValidateConfiguredPlansAsync();
 }
 
 // Configure the HTTP request pipeline.

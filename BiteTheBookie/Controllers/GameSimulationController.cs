@@ -19,9 +19,14 @@ namespace BiteTheBookie.Controllers
         [HttpGet]
         public async Task<IActionResult> Start(string homeTeam, string awayTeam, string league)
         {
-            if (string.IsNullOrWhiteSpace(homeTeam) || string.IsNullOrWhiteSpace(awayTeam) || string.IsNullOrWhiteSpace(league))
+            if (string.IsNullOrWhiteSpace(homeTeam)
+                || string.IsNullOrWhiteSpace(awayTeam)
+                || string.IsNullOrWhiteSpace(league))
             {
-                return BadRequest("Missing game information for the simulation.");
+                return Content(
+                    "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2>" +
+                    "<p>Missing game details. Please try again from the scoreboard.</p></section>",
+                    "text/html");
             }
 
             var simulationResult = await _simulationService.GenerateGameSimulationAsync(

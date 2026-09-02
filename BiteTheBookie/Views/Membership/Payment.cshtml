@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Complete Your Payment";
+    var plan = (string)ViewBag.Plan;
+    var planId = (string)ViewBag.PlanId;
+    var clientId = (string)ViewBag.ClientId;
+    var clientToken = (string)ViewBag.ClientToken;
+    var sdkToken = (string)ViewBag.SdkToken;
+    var planName = (string)ViewBag.PlanName;
+    var planPrice = (string)ViewBag.PlanPrice;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+
+            <div class="selected-tier mb-4">
+                <div class="selected-tier__label"><i class="fas fa-lock me-2"></i>Secure Checkout</div>
+                <div class="selected-tier__row">
+                    <div>
+                        <div class="selected-tier__name">@planName Plan</div>
+                        <div class="selected-tier__tagline">Cancel anytime.</div>
+                    </div>
+                    <div class="selected-tier__price">
+                        @planPrice<span class="selected-tier__period"> per month</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold text-center mb-4">Complete Your Payment</h2>
+
+                    <div id="payment-error" class="alert alert-danger d-none" role="alert"></div>
+
+                    <!-- PayPal button (account or guest) -->
+                    <div id="paypal-button-container" class="mb-3"></div>
+
+                    <div class="text-center mt-3">
+                        <a asp-controller="Membership" asp-action="Join" class="selected-tier__change">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Hidden form used to post the approved subscription to the server for verification/activation. *@
+<form id="confirm-form" asp-controller="Membership" asp-action="ConfirmSubscription" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="subscriptionId" id="confirm-subscription-id" />
+    <input type="hidden" name="plan" value="@plan" />
+</form>
+
+@section Scripts {
+    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons&intent=subscription&vault=true"
+            data-client-token="@clientToken"
+            data-sdk-integration-source="integrationbuilder_sc"></script>
+    <script>
+        (function () {
+            const planId = '@planId';
+            const errorBox = document.getElementById('payment-error');
+
+            function showError(message) {
+                errorBox.textContent = message || 'Something went wrong processing your payment. Please try again.';
+                errorBox.classList.remove('d-none');
+                errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function completeSubscription(subscriptionId) {
+                document.getElementById('confirm-subscription-id').value = subscriptionId;
+                document.getElementById('confirm-form').submit();
+            }
+
+            if (typeof paypal === 'undefined') {
+                showError('Unable to load the payment provider. Please refresh and try again.');
+                return;
+            }
+
+            // Use PayPal Buttons only (no hosted card fields)
+            paypal.Buttons({
+                style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
+                createSubscription: function (data, actions) {
+                    return actions.subscription.create({ plan_id: planId });
+                },
+                onApprove: function (data) {
+                    completeSubscription(data.subscriptionID);
+                },
+                onError: function (err) {
+                    console.error(err);
+                    showError('There was a problem starting the PayPal checkout.');
+                }
+            }).render('#paypal-button-container');
+
+        })();
+    </script>
+}
