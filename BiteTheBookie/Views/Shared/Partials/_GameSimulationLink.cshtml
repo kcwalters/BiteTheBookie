@@ -9,8 +9,8 @@
     if (SignInManager.IsSignedIn(User))
     {
         var currentUser = await UserManager.GetUserAsync(User);
-        isPaid = currentUser != null && currentUser.IsPremium &&
-                 (currentUser.SubscriptionTier == SubscriptionTier.Premium || currentUser.SubscriptionTier == SubscriptionTier.VIP);
+        isPaid = currentUser != null && currentUser.IsPro &&
+                 (currentUser.SubscriptionTier == SubscriptionTier.Pro || currentUser.SubscriptionTier == SubscriptionTier.AllAccess);
     }
 }
 

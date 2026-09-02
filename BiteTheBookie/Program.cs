@@ -43,11 +43,11 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 // Authorization policies for Free vs Paid access
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("PremiumOnly", policy =>
-        policy.RequireClaim("SubscriptionTier", "Premium", "VIP"));
+    options.AddPolicy("ProOnly", policy =>
+        policy.RequireClaim("SubscriptionTier", "Pro", "AllAccess"));
 
-    options.AddPolicy("VIPOnly", policy =>
-        policy.RequireClaim("SubscriptionTier", "VIP"));
+    options.AddPolicy("AllAccessOnly", policy =>
+        policy.RequireClaim("SubscriptionTier", "AllAccess"));
 
     options.AddPolicy("RegisteredUser", policy =>
         policy.RequireAuthenticatedUser());

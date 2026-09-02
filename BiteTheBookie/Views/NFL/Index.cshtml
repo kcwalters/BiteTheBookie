@@ -7,7 +7,7 @@
     ViewData["Title"] = "NFL - Scores, Schedule & Headlines";
     var featured = Model.FeaturedHeadline;
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
+    var hasGameSimulationAccess = currentUser?.IsPro == true || currentUser?.AllAccessUser == true;
 }
 
 <div class="container nfl-landing py-3">

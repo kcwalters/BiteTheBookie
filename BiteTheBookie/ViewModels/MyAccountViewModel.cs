@@ -9,7 +9,7 @@ namespace BiteTheBookie.ViewModels
         public string LastName { get; set; } = string.Empty;
         public SubscriptionTier SubscriptionTier { get; set; }
         public DateTime? SubscriptionExpiry { get; set; }
-        public bool IsPremium { get; set; }
+        public bool IsPro { get; set; }
         public DateTime MemberSince { get; set; }
     }
 }
