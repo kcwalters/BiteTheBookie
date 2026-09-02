@@ -149,7 +149,7 @@
 
                         <div class="text-center mt-3">
                             <span class="text-muted">Already have an account?</span>
-                            <a asp-area="Identity" asp-page="/Account/Login">Log In</a>
+                            <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Query["returnUrl"]">Log In</a>
                         </div>
                     </form>
                 </div>

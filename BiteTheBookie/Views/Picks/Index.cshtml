@@ -137,11 +137,7 @@
                                     }
                                 </td>
                                 <td class="text-end">
-                                    <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = Model.League })"
-                                       class="btn btn-sm btn-outline-primary"
-                                       data-sim-trigger>
-                                        <i class="fas fa-bolt me-1"></i>Simulate
-                                    </a>
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.League }' />
                                 </td>
                             </tr>
                         }

@@ -38,16 +38,6 @@ namespace BiteTheBookie.Models
         /// Whether the subscription is currently active
         /// </summary>
 
-        public bool IsProUser
-        {
-            get { return SubscriptionTier == SubscriptionTier.Premium && IsPremium; }
-        }
-
-        public bool AllAccessUser
-        {
-            get { return SubscriptionTier == SubscriptionTier.VIP && IsPremium; }
-        }
-
         public bool IsPremium => SubscriptionTier != SubscriptionTier.Free 
                                  && SubscriptionExpiry.HasValue 
                                  && SubscriptionExpiry.Value > DateTime.UtcNow;
