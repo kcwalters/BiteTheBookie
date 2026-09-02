@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BiteTheBookie.Services.Interfaces;
+using BiteTheBookie.ViewModels;
 using System.Threading.Tasks;
 
 namespace BiteTheBookie.Controllers
@@ -34,8 +35,17 @@ namespace BiteTheBookie.Controllers
                 league: league
             );
 
-            // Return simulation output.
-            return Content(simulationResult, "text/html");
+            var model = new GameSimulationViewModel
+            {
+                GameId = $"{awayTeam}-at-{homeTeam}-{league}".ToLowerInvariant(),
+                HomeTeam = homeTeam,
+                AwayTeam = awayTeam,
+                League = league,
+                SimulationContent = simulationResult,
+                IsLoading = false
+            };
+
+            return View(model);
         }
     }
 }

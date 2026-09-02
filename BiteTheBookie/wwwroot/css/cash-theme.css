@@ -336,6 +336,13 @@ html.theme-cash .simulation-content li,
 html.theme-cash .simulation-content td,
 html.theme-cash .simulation-content div,
 html.theme-cash .simulation-content span,
+html.theme-cash .simulation-hero,
+html.theme-cash .simulation-hero p,
+html.theme-cash .simulation-hero span,
+html.theme-cash .simulation-hero div,
+html.theme-cash .simulation-hero h1,
+html.theme-cash .simulation-hero h2,
+html.theme-cash .simulation-hero h3,
 html.theme-cash .markdown-content,
 html.theme-cash .markdown-content p,
 html.theme-cash .markdown-content li,
@@ -349,11 +356,32 @@ html.theme-cash .simulation-content h1,
 html.theme-cash .simulation-content h2,
 html.theme-cash .simulation-content h3,
 html.theme-cash .simulation-content strong,
+html.theme-cash .simulation-hero .simulation-title,
+html.theme-cash .simulation-hero .simulation-team__name,
+html.theme-cash .simulation-hero .simulation-badge,
 html.theme-cash .markdown-content h1,
 html.theme-cash .markdown-content h2,
 html.theme-cash .markdown-content h3,
 html.theme-cash .markdown-content strong {
     color: var(--btb-primary, #0066cc) !important;
+}
+
+html.theme-cash .simulation-hero {
+    background: linear-gradient(135deg, #06111f 0%, #0b2345 55%, #123a6b 100%);
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+html.theme-cash .simulation-notice {
+    background: rgba(0, 102, 204, .08);
+    border-color: rgba(0, 102, 204, .2);
+}
+
+html.theme-cash .simulation-shell {
+    border-color: rgba(255,255,255,.08);
+}
+
+html.theme-cash .simulation-content {
+    background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
 }
 
 html.theme-cash .markdown-content table th {

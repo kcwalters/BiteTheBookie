@@ -1,6 +1,12 @@
 ﻿@model IEnumerable<BiteTheBookie.Models.MLB.Game>
+@using BiteTheBookie.Models
 @using Microsoft.AspNetCore.Identity
-@inject SignInManager<BiteTheBookie.Models.ApplicationUser> SignInManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
+}
 
 <style>
     .mlb-schedule {

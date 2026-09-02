@@ -42,7 +42,7 @@
         <!-- Cache notice -->
         @if (Model.IsFromCache && Model.CachedAt.HasValue)
         {
-            <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+            <div class="simulation-notice d-flex align-items-center gap-2 mb-3">
                 <i class="fas fa-database fs-5"></i>
                 <span>
                     Simulation loaded from today&rsquo;s saved results
@@ -55,7 +55,7 @@
         }
 
         <!-- Simulation content -->
-        <div class="content-card">
+        <div class="content-card simulation-shell">
             @if (string.IsNullOrWhiteSpace(Model.SimulationContent))
             {
                 <div class="alert alert-warning mb-0">
@@ -71,13 +71,13 @@
         </div>
 
         <!-- Action buttons -->
-        <div class="content-card mt-4">
+        <div class="simulation-actions mt-4">
             <div class="d-flex gap-2 justify-content-center flex-wrap">
                 <a href="@Url.Action("Detail", "Picks", new { gameId = Model.GameId, regenerate = true })"
-                   class="btn btn-primary" data-sim-trigger>
+                   class="btn btn-primary btn-lg simulation-actions__primary" data-sim-trigger>
                     <i class="fas fa-sync-alt me-1"></i> Regenerate Simulation
                 </a>
-                <a asp-controller="Picks" asp-action="Index" class="btn btn-outline-secondary">
+                <a asp-controller="Picks" asp-action="Index" class="btn btn-outline-secondary btn-lg simulation-actions__secondary">
                     <i class="fas fa-list me-1"></i> View All Picks
                 </a>
             </div>

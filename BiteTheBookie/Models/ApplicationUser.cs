@@ -51,6 +51,10 @@ namespace BiteTheBookie.Models
         public bool IsPremium => SubscriptionTier != SubscriptionTier.Free 
                                  && SubscriptionExpiry.HasValue 
                                  && SubscriptionExpiry.Value > DateTime.UtcNow;
+
+        public bool IsProUser => SubscriptionTier == SubscriptionTier.Premium && IsPremium;
+
+        public bool AllAccessUser => SubscriptionTier == SubscriptionTier.VIP && IsPremium;
     }
 
     public enum SubscriptionTier
