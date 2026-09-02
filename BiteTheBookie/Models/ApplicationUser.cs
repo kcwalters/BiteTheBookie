@@ -38,7 +38,7 @@ namespace BiteTheBookie.Models
         /// Whether the subscription is currently active
         /// </summary>
 
-        public bool IsPro => SubscriptionTier != SubscriptionTier.Pro 
+        public bool IsPro => (SubscriptionTier == SubscriptionTier.Pro || SubscriptionTier == SubscriptionTier.AllAccess)
                                  && SubscriptionExpiry.HasValue 
                                  && SubscriptionExpiry.Value > DateTime.UtcNow;
 
