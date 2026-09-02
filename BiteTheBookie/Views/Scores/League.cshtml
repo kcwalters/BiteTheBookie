@@ -86,33 +86,7 @@
                         </div>
                         <!-- Simulation link/button -->
                         <div class="mt-2 text-end">
-                            @if (SignInManager.IsSignedIn(User))
-                            {
-                                var currentUser = await UserManager.GetUserAsync(User);
-                                if (currentUser == null)
-                                {
-                                    <p class="text-danger">[Error: Unable to load user details]</p>
-                                }
-                                else if (currentUser.SubscriptionTier == SubscriptionTier.Premium || currentUser.SubscriptionTier == SubscriptionTier.VIP)
-                                {
-                                    <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start" asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
-                                        <i class="fa-solid fa-computer"></i> Game Simulation
-                                    </a>
-                                }
-                                else
-                                {
-                                    <p class="text-warning">[Debug: User subscription tier: @currentUser.SubscriptionTier]</p>
-                                    <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                        <i class="fa-solid fa-dollar-sign"></i> $ Game Simulation
-                                    </a>
-                                }
-                            }
-                            else
-                            {
-                                <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                    <i class="fa fa-user-plus"></i> Join to Simulate
-                                </a>
-                            }
+                            <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.LeagueCode }' />
                         </div>
                     </div>
                 }

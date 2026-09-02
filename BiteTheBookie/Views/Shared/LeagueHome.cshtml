@@ -80,6 +80,9 @@
                                     </div>
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
+                                <div class="mt-2 text-end">
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.ExpertPicksLeague }' />
+                                </div>
                             </div>
                         }
                     </div>
