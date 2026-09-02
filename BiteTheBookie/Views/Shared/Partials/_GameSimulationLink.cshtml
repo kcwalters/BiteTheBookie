@@ -16,7 +16,8 @@
 
 @if (isPaid)
 {
-    <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
+    <a class="btn btn-sm btn-primary"
+       asp-controller="GameSimulation" asp-action="Start"
        asp-route-homeTeam="@Model.HomeTeam" asp-route-awayTeam="@Model.AwayTeam" asp-route-league="@Model.League">
         <i class="fa-solid fa-computer"></i> Game Simulation
     </a>

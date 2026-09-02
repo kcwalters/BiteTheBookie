@@ -148,7 +148,7 @@
                         }
                         else
                         {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
                                 $ Game Simulation
                             </a>
                         }
@@ -203,7 +203,7 @@
                         }
                         else
                         {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
                                 $ Game Simulation
                             </a>
                         }
@@ -258,7 +258,7 @@
                         }
                         else
                         {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
                                 $ Game Simulation
                             </a>
                         }

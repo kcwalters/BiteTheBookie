@@ -34,41 +34,8 @@
     }
     else
     {
-        @if (Model.IsFromCache && Model.CachedAt.HasValue)
-        {
-            <div class="simulation-notice mb-3">
-                <i class="fas fa-database me-2"></i>
-                Loaded from cache at @Model.CachedAt.Value.ToLocalTime().ToString("h:mm tt")
-                <a class="ms-2" href="@Url.Action("Start", "GameSimulation", new { homeTeam = Model.HomeTeam, awayTeam = Model.AwayTeam, league = Model.League })">regenerate</a>
-            </div>
-        }
-
-        <div class="content-card simulation-shell">
-            @if (string.IsNullOrWhiteSpace(Model.SimulationContent))
-            {
-                <div class="alert alert-warning mb-0">
-                    <p class="mb-0">No simulation content is available yet.</p>
-                </div>
-            }
-            else
-            {
-                <div class="simulation-content markdown-content">
-                    @Html.Raw(Model.SimulationContent)
-                </div>
-            }
-        </div>
-
-        <div class="simulation-actions mt-4">
-            <div class="d-flex gap-2 justify-content-center flex-wrap">
-                <a href="@Url.Action("Start", "GameSimulation", new { homeTeam = Model.HomeTeam, awayTeam = Model.AwayTeam, league = Model.League })"
-                   class="btn btn-primary btn-lg simulation-actions__primary">
-                    <i class="fas fa-sync-alt me-1"></i> Regenerate Simulation
-                </a>
-                <a asp-controller="Scores" asp-action="League" asp-route-league="@Model.League"
-                   class="btn btn-outline-secondary btn-lg simulation-actions__secondary">
-                    <i class="fas fa-chart-bar me-1"></i> Back to Scores
-                </a>
-            </div>
+        <div class="content-card">
+            <partial name="_SimulationResult" model="Model" />
         </div>
     }
 </div>

@@ -291,8 +291,8 @@ namespace BiteTheBookie.Controllers
             // Swap Identity role from Free to the paid tier
             var targetRole = tier switch
             {
-                SubscriptionTier.VIP => "VIP",
-                SubscriptionTier.Premium => "Premium",
+                SubscriptionTier.VIP => "Pro",
+                SubscriptionTier.Premium => "All Access",
                 _ => "Free"
             };
             var currentRoles = await _userManager.GetRolesAsync(user);
@@ -361,8 +361,8 @@ namespace BiteTheBookie.Controllers
             // Swap Identity role from Free to the paid tier
             var targetRole = tier switch
             {
-                SubscriptionTier.VIP => "VIP",
-                SubscriptionTier.Premium => "Premium",
+                SubscriptionTier.VIP => "PRO",
+                SubscriptionTier.Premium => "All Access",
                 _ => "Free"
             };
             var currentRoles = await _userManager.GetRolesAsync(user);
