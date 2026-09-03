@@ -136,7 +136,7 @@
                     <li><a asp-controller="Odds" asp-action="Index"><i class="fas fa-percent"></i>NFL Odds</a></li>
                     <li><a asp-controller="Picks" asp-action="AgainstTheSpread"><i class="fas fa-balance-scale"></i>Against the Spread</a></li>
                     <li><a asp-controller="Experts" asp-action="Index"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
-                    <li><a href="https://www.espn.com/nfl/schedule" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
+                    <li><a asp-controller="Schedule" asp-action="Index" asp-route-league="NFL"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
                     <li><a href="https://www.espn.com/nfl/standings" target="_blank" rel="noopener"><i class="fas fa-list-ol"></i>Standings</a></li>
                 </ul>
             </div>

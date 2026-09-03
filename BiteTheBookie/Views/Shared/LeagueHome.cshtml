@@ -131,9 +131,9 @@
                     <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction"><i class="fas fa-percent"></i>@league Odds</a></li>
                     <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
                     <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-list-ol"></i>Scores</a></li>
-                    @if (!string.IsNullOrWhiteSpace(Model.EspnScheduleUrl))
+                    @if (!string.IsNullOrWhiteSpace(Model.ExpertPicksLeague))
                     {
-                        <li><a href="@Model.EspnScheduleUrl" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
+                        <li><a asp-controller="Schedule" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
                     }
                     @if (!string.IsNullOrWhiteSpace(Model.EspnStandingsUrl))
                     {
