@@ -41,6 +41,27 @@ namespace BiteTheBookie.ViewModels
         /// Available MLB games for the Game ID dropdown.
         /// </summary>
         public List<MlbGameOption> AvailableMlbGames { get; set; } = new();
+
+        /// <summary>
+        /// Available CBB (college basketball) games for the Game ID dropdown.
+        /// </summary>
+        public List<CollegeGameOption> AvailableCbbGames { get; set; } = new();
+
+        /// <summary>
+        /// Available CFB (college football) games for the Game ID dropdown.
+        /// </summary>
+        public List<CollegeGameOption> AvailableCfbGames { get; set; } = new();
+    }
+
+    public class CollegeGameOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string AwayLogo { get; set; } = string.Empty;
+        public string HomeLogo { get; set; } = string.Empty;
+        public string AwayName { get; set; } = string.Empty;
+        public string HomeName { get; set; } = string.Empty;
+        public DateTime GameTime { get; set; }
     }
 
     public class MlbGameOption

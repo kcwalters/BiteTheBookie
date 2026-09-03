@@ -35,6 +35,14 @@
                 <a class="nav-link @(Model.SelectedLeague == "NFL" ? "active" : "")"
                    asp-action="Index" asp-route-league="NFL">NFL</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "CBB" ? "active" : "")"
+                   asp-action="Index" asp-route-league="CBB">CBB</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(Model.SelectedLeague == "CFB" ? "active" : "")"
+                   asp-action="Index" asp-route-league="CFB">CFB</a>
+            </li>
         </ul>
 
         @if (Model.Picks.Any())

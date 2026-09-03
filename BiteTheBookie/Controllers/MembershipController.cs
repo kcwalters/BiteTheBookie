@@ -207,47 +207,6 @@ namespace BiteTheBookie.Controllers
         }
 
         /// <summary>
-        /// Upgrade subscription
-        /// </summary>
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Upgrade(string plan)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return RedirectToAction("Join");
-
-            var newTier = plan?.ToLower() switch
-            {
-                "premium" => SubscriptionTier.Pro,
-                "vip" => SubscriptionTier.AllAccess,
-                _ => SubscriptionTier.Free
-            };
-
-            // TODO: Process payment via Stripe/PayPal before upgrading
-
-            user.SubscriptionTier = newTier;
-            user.SubscriptionExpiry = DateTime.UtcNow.AddMonths(1);
-
-            await _userManager.UpdateAsync(user);
-
-            // Update claims
-            var existingClaims = await _userManager.GetClaimsAsync(user);
-            var tierClaim = existingClaims.FirstOrDefault(c => c.Type == "SubscriptionTier");
-            if (tierClaim != null)
-            {
-                await _userManager.RemoveClaimAsync(user, tierClaim);
-            }
-            await _userManager.AddClaimAsync(user,
-                new System.Security.Claims.Claim("SubscriptionTier", newTier.ToString()));
-
-            // Refresh sign-in to update claims
-            await _signInManager.RefreshSignInAsync(user);
-
-            return RedirectToAction("MyAccount");
-        }
-
-        /// <summary>
         /// Validate PayPal subscription and apply selected tier
         /// </summary>
         [Authorize]
