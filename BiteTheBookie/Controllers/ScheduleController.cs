@@ -35,6 +35,9 @@ namespace BiteTheBookie.Controllers
             if (!_scheduleService.IsSupported(code))
                 code = "NFL";
 
+            // When the user hasn't explicitly picked a date, default to the next day
+            // that actually has games so the scoreboard is never empty on load.
+            var userPickedDate = date.HasValue;
             var selectedDate = (date ?? DateTime.Today).Date;
 
             var model = new ScheduleViewModel
@@ -46,7 +49,26 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                model.Games = await _scheduleService.GetGamesForDateAsync(code, selectedDate, cancellationToken);
+                var games = await _scheduleService.GetGamesForDateAsync(code, selectedDate, cancellationToken);
+
+                if (!userPickedDate && games.Count == 0)
+                {
+                    // Scan forward up to two weeks for the next game day.
+                    for (int i = 1; i <= 14; i++)
+                    {
+                        var nextDate = DateTime.Today.AddDays(i);
+                        var upcoming = await _scheduleService.GetGamesForDateAsync(code, nextDate, cancellationToken);
+                        if (upcoming.Count > 0)
+                        {
+                            selectedDate = nextDate;
+                            model.SelectedDate = nextDate;
+                            games = upcoming;
+                            break;
+                        }
+                    }
+                }
+
+                model.Games = games;
             }
             catch
             {

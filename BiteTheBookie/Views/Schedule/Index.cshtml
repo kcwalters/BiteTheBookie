@@ -35,7 +35,13 @@
     </div>
 
     <div class="content-card">
-        <h5 class="mb-3">@Model.SelectedDateDisplay</h5>
+        <h5 class="mb-3">
+            @Model.SelectedDateDisplay
+            @if (Model.SelectedDate.Date > DateTime.Today)
+            {
+                <span class="badge bg-primary ms-2">Next Game Day</span>
+            }
+        </h5>
 
         @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
         {
