@@ -99,6 +99,9 @@ builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
 builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection("SportsTicker"));
 builder.Services.AddSportsTickers(builder.Configuration);
 
+// Daily Fantasy Football (DFS)
+builder.Services.AddFantasyFootball(builder.Configuration);
+
 // Game services
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddScoped<INBARosterService, NBARosterService>();
