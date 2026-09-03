@@ -99,6 +99,9 @@ builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
 builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection("SportsTicker"));
 builder.Services.AddSportsTickers(builder.Configuration);
 
+// Daily Fantasy Football (DFS)
+builder.Services.AddFantasyFootball(builder.Configuration);
+
 // Game services
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddScoped<INBARosterService, NBARosterService>();
@@ -131,6 +134,14 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
+
+    // Ensure the subscription/access roles exist so AddToRoleAsync never fails.
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    foreach (var roleName in new[] { "Free", "Pro", "AllAccess", "Admin" })
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+    }
 
     // Diagnostic: validate configured PayPal billing plans exist and are ACTIVE.
     // Never throws; only logs warnings so misconfiguration is caught at startup, not at checkout.

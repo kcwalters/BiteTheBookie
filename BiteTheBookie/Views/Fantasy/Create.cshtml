@@ -1,0 +1,99 @@
+@model DateTime
+@{
+    ViewData["Title"] = "Create DFS Contest";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="text-uppercase text-muted small fw-bold">Admin</div>
+        <h1 class="mb-2">Create DFS Contest</h1>
+        <p class="text-muted mb-0">
+            A contest and its player pool are built from the real ESPN NFL slate for the selected date.
+            Salaries are derived from real roster/depth data. Lock time is the earliest kickoff.
+        </p>
+    </div>
+
+    @if (TempData["FantasyError"] is string errMsg)
+    {
+        <div class="alert alert-danger">@errMsg</div>
+    }
+
+    <div class="content-card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label" for="name">Contest Name (optional)</label>
+                <input type="text" id="name" name="name" class="form-control" placeholder="Leave blank to auto-name" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="slateDate">Slate Date</label>
+                <input type="date" id="slateDate" name="slateDate" class="form-control"
+                       value="@Model.ToString("yyyy-MM-dd")" required />
+                <div class="form-text">Choose a date with scheduled NFL games (e.g. a Sunday).</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="slateGames">Games on this date</label>
+                <select id="slateGames" class="form-select" multiple size="6" disabled>
+                    <option value="">Select a date to load games…</option>
+                </select>
+                <div class="form-text" id="slateGamesHelp">
+                    All games on the selected date are included in the contest. This list is for reference.
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Build Contest</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const dateInput = document.getElementById('slateDate');
+            const gamesSelect = document.getElementById('slateGames');
+            const help = document.getElementById('slateGamesHelp');
+            const url = '@Url.Action("SlateGames", "Fantasy")';
+
+            async function loadGames() {
+                const date = dateInput.value;
+                if (!date) return;
+
+                gamesSelect.disabled = true;
+                gamesSelect.innerHTML = '<option value="">Loading games…</option>';
+
+                try {
+                    const resp = await fetch(url + '?date=' + encodeURIComponent(date), {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!resp.ok) throw new Error('Request failed');
+                    const games = await resp.json();
+
+                    gamesSelect.innerHTML = '';
+                    if (!games.length) {
+                        gamesSelect.innerHTML = '<option value="">No NFL games scheduled for this date</option>';
+                        help.textContent = 'Pick a date with scheduled NFL games (e.g. a Sunday).';
+                        return;
+                    }
+
+                    games.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.gameId;
+                        opt.textContent = g.label + (g.status && g.status !== 'Scheduled' ? ' (' + g.status + ')' : '');
+                        gamesSelect.appendChild(opt);
+                    });
+                    gamesSelect.size = Math.min(Math.max(games.length, 3), 10);
+                    help.textContent = games.length + ' game(s) found. All are included in the contest.';
+                } catch (e) {
+                    gamesSelect.innerHTML = '<option value="">Could not load games. Try again.</option>';
+                    help.textContent = 'There was a problem loading the slate from the ESPN API.';
+                }
+            }
+
+            dateInput.addEventListener('change', loadGames);
+            // Load initial games for the default date.
+            loadGames();
+        })();
+    </script>
+}

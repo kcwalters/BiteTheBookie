@@ -1,0 +1,78 @@
+@model BiteTheBookie.ViewModels.FantasyLeaderboardViewModel
+@{
+    ViewData["Title"] = $"{Model.Contest.Name} — Leaderboard";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="text-uppercase text-muted small fw-bold">Leaderboard · @Model.Contest.League</div>
+                <h1 class="mb-2">@Model.Contest.Name</h1>
+                <div class="text-muted small">
+                    @if (Model.Contest.IsScored)
+                    {
+                        <span class="badge bg-secondary">Final</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Not Scored</span>
+                    }
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                @if (User.IsInRole("Admin") && !Model.Contest.IsScored)
+                {
+                    <form asp-action="Score" method="post" onsubmit="return confirm('Score this contest from live box-score data?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Contest.Id" />
+                        <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-bolt me-1"></i> Score Now</button>
+                    </form>
+                }
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> Lobby</a>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["FantasyMessage"] is string okMsg)
+    {
+        <div class="alert alert-success">@okMsg</div>
+    }
+    @if (TempData["FantasyError"] is string errMsg)
+    {
+        <div class="alert alert-danger">@errMsg</div>
+    }
+
+    <div class="content-card">
+        @if (!Model.Rows.Any())
+        {
+            <p class="mb-0 text-muted">No entries have been submitted yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Rank</th>
+                            <th>Player</th>
+                            <th class="text-end">Salary Used</th>
+                            <th class="text-end">Points</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr class="@(row.IsCurrentUser ? "table-primary" : "")">
+                                <td>@row.Rank</td>
+                                <td>@row.UserName @(row.IsCurrentUser ? "(you)" : "")</td>
+                                <td class="text-end">$@row.TotalSalary.ToString("N0")</td>
+                                <td class="text-end fw-bold">@(row.TotalPoints.HasValue ? row.TotalPoints.Value.ToString("N2") : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

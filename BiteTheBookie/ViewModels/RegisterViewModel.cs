@@ -63,7 +63,7 @@ namespace BiteTheBookie.ViewModels
         public string ConfirmPassword { get; set; } = string.Empty;
 
         /// <summary>
-        /// free, premium, or vip
+        /// free, pro, or vip
         /// </summary>
         public string? SelectedPlan { get; set; } = "free";
     }

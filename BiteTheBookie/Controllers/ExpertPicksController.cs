@@ -21,6 +21,8 @@ namespace BiteTheBookie.Controllers
         private readonly ILogger<ExpertPicksController> _logger;
         private readonly INBAGamesService _nbaGamesService;
         private readonly IMLBGamesService _mlbGamesService;
+        private readonly ICBBGamesService _cbbGamesService;
+        private readonly ICFBGamesService _cfbGamesService;
         private readonly TheOddsApiClient _oddsApiClient;
 
         public ExpertPicksController(
@@ -29,6 +31,8 @@ namespace BiteTheBookie.Controllers
             ILogger<ExpertPicksController> logger,
             INBAGamesService nbaGamesService,
             IMLBGamesService mlbGamesService,
+            ICBBGamesService cbbGamesService,
+            ICFBGamesService cfbGamesService,
             TheOddsApiClient oddsApiClient)
         {
             _db = db;
@@ -36,6 +40,8 @@ namespace BiteTheBookie.Controllers
             _logger = logger;
             _nbaGamesService = nbaGamesService;
             _mlbGamesService = mlbGamesService;
+            _cbbGamesService = cbbGamesService;
+            _cfbGamesService = cfbGamesService;
             _oddsApiClient = oddsApiClient;
         }
 
@@ -253,6 +259,34 @@ namespace BiteTheBookie.Controllers
                     awayTeamName = mlbGame.AwayTeam,
                     homeTeamName = mlbGame.HomeTeam,
                     gameTime = mlbGame.GameTime?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm") ?? "Unavailable"
+                });
+            }
+
+            if (league == "CBB")
+            {
+                var cbbGames = await _cbbGamesService.GetUpcomingCBBGamesAsync();
+                var cbbGame = cbbGames.FirstOrDefault(g => g.GameId == gameId);
+                if (cbbGame == null) return NotFound();
+
+                return Json(new
+                {
+                    awayTeamName = cbbGame.AwayTeamName,
+                    homeTeamName = cbbGame.HomeTeamName,
+                    gameTime = cbbGame.GameTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm")
+                });
+            }
+
+            if (league == "CFB")
+            {
+                var cfbGames = await _cfbGamesService.GetUpcomingCFBGamesAsync();
+                var cfbGame = cfbGames.FirstOrDefault(g => g.GameId == gameId);
+                if (cfbGame == null) return NotFound();
+
+                return Json(new
+                {
+                    awayTeamName = cfbGame.AwayTeamName,
+                    homeTeamName = cfbGame.HomeTeamName,
+                    gameTime = cfbGame.GameTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm")
                 });
             }
 
@@ -496,22 +530,11 @@ namespace BiteTheBookie.Controllers
 
         private async Task PopulateAvailableGamesAsync(AdminPickViewModel vm)
         {
-            if (vm.League == "NBA")
-            {
-                vm.AvailableNbaGames = await GetNbaGameSelectListAsync();
-            }
-
-            // Always load MLB games too so they're available when the user switches leagues
+            // Load all leagues so games are available when the user switches leagues.
+            vm.AvailableNbaGames = await GetNbaGameSelectListAsync();
             vm.AvailableMlbGames = await GetMlbGameSelectListAsync();
-
-            if (vm.League == "NBA")
-            {
-                // NBA was already loaded above
-            }
-            else
-            {
-                vm.AvailableNbaGames = await GetNbaGameSelectListAsync();
-            }
+            vm.AvailableCbbGames = await GetCbbGameSelectListAsync();
+            vm.AvailableCfbGames = await GetCfbGameSelectListAsync();
         }
 
         private async Task<List<ViewModels.NbaGameOption>> GetNbaGameSelectListAsync()
@@ -566,6 +589,62 @@ namespace BiteTheBookie.Controllers
             {
                 _logger.LogWarning(ex, "Failed to load MLB games for dropdown");
                 return new List<ViewModels.MlbGameOption>();
+            }
+        }
+
+        private async Task<List<ViewModels.CollegeGameOption>> GetCbbGameSelectListAsync()
+        {
+            try
+            {
+                var games = await _cbbGamesService.GetUpcomingCBBGamesAsync();
+
+                return games
+                    .Where(g => g.Status == "Scheduled")
+                    .OrderBy(g => g.GameTime)
+                    .Select(g => new ViewModels.CollegeGameOption
+                    {
+                        Value = g.GameId,
+                        Text = $"{g.AwayTeamName} @ {g.HomeTeamName} \u2014 {g.GameTime.ToLocalTime():MMM dd, h:mm tt}",
+                        AwayLogo = g.AwayTeamLogo,
+                        HomeLogo = g.HomeTeamLogo,
+                        AwayName = g.AwayTeamName,
+                        HomeName = g.HomeTeamName,
+                        GameTime = g.GameTime
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load CBB games for dropdown");
+                return new List<ViewModels.CollegeGameOption>();
+            }
+        }
+
+        private async Task<List<ViewModels.CollegeGameOption>> GetCfbGameSelectListAsync()
+        {
+            try
+            {
+                var games = await _cfbGamesService.GetUpcomingCFBGamesAsync();
+
+                return games
+                    .Where(g => g.Status == "Scheduled")
+                    .OrderBy(g => g.GameTime)
+                    .Select(g => new ViewModels.CollegeGameOption
+                    {
+                        Value = g.GameId,
+                        Text = $"{g.AwayTeamName} @ {g.HomeTeamName} \u2014 {g.GameTime.ToLocalTime():MMM dd, h:mm tt}",
+                        AwayLogo = g.AwayTeamLogo,
+                        HomeLogo = g.HomeTeamLogo,
+                        AwayName = g.AwayTeamName,
+                        HomeName = g.HomeTeamName,
+                        GameTime = g.GameTime
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load CFB games for dropdown");
+                return new List<ViewModels.CollegeGameOption>();
             }
         }
 
