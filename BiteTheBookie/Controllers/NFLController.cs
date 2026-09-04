@@ -132,7 +132,7 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                model.UpcomingGames = await GetUpcomingGamesAsync("NFL", cancellationToken);
+                model.UpcomingGames = await _scheduleService.GetNflGamesByWeekAsync(cancellationToken);
             }
             catch
             {
@@ -149,26 +149,6 @@ namespace BiteTheBookie.Controllers
             }
 
             return View(model);
-        }
-
-        // Fetches all games for the current week (Monday through Sunday) from the live
-        // ESPN schedule feed.
-        private async Task<List<NBAGameMatchup>> GetUpcomingGamesAsync(string league, CancellationToken cancellationToken)
-        {
-            var upcoming = new List<NBAGameMatchup>();
-
-            // Find Monday of the current week (Monday-Sunday span).
-            var today = DateTime.Today;
-            int daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
-            var monday = today.AddDays(-daysSinceMonday);
-
-            for (var i = 0; i < 7; i++)
-            {
-                var dayGames = await _scheduleService.GetGamesForDateAsync(league, monday.AddDays(i), cancellationToken);
-                upcoming.AddRange(dayGames);
-            }
-
-            return upcoming;
         }
 
         public IActionResult AllTeams()

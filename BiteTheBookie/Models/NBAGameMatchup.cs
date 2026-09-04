@@ -19,6 +19,9 @@ namespace BiteTheBookie.Models
         public int? HomeScore { get; set; }
         public string Status { get; set; } = "Scheduled";
 
+        /// <summary>NFL week number (regular season), when applicable. 0 if not set.</summary>
+        public int Week { get; set; }
+
         /// <summary>Venue/location description (e.g. "Crypto.com Arena, Los Angeles").</summary>
         public string Venue { get; set; } = string.Empty;
 
