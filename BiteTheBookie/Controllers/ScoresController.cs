@@ -27,7 +27,7 @@ namespace BiteTheBookie.Controllers
             _nHLScoresService = nHLSScoresService;
             _nCAAScoresService = nCAAScoresService;
             _cFBScoresService = cFBScoresService;
-            _mLBGamesService = mLBGamesService;
+            _mLBGamesService = mLBGamesService; 
         }
 
         // Landing: default to NFL scores.
