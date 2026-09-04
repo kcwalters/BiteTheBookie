@@ -20,12 +20,4 @@ namespace BiteTheBookie.Services.Interfaces
         Task<IEnumerable<NewsItemViewModel>> GetLatestNewsAsync(string feedUrl, int count);
         Task<NewsItemViewModel> GetNewsByIdAsync(int id);
     }
-
-    public interface IBetSlipService
-    {
-        Task<BetSlipViewModel> GetBetSlipAsync();
-        Task AddBetAsync(AddBetRequest request);
-        Task RemoveBetAsync(int gameId);
-        Task ClearAsync();
-    }
 }

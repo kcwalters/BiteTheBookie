@@ -1,13 +1,4 @@
-﻿// Toggle BetSlip visibility
-function removeBet(gameId) {
-    fetch('/BetSlip/Remove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameId })
-    }).then(() => location.reload());
-}
-
-// Refresh NFL ticker every 60 seconds
+﻿// Refresh NFL ticker every 60 seconds
 (function () {
     const REFRESH_MS = 60000; // 60 seconds
     async function refreshTicker() {

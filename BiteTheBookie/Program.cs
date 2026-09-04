@@ -56,7 +56,7 @@ builder.Services.AddAuthorization(options =>
 // MVC
 builder.Services.AddControllersWithViews();
 
-// Azure OpenAI ChatClient — register once for all services
+// Azure OpenAI ChatClient â€” register once for all services
 var aoaiEndpoint = builder.Configuration["AzureOpenAI:Endpoint"];
 var aoaiApiKey = builder.Configuration["AzureOpenAI:ApiKey"];
 var aoaiDeployment = builder.Configuration["AzureOpenAI:DeploymentName"];
@@ -80,13 +80,11 @@ builder.Services.AddScoped<TheOddsApiClient>();
 builder.Services.AddHttpClient<OddsService>();
 builder.Services.AddScoped<IOddsService>(sp => sp.GetRequiredService<OddsService>());
 
-// News (ESPN RSS overrides the stub — only register EspnRssNewsService)
+// News (ESPN RSS overrides the stub â€” only register EspnRssNewsService)
 builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
 builder.Services.AddHttpClient<EspnRssNewsService>();
 builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
 
-// Bet slip
-builder.Services.AddScoped<IBetSlipService, BetSlipService>();
 builder.Services.AddHttpClient<PayPalService>();
 
 // MLB
