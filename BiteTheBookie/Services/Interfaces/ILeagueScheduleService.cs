@@ -16,6 +16,12 @@ namespace BiteTheBookie.Services.Interfaces
         /// <param name="league">League code: NBA, NFL, NHL, MLB, CFB, or CBB.</param>
         Task<List<NBAGameMatchup>> GetGamesForDateAsync(string league, DateTime date, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Returns every NFL regular-season game for the current season, with each game's
+        /// <see cref="NBAGameMatchup.Week"/> populated. Games are ordered by week then start time.
+        /// </summary>
+        Task<List<NBAGameMatchup>> GetNflGamesByWeekAsync(CancellationToken cancellationToken = default);
+
         /// <summary>Returns true if the given league code is supported.</summary>
         bool IsSupported(string league);
     }

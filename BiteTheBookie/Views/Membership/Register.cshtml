@@ -2,28 +2,71 @@
 
 @{
     ViewData["Title"] = "Create Account";
-    var planName = Model.SelectedPlan?.ToLower() switch
+    var plan = Model.SelectedPlan?.ToLower();
+    var planName = plan switch
     {
-        "premium" => "Premium",
-        "vip" => "VIP",
+        "pro" => "Pro",
+        "allaccess" => "All Access",
         _ => "Free"
     };
-    var planColor = Model.SelectedPlan?.ToLower() switch
+    var planPrice = plan switch
     {
-        "premium" => "primary",
-        "vip" => "dark",
+        "pro" => "$9.99",
+        "allaccess" => "$19.99",
+        _ => "$0"
+    };
+    var planPeriod = plan switch
+    {
+        "pro" => "per month",
+        "allaccess" => "per month",
+        _ => "forever"
+    };
+    var planColor = plan switch
+    {
+        "pro" => "primary",
+        "allaccess" => "warning",
         _ => "secondary"
     };
+    var planTagline = plan switch
+    {
+        "pro" => "The complete toolkit for serious handicappers.",
+        "allaccess" => "Everything we offer, plus AllAccess-only perks.",
+        _ => "Follow the action & get a feel for the platform."
+    };
+    var isPaid = plan == "pro" || plan == "allaccess";
 }
 
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
+
+            <div class="selected-tier mb-4">
+                <div class="selected-tier__label"><i class="fas fa-tag me-2"></i>Selected Plan</div>
+                <div class="selected-tier__row">
+                    <div>
+                        <div class="selected-tier__name">@planName</div>
+                        <div class="selected-tier__tagline">@planTagline</div>
+                    </div>
+                    <div class="selected-tier__price">
+                        @planPrice<span class="selected-tier__period"> @planPeriod</span>
+                    </div>
+                </div>
+                <a asp-controller="Membership" asp-action="Join" class="selected-tier__change">
+                    <i class="fas fa-arrow-left me-1"></i>Change plan
+                </a>
+            </div>
+
             <div class="card shadow-sm">
                 <div class="card-body p-4">
                     <div class="text-center mb-4">
                         <h2 class="fw-bold">Create Your Account</h2>
                         <span class="badge bg-@planColor fs-6 mt-2">@planName Plan</span>
+                        @if (isPaid)
+                        {
+                            <div class="text-muted small mt-2">
+                                You'll complete secure payment after creating your account.
+                            </div>
+                        }
                     </div>
 
                     <form asp-action="Register" method="post">
@@ -106,7 +149,7 @@
 
                         <div class="text-center mt-3">
                             <span class="text-muted">Already have an account?</span>
-                            <a asp-area="Identity" asp-page="/Account/Login">Log In</a>
+                            <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Query["returnUrl"]">Log In</a>
                         </div>
                     </form>
                 </div>
@@ -114,6 +157,69 @@
         </div>
     </div>
 </div>
+
+<style>
+    .selected-tier {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 14px;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+    }
+
+    .selected-tier__label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #38bdf8;
+        margin-bottom: 0.5rem;
+    }
+
+    .selected-tier__row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .selected-tier__name {
+        font-size: 1.35rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .selected-tier__tagline {
+        color: #9ca3af;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .selected-tier__price {
+        font-size: 1.6rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .selected-tier__period {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #9ca3af;
+    }
+
+    .selected-tier__change {
+        display: inline-block;
+        margin-top: 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #38bdf8;
+        text-decoration: none;
+    }
+
+    .selected-tier__change:hover {
+        text-decoration: underline;
+    }
+</style>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

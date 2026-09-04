@@ -1,13 +1,13 @@
 @model BiteTheBookie.ViewModels.ScoresPageViewModel
 @using BiteTheBookie.Models
 @using Microsoft.AspNetCore.Identity
-@inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<BiteTheBookie.Models.ApplicationUser> SignInManager
+@inject UserManager<BiteTheBookie.Models.ApplicationUser> UserManager
 @{
     ViewData["Title"] = $"{Model.LeagueName} Scores";
     var league = Model.LeagueName;
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
+    var hasGameSimulationAccess = currentUser?.IsPro == true || currentUser?.AllAccessUser == true;
 }
 
 <div class="container scores-page py-3">
@@ -32,6 +32,7 @@
             {
                 <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
             }
+            <li><a href="/GameSimulation?league=@league">$ Game Simulation</a></li>
         </ul>
     </div>
 
@@ -87,25 +88,7 @@
                             <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                         </div>
                         <div class="mt-2 text-end">
-                            @if (hasGameSimulationAccess)
-                            {
-                                <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                                   asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
-                                    Simulate Game
-                                </a>
-                            }
-                            else if (SignInManager.IsSignedIn(User))
-                            {
-                                <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                    $ Game Simulation
-                                </a>
-                            }
-                            else
-                            {
-                                <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
-                                    $ Game Simulation
-                                </a>
-                            }
+                            <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.LeagueCode }' />
                         </div>
                     </div>
                 }
@@ -165,7 +148,7 @@
                         }
                         else
                         {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
                                 $ Game Simulation
                             </a>
                         }
@@ -220,7 +203,7 @@
                         }
                         else
                         {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
                                 $ Game Simulation
                             </a>
                         }
@@ -275,7 +258,7 @@
                         }
                         else
                         {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
                                 $ Game Simulation
                             </a>
                         }

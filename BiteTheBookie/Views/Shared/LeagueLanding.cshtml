@@ -24,5 +24,8 @@
             <a class="btn btn-outline-primary" asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">@Model.LeagueName Odds</a>
             <a class="btn btn-outline-primary" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Expert Picks</a>
         </div>
+        <ul>
+            <li><a href="/GameSimulation?league=@Model.LeagueName">$ Game Simulation</a></li>
+        </ul>
     </div>
 </div>

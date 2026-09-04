@@ -11,7 +11,7 @@
     if (SignInManager.IsSignedIn(User))
     {
         var currentUser = await UserManager.GetUserAsync(User);
-        isPremiumOrVip = currentUser?.IsPremium == true;
+        isPremiumOrVip = currentUser?.IsPro == true;
     }
 }
 
@@ -113,20 +113,7 @@
                                     }
                                 </td>
                                 <td>
-                                    @if (isPremiumOrVip)
-                                    {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId })"
-                                           class="btn btn-sm btn-outline-secondary"
-                                           data-sim-trigger>Simulation</a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join"
-                                           class="btn btn-sm btn-warning"
-                                           title="Upgrade to view simulation">
-                                            <i class="fas fa-dollar-sign"></i>
-                                        </a>
-                                    }
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "CBB" }' />
                                 </td>
                             </tr>
                         }

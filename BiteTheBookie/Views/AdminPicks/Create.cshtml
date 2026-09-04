@@ -30,6 +30,8 @@
                             <option value="NBA">NBA</option>
                             <option value="MLB">MLB</option>
                             <option value="NFL">NFL</option>
+                            <option value="CBB">CBB</option>
+                            <option value="CFB">CFB</option>
                         </select>
                         <span asp-validation-for="League" class="text-danger"></span>
                     </div>
@@ -85,6 +87,62 @@
                         {
                             <div class="form-text text-warning">
                                 <i class="fas fa-exclamation-triangle me-1"></i>No MLB games found for today. You can type a Game ID manually below.
+                            </div>
+                        }
+                        <span asp-validation-for="GameId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3" id="cbbGameDropdownContainer" style="display: none;">
+                        <label class="form-label fw-semibold">Select Game</label>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="cbbGameDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                -- Select a CBB Game --
+                            </button>
+                            <ul class="dropdown-menu w-100" id="cbbGameDropdownMenu">
+                                @foreach (var game in Model.AvailableCbbGames)
+                                {
+                                    <li>
+                                        <a class="dropdown-item cbb-game-item" href="#" data-value="@game.Value" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                            <img src="@game.AwayLogo" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            <img src="@game.HomeLogo" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            @game.Text
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        @if (!Model.AvailableCbbGames.Any())
+                        {
+                            <div class="form-text text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>No upcoming CBB games found. You can type a Game ID manually below.
+                            </div>
+                        }
+                        <span asp-validation-for="GameId" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3" id="cfbGameDropdownContainer" style="display: none;">
+                        <label class="form-label fw-semibold">Select Game</label>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="cfbGameDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                -- Select a CFB Game --
+                            </button>
+                            <ul class="dropdown-menu w-100" id="cfbGameDropdownMenu">
+                                @foreach (var game in Model.AvailableCfbGames)
+                                {
+                                    <li>
+                                        <a class="dropdown-item cfb-game-item" href="#" data-value="@game.Value" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                            <img src="@game.AwayLogo" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            <img src="@game.HomeLogo" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
+                                            @game.Text
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        @if (!Model.AvailableCfbGames.Any())
+                        {
+                            <div class="form-text text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>No upcoming CFB games found. You can type a Game ID manually below.
                             </div>
                         }
                         <span asp-validation-for="GameId" class="text-danger"></span>
@@ -191,12 +249,18 @@
         var leagueSelect = document.getElementById('leagueSelect');
         var nbaDropdownContainer = document.getElementById('nbaGameDropdownContainer');
         var mlbDropdownContainer = document.getElementById('mlbGameDropdownContainer');
+        var cbbDropdownContainer = document.getElementById('cbbGameDropdownContainer');
+        var cfbDropdownContainer = document.getElementById('cfbGameDropdownContainer');
         var gameIdTextContainer = document.getElementById('gameIdTextContainer');
         var nbaGameDropdownBtn = document.getElementById('nbaGameDropdownBtn');
         var nbaGameDropdownMenu = document.getElementById('nbaGameDropdownMenu');
         var nbaGameDropdown = document.getElementById('nbaGameDropdown');
         var mlbGameDropdownBtn = document.getElementById('mlbGameDropdownBtn');
         var mlbGameDropdownMenu = document.getElementById('mlbGameDropdownMenu');
+        var cbbGameDropdownBtn = document.getElementById('cbbGameDropdownBtn');
+        var cbbGameDropdownMenu = document.getElementById('cbbGameDropdownMenu');
+        var cfbGameDropdownBtn = document.getElementById('cfbGameDropdownBtn');
+        var cfbGameDropdownMenu = document.getElementById('cfbGameDropdownMenu');
         var gameIdInput = document.getElementById('gameIdInput');
         var gameIdTextInput = document.getElementById('gameIdTextInput');
         var awayTeamInput = document.getElementById('awayTeamInput');
@@ -209,15 +273,23 @@
             var league = leagueSelect.value;
             var nbaHasGames = nbaGameDropdownMenu && nbaGameDropdownMenu.querySelectorAll('.nba-game-item').length > 0;
             var mlbHasGames = mlbGameDropdownMenu && mlbGameDropdownMenu.querySelectorAll('.mlb-game-item').length > 0;
+            var cbbHasGames = cbbGameDropdownMenu && cbbGameDropdownMenu.querySelectorAll('.cbb-game-item').length > 0;
+            var cfbHasGames = cfbGameDropdownMenu && cfbGameDropdownMenu.querySelectorAll('.cfb-game-item').length > 0;
 
             nbaDropdownContainer.style.display = 'none';
             mlbDropdownContainer.style.display = 'none';
+            if (cbbDropdownContainer) cbbDropdownContainer.style.display = 'none';
+            if (cfbDropdownContainer) cfbDropdownContainer.style.display = 'none';
             gameIdTextContainer.style.display = 'none';
 
             if (league === 'NBA' && nbaHasGames) {
                 nbaDropdownContainer.style.display = 'block';
             } else if (league === 'MLB' && mlbHasGames) {
                 mlbDropdownContainer.style.display = 'block';
+            } else if (league === 'CBB' && cbbHasGames) {
+                cbbDropdownContainer.style.display = 'block';
+            } else if (league === 'CFB' && cfbHasGames) {
+                cfbDropdownContainer.style.display = 'block';
             } else {
                 gameIdTextContainer.style.display = 'block';
             }
@@ -235,6 +307,8 @@
             gameIdTextInput.value = '';
             if (nbaGameDropdownBtn) nbaGameDropdownBtn.textContent = '-- Select an NBA Game --';
             if (mlbGameDropdownBtn) mlbGameDropdownBtn.textContent = '-- Select an MLB Game --';
+            if (cbbGameDropdownBtn) cbbGameDropdownBtn.textContent = '-- Select a CBB Game --';
+            if (cfbGameDropdownBtn) cfbGameDropdownBtn.textContent = '-- Select a CFB Game --';
             awayTeamInput.value = '';
             homeTeamInput.value = '';
             gameTimeInput.value = '';
@@ -344,5 +418,35 @@
                 loadMlbPregameSummary(val);
             });
         }
+
+        function wireCollegeMenu(menu, btn, league) {
+            if (!menu) return;
+            menu.addEventListener('click', function (e) {
+                var itemClass = league === 'CBB' ? '.cbb-game-item' : '.cfb-game-item';
+                var a = e.target.closest(itemClass);
+                if (!a) return;
+                e.preventDefault();
+                var val = a.getAttribute('data-value');
+                var away = a.getAttribute('data-away-name');
+                var home = a.getAttribute('data-home-name');
+                var gtime = a.getAttribute('data-gametime');
+
+                if (btn) btn.textContent = a.textContent.trim();
+                gameIdInput.value = val || '';
+                awayTeamInput.value = away || '';
+                homeTeamInput.value = home || '';
+
+                if (gtime) {
+                    try { gameTimeInput.value = new Date(gtime).toISOString().slice(0, 16); } catch (ex) { gameTimeInput.value = ''; }
+                } else {
+                    gameTimeInput.value = '';
+                }
+
+                onGameSelected(league, val);
+            });
+        }
+
+        wireCollegeMenu(cbbGameDropdownMenu, cbbGameDropdownBtn, 'CBB');
+        wireCollegeMenu(cfbGameDropdownMenu, cfbGameDropdownBtn, 'CFB');
     </script>
 }

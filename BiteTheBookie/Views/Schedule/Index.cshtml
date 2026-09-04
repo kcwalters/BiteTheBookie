@@ -1,0 +1,113 @@
+@model BiteTheBookie.ViewModels.ScheduleViewModel
+@{
+    ViewData["Title"] = $"{Model.LeagueName} Full Schedule";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="text-uppercase text-muted small fw-bold">Full Schedule</div>
+        <h1 class="mb-2">@Model.LeagueName Schedule</h1>
+        <p class="text-muted mb-0">Pick a league and date to see the games for that day.</p>
+    </div>
+
+    <div class="content-card mb-4">
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-sm-4">
+                <label class="form-label" for="league">League</label>
+                <select id="league" name="league" class="form-select" onchange="this.form.submit()">
+                    @foreach (var (code, name) in Model.Leagues)
+                    {
+                        <option value="@code" selected="@(code == Model.LeagueCode)">@name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-4">
+                <label class="form-label" for="date">Date</label>
+                <input type="date" id="date" name="date" class="form-control"
+                       value="@Model.SelectedDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            </div>
+            <div class="col-sm-4">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-calendar-alt me-1"></i> Show Games
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="content-card">
+        <h5 class="mb-3">
+            @Model.SelectedDateDisplay
+            @if (Model.SelectedDate.Date > DateTime.Today)
+            {
+                <span class="badge bg-primary ms-2">Next Game Day</span>
+            }
+        </h5>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger mb-0">@Model.ErrorMessage</div>
+        }
+        else if (!Model.Games.Any())
+        {
+            <p class="text-muted mb-0">No @Model.LeagueName games are scheduled for this date.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 130px;">Time</th>
+                            <th>Matchup</th>
+                            <th>Venue</th>
+                            <th class="text-end" style="width: 120px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var g in Model.Games)
+                        {
+                            <tr>
+                                <td>@g.GameTime.ToLocalTime().ToString("h:mm tt")</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrWhiteSpace(g.AwayTeamLogo))
+                                        {
+                                            <img src="@g.AwayTeamLogo" alt="@g.AwayTeamCode" width="24" height="24" />
+                                        }
+                                        <span class="fw-semibold">@g.AwayTeamName</span>
+                                        <span class="text-muted">@(g.IsScheduled ? "@" : "")</span>
+                                        @if (!g.IsScheduled)
+                                        {
+                                            <span class="fw-bold">@(g.AwayScore) - @(g.HomeScore)</span>
+                                            <span class="text-muted">·</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(g.HomeTeamLogo))
+                                        {
+                                            <img src="@g.HomeTeamLogo" alt="@g.HomeTeamCode" width="24" height="24" />
+                                        }
+                                        <span class="fw-semibold">@g.HomeTeamName</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted small">@g.Venue</td>
+                                <td class="text-end">
+                                    @if (g.IsLive)
+                                    {
+                                        <span class="badge bg-danger">@(string.IsNullOrWhiteSpace(g.StatusDetail) ? "Live" : g.StatusDetail)</span>
+                                    }
+                                    else if (g.IsFinal)
+                                    {
+                                        <span class="badge bg-secondary">Final</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">@(string.IsNullOrWhiteSpace(g.StatusDetail) ? "Scheduled" : g.StatusDetail)</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

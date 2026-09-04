@@ -66,5 +66,27 @@ namespace BiteTheBookie
 
             return services;
         }
+
+        /// <summary>
+        /// Registers Daily Fantasy Football (DFS) services: PPR scoring options, the scoring
+        /// service, and the ESPN-backed data service (slate, player pool, box-score points).
+        /// </summary>
+        /// <param name="services">The service collection to add registrations to.</param>
+        /// <param name="configuration">Application configuration used to bind <see cref="Models.Fantasy.FantasyScoringOptions"/>.</param>
+        /// <returns>The original <see cref="IServiceCollection"/> for chaining.</returns>
+        public static IServiceCollection AddFantasyFootball(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<Models.Fantasy.FantasyScoringOptions>(
+                configuration.GetSection(Models.Fantasy.FantasyScoringOptions.SectionName));
+
+            services.AddScoped<IFantasyScoringService, FantasyScoringService>();
+
+            services.AddHttpClient<INflFantasyDataService, NflFantasyDataService>(client =>
+            {
+                client.BaseAddress = new Uri("https://site.web.api.espn.com/");
+            });
+
+            return services;
+        }
     }
 }

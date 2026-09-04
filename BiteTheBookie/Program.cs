@@ -43,11 +43,11 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 // Authorization policies for Free vs Paid access
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("PremiumOnly", policy =>
-        policy.RequireClaim("SubscriptionTier", "Premium", "VIP"));
+    options.AddPolicy("ProOnly", policy =>
+        policy.RequireClaim("SubscriptionTier", "Pro", "AllAccess"));
 
-    options.AddPolicy("VIPOnly", policy =>
-        policy.RequireClaim("SubscriptionTier", "VIP"));
+    options.AddPolicy("AllAccessOnly", policy =>
+        policy.RequireClaim("SubscriptionTier", "AllAccess"));
 
     options.AddPolicy("RegisteredUser", policy =>
         policy.RequireAuthenticatedUser());
@@ -56,7 +56,7 @@ builder.Services.AddAuthorization(options =>
 // MVC
 builder.Services.AddControllersWithViews();
 
-// Azure OpenAI ChatClient — register once for all services
+// Azure OpenAI ChatClient â€” register once for all services
 var aoaiEndpoint = builder.Configuration["AzureOpenAI:Endpoint"];
 var aoaiApiKey = builder.Configuration["AzureOpenAI:ApiKey"];
 var aoaiDeployment = builder.Configuration["AzureOpenAI:DeploymentName"];
@@ -80,12 +80,12 @@ builder.Services.AddScoped<TheOddsApiClient>();
 builder.Services.AddHttpClient<OddsService>();
 builder.Services.AddScoped<IOddsService>(sp => sp.GetRequiredService<OddsService>());
 
-// News (ESPN RSS overrides the stub — only register EspnRssNewsService)
+// News (ESPN RSS overrides the stub â€” only register EspnRssNewsService)
 builder.Services.Configure<EspnNewsOptions>(builder.Configuration.GetSection("EspnNews"));
 builder.Services.AddHttpClient<EspnRssNewsService>();
 builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
 
-// Bet slip
+builder.Services.AddHttpClient<PayPalService>();
 
 // MLB
 builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
@@ -96,6 +96,9 @@ builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
 // Tickers (NFL, NBA, NHL, NCAA via extension method)
 builder.Services.Configure<SportsTickerOptions>(builder.Configuration.GetSection("SportsTicker"));
 builder.Services.AddSportsTickers(builder.Configuration);
+
+// Daily Fantasy Football (DFS)
+builder.Services.AddFantasyFootball(builder.Configuration);
 
 // Game services
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
@@ -129,6 +132,19 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
+
+    // Ensure the subscription/access roles exist so AddToRoleAsync never fails.
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    foreach (var roleName in new[] { "Free", "Pro", "AllAccess", "Admin" })
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+    }
+
+    // Diagnostic: validate configured PayPal billing plans exist and are ACTIVE.
+    // Never throws; only logs warnings so misconfiguration is caught at startup, not at checkout.
+    var payPalService = scope.ServiceProvider.GetRequiredService<PayPalService>();
+    await payPalService.ValidateConfiguredPlansAsync();
 }
 
 // Configure the HTTP request pipeline.

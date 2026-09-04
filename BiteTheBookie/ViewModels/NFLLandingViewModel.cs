@@ -10,6 +10,25 @@ namespace BiteTheBookie.ViewModels
     {
         public List<NBAGameMatchup> Games { get; set; } = new();
 
+        /// <summary>
+        /// Upcoming NFL games for the current week (today through the next six days),
+        /// sourced live from ESPN. Finished games are excluded.
+        /// </summary>
+        public List<NBAGameMatchup> UpcomingGames { get; set; } = new();
+
+        /// <summary>Upcoming games grouped by their local calendar day, ordered by start time.</summary>
+        public IEnumerable<IGrouping<DateTime, NBAGameMatchup>> UpcomingGamesByDay =>
+            UpcomingGames
+                .OrderBy(g => g.GameTime)
+                .GroupBy(g => g.GameTime.ToLocalTime().Date);
+
+        /// <summary>Every regular-season game grouped by NFL week number, ordered by week then start time.</summary>
+        public IEnumerable<IGrouping<int, NBAGameMatchup>> GamesByWeek =>
+            UpcomingGames
+                .OrderBy(g => g.Week)
+                .ThenBy(g => g.GameTime)
+                .GroupBy(g => g.Week);
+
         public IReadOnlyList<NewsItemViewModel> Headlines { get; set; } = new List<NewsItemViewModel>();
 
         public string? ErrorMessage { get; set; }

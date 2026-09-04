@@ -20,7 +20,7 @@ namespace BiteTheBookie.Models
 
         
         /// <summary>
-        /// Free, Premium, or VIP
+        /// Free, Pro, or AllAccess
         /// </summary>
         public SubscriptionTier SubscriptionTier { get; set; } = SubscriptionTier.Free;
         
@@ -37,19 +37,21 @@ namespace BiteTheBookie.Models
         /// <summary>
         /// Whether the subscription is currently active
         /// </summary>
-        public bool IsPremium => SubscriptionTier != SubscriptionTier.Free 
+
+        public bool IsPro => (SubscriptionTier == SubscriptionTier.Pro || SubscriptionTier == SubscriptionTier.AllAccess)
                                  && SubscriptionExpiry.HasValue 
                                  && SubscriptionExpiry.Value > DateTime.UtcNow;
 
-        public bool IsProUser => SubscriptionTier == SubscriptionTier.Premium && IsPremium;
-
-        public bool AllAccessUser => SubscriptionTier == SubscriptionTier.VIP && IsPremium;
+        public bool AllAccessUser => SubscriptionTier == SubscriptionTier.AllAccess 
+                                        && SubscriptionExpiry.HasValue
+                                        && SubscriptionExpiry.Value > DateTime.UtcNow;
     }
 
     public enum SubscriptionTier
     {
         Free = 0,
-        Premium = 1,
-        VIP = 2
+        Pro = 1,
+        AllAccess = 2,
+        Admin = 3,
     }
 }

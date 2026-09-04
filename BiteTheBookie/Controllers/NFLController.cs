@@ -11,11 +11,13 @@ namespace BiteTheBookie.Controllers
 
         private readonly INFLScoresService _scoresService;
         private readonly INewsService _newsService;
+        private readonly ILeagueScheduleService _scheduleService;
 
-        public NFLController(INFLScoresService scoresService, INewsService newsService)
+        public NFLController(INFLScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService)
         {
             _scoresService = scoresService;
             _newsService = newsService;
+            _scheduleService = scheduleService;
         }
 
         // Codes MUST match wwwroot/js/nfl-team-modal.js nflTeams / nflColumns.
@@ -126,6 +128,15 @@ namespace BiteTheBookie.Controllers
             catch
             {
                 model.ErrorMessage = "Live NFL scores are unavailable right now.";
+            }
+
+            try
+            {
+                model.UpcomingGames = await _scheduleService.GetNflGamesByWeekAsync(cancellationToken);
+            }
+            catch
+            {
+                // Upcoming games are optional; the view handles an empty list.
             }
 
             try

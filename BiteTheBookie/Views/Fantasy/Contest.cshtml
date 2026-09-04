@@ -1,0 +1,139 @@
+@model BiteTheBookie.ViewModels.FantasyContestViewModel
+@{
+    ViewData["Title"] = Model.Contest.Name;
+    var playersByPosition = Model.Players.ToLookup(p => p.Position);
+    // Existing selections (slot label -> selected player id) for pre-filling.
+    var currentSelections = Model.MyEntry?.Slots
+        .ToDictionary(s => s.SlotLabel, s => s.FantasyPlayerId)
+        ?? new Dictionary<string, int>();
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="text-uppercase text-muted small fw-bold">Daily Fantasy · @Model.Contest.League</div>
+                <h1 class="mb-2">@Model.Contest.Name</h1>
+                <div class="text-muted small">
+                    <span class="me-3"><i class="fas fa-coins me-1"></i> Cap: $@Model.Contest.SalaryCap.ToString("N0")</span>
+                    <span><i class="fas fa-lock me-1"></i> Locks: @Model.Contest.LockTime.ToLocalTime().ToString("ddd MMM d, h:mm tt")</span>
+                </div>
+            </div>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> Lobby</a>
+        </div>
+    </div>
+
+    @if (TempData["FantasyMessage"] is string okMsg)
+    {
+        <div class="alert alert-success">@okMsg</div>
+    }
+    @if (TempData["FantasyError"] is string errMsg)
+    {
+        <div class="alert alert-danger">@errMsg</div>
+    }
+
+    @if (Model.IsLocked)
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-lock me-1"></i> This contest is locked. Lineups can no longer be edited.
+        </div>
+    }
+
+    <form asp-action="Submit" method="post" id="lineupForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="ContestId" value="@Model.Contest.Id" />
+
+        <div class="content-card">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h5 class="mb-0">Build Your Lineup</h5>
+                <div class="fs-5">
+                    <span class="text-muted">Salary:</span>
+                    <span id="salaryUsed" class="fw-bold">$0</span>
+                    <span class="text-muted">/ $@Model.Contest.SalaryCap.ToString("N0")</span>
+                    <span id="salaryRemaining" class="badge bg-success ms-2">$@Model.Contest.SalaryCap.ToString("N0") left</span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 90px;">Slot</th>
+                            <th>Player</th>
+                            <th class="text-end" style="width: 120px;">Salary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (slot, eligible) in Model.Slots)
+                        {
+                            var selectedId = currentSelections.TryGetValue(slot, out var sid) ? sid : 0;
+                            <tr>
+                                <td><span class="badge bg-dark">@slot</span></td>
+                                <td>
+                                    <select name="Selections[@slot]" class="form-select lineup-select"
+                                            data-slot="@slot" @(Model.IsLocked ? "disabled" : "")>
+                                        <option value="0" data-salary="0">-- Select @slot --</option>
+                                        @foreach (var pos in eligible)
+                                        {
+                                            @foreach (var p in playersByPosition[pos].OrderByDescending(x => x.Salary))
+                                            {
+                                                <option value="@p.Id" data-salary="@p.Salary" selected="@(p.Id == selectedId)">
+                                                    @p.PlayerName (@p.Position · @p.TeamCode vs @p.OpponentCode) — $@p.Salary.ToString("N0")
+                                                </option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td class="text-end slot-salary">$0</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!Model.IsLocked)
+            {
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-check me-1"></i> Save Lineup
+                    </button>
+                </div>
+            }
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const cap = @Model.Contest.SalaryCap;
+            const selects = Array.from(document.querySelectorAll('.lineup-select'));
+            const usedEl = document.getElementById('salaryUsed');
+            const remEl = document.getElementById('salaryRemaining');
+            const submitBtn = document.getElementById('submitBtn');
+
+            function fmt(n) { return '$' + n.toLocaleString(); }
+
+            function recalc() {
+                let total = 0;
+                selects.forEach(sel => {
+                    const opt = sel.options[sel.selectedIndex];
+                    const salary = parseInt(opt.getAttribute('data-salary') || '0', 10);
+                    total += salary;
+                    const cell = sel.closest('tr').querySelector('.slot-salary');
+                    if (cell) cell.textContent = fmt(salary);
+                });
+                const remaining = cap - total;
+                usedEl.textContent = fmt(total);
+                remEl.textContent = fmt(remaining) + ' left';
+                const over = remaining < 0;
+                remEl.classList.toggle('bg-success', !over);
+                remEl.classList.toggle('bg-danger', over);
+                if (submitBtn) submitBtn.disabled = over;
+            }
+
+            selects.forEach(sel => sel.addEventListener('change', recalc));
+            recalc();
+        })();
+    </script>
+}

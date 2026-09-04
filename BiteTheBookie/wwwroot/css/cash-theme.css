@@ -559,3 +559,22 @@ html.theme-cash .nfl-landing__subnav a:hover {
     color: var(--cp-primary) !important;
 }
 
+/* ?? League page: raise contrast on hard-to-read secondary text ????????? */
+html.theme-cash .nfl-landing__subnav a {
+    color: #cdd7ea !important; /* brighter than muted for the subnav */
+}
+html.theme-cash .nfl-game-card__status,
+html.theme-cash .nfl-games__title small,
+html.theme-cash .nfl-games__empty p,
+html.theme-cash .nfl-hero__meta,
+html.theme-cash .nfl-hero__excerpt {
+    color: #cdd7ea !important; /* readable secondary text on dark cards */
+}
+html.theme-cash .nfl-games__title,
+html.theme-cash .nfl-headlines__title {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .nfl-game-card__status.is-live {
+    color: var(--cp-danger) !important;
+}
+

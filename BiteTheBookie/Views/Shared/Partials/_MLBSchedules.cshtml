@@ -5,7 +5,7 @@
 @inject UserManager<ApplicationUser> UserManager
 @{
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
+    var hasGameSimulationAccess = currentUser?.IsPro == true || currentUser?.AllAccessUser == true;
 }
 
 <style>
@@ -126,25 +126,7 @@
                 </td>
                 <td class="status">@game.Status</td>
                 <td class="text-center">
-                    @if (hasGameSimulationAccess)
-                    {
-                        <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                           asp-route-homeTeam="@game.HomeTeam" asp-route-awayTeam="@game.AwayTeam" asp-route-league="MLB">
-                            Simulate Game
-                        </a>
-                    }
-                    else if (SignInManager.IsSignedIn(User))
-                    {
-                        <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                            $ Game Simulation
-                        </a>
-                    }
-                    else
-                    {
-                        <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
-                            $ Game Simulation
-                        </a>
-                    }
+                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeam, AwayTeam = game.AwayTeam, League = "MLB" }' />
                 </td>
             </tr>
         }

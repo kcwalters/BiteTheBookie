@@ -1186,7 +1186,7 @@ $.validator.addMethod( "phoneNL", function( value, element ) {
  *
  * Ministry of National Defence numbers and VoIP numbers starts with 26 and 39.
  *
- * Excludes intelligent networks (premium rate, shared cost, free phone numbers).
+ * Excludes intelligent networks (pro rate, shared cost, free phone numbers).
  *
  * Poland National Numbering Plan http://www.itu.int/oth/T02020000A8/en
  */
@@ -1205,7 +1205,7 @@ $.validator.addMethod( "phonePL", function( phone_number, element ) {
  * http://www.aa-asterisk.org.uk/index.php/Regular_Expressions_for_Validating_and_Formatting_GB_Telephone_Numbers
  */
 
-// Matches UK landline + mobile, accepting only 01-3 for landline or 07 for mobile to exclude many premium numbers
+// Matches UK landline + mobile, accepting only 01-3 for landline or 07 for mobile to exclude many pro numbers
 $.validator.addMethod( "phonesUK", function( phone_number, element ) {
 	phone_number = phone_number.replace( /\(|\)|\s+|-/g, "" );
 	return this.optional( element ) || phone_number.length > 9 &&

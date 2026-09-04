@@ -7,7 +7,7 @@
     ViewData["Title"] = "NFL - Scores, Schedule & Headlines";
     var featured = Model.FeaturedHeadline;
     var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    var hasGameSimulationAccess = currentUser?.IsProUser == true || currentUser?.AllAccessUser == true;
+    var hasGameSimulationAccess = currentUser?.IsPro == true || currentUser?.AllAccessUser == true;
 }
 
 <div class="container nfl-landing py-3">
@@ -54,66 +54,52 @@
                 </a>
             }
 
-            <!-- Today's games -->
-            <div class="nfl-games">
+            <!-- Full season schedule grouped by NFL week -->
+            <div class="nfl-games mt-4">
                 <div class="nfl-games__title">
-                    <span>Scoreboard</span>
-                    <small class="text-muted">@Model.SelectedDateDisplay</small>
+                    <span>Full Schedule</span>
+                    <small class="text-muted">By week</small>
                 </div>
 
-                @if (Model.Games.Any())
+                @if (Model.UpcomingGames.Any())
                 {
-                    <div class="nfl-games__grid">
-                        @foreach (var game in Model.Games)
-                        {
-                            <div class="nfl-game-card">
-                                <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
-                                    @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
-                                </div>
-                                <div class="nfl-game-card__row">
-                                    <div class="nfl-game-card__team">
-                                        <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
-                                        <span>@game.AwayTeamName</span>
+                    @foreach (var weekGroup in Model.GamesByWeek)
+                    {
+                        <h6 class="mt-3 mb-2 fw-bold">Week @weekGroup.Key</h6>
+                        <div class="nfl-games__grid">
+                            @foreach (var game in weekGroup)
+                            {
+                                <div class="nfl-game-card">
+                                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? game.GameTimeDisplay : game.StatusDetail)
                                     </div>
-                                    <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
-                                </div>
-                                <div class="nfl-game-card__row">
-                                    <div class="nfl-game-card__team">
-                                        <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
-                                        <span>@game.HomeTeamName</span>
+                                    <div class="nfl-game-card__row">
+                                        <div class="nfl-game-card__team">
+                                            <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                                            <span>@game.AwayTeamName</span>
+                                        </div>
+                                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
                                     </div>
-                                    <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                                    <div class="nfl-game-card__row">
+                                        <div class="nfl-game-card__team">
+                                            <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                                            <span>@game.HomeTeamName</span>
+                                        </div>
+                                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL" }' />
+                                    </div>
                                 </div>
-                                <div class="mt-2 text-end">
-                                    @if (hasGameSimulationAccess)
-                                    {
-                                        <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                                           asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="NFL">
-                                            Simulate Game
-                                        </a>
-                                    }
-                                    else if (SignInManager.IsSignedIn(User))
-                                    {
-                                        <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                            $ Game Simulation
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
-                                            $ Game Simulation
-                                        </a>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
+                            }
+                        </div>
+                    }
                 }
                 else
                 {
                     <div class="nfl-games__empty">
                         <img src="@Model.LeagueLogo" alt="NFL" />
-                        <p class="mb-0 text-muted">No NFL games scheduled for today. Check back on game day.</p>
+                        <p class="mb-0 text-muted">The NFL schedule is unavailable right now.</p>
                     </div>
                 }
             </div>
@@ -147,7 +133,7 @@
                     <li><a asp-controller="Odds" asp-action="NFL"><i class="fas fa-percent"></i>NFL Odds</a></li>
                     <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NFL"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
                     <li><a asp-controller="Scores" asp-action="League" asp-route-league="NFL"><i class="fas fa-list-ol"></i>Scores</a></li>
-                    <li><a href="https://www.espn.com/nfl/schedule" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
+                    <li><a asp-controller="Schedule" asp-action="Index" asp-route-league="NFL"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
                     <li><a href="https://www.espn.com/nfl/standings" target="_blank" rel="noopener"><i class="fas fa-list-ol"></i>Standings</a></li>
                 </ul>
             </div>  

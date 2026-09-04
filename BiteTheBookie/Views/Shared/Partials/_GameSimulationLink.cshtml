@@ -1,0 +1,30 @@
+@model BiteTheBookie.ViewModels.GameSimulationLinkViewModel
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    var isPaid = false;
+    if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+        isPaid = currentUser != null && currentUser.IsPro &&
+                 (currentUser.SubscriptionTier == SubscriptionTier.Pro || currentUser.SubscriptionTier == SubscriptionTier.AllAccess);
+    }
+}
+
+@if (isPaid)
+{
+    <a class="btn btn-sm btn-primary"
+       asp-controller="GameSimulation" asp-action="Start"
+       asp-route-homeTeam="@Model.HomeTeam" asp-route-awayTeam="@Model.AwayTeam" asp-route-league="@Model.League">
+        <i class="fa-solid fa-computer"></i> Game Simulation
+    </a>
+}
+else
+{
+    <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+        <i class="fa-solid fa-dollar-sign"></i> Game Simulation
+    </a>
+}

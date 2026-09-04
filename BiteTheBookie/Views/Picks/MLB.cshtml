@@ -11,7 +11,7 @@
     if (SignInManager.IsSignedIn(User))
     {
         var currentUser = await UserManager.GetUserAsync(User);
-        isPremiumOrVip = currentUser?.IsPremium == true;
+        isPremiumOrVip = currentUser?.IsPro == true;
     }
 
     var today = DateTime.UtcNow.Date;
@@ -168,21 +168,10 @@
                                                         <i class="fas fa-circle pulse me-1" style="font-size: 8px;"></i> Live
                                                     </button>
                                                 }
-                                                else if (isPremiumOrVip)
-                                                {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" asp-route-league="MLB"
-                                                       class="btn btn-sm @(game.Status == "Final" ? "btn-outline-secondary" : "btn-primary")" data-sim-trigger>
-                                                        <i class="fas fa-baseball-ball me-1"></i> Game Simulation
-                                                    </a>
-                                                }
                                                 else
                                                 {
-                                                    <a asp-controller="Membership" asp-action="Join"
-                                                       class="btn btn-sm btn-warning d-flex flex-column align-items-center gap-1"
-                                                       title="Upgrade to view simulation">
-                                                        <i class="fas fa-dollar-sign"></i>
-                                                        <span class="small fw-semibold">Game Simulation</span>
-                                                    </a>
+                                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "MLB" }' />
+                                                }
                                                 }
                                             </div>
                                         </div>
@@ -281,22 +270,7 @@
 
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
-                                                @if (isPremiumOrVip)
-                                                {
-                                                    <a asp-controller="Picks" asp-action="Detail" asp-route-gameId="@game.GameId" asp-route-league="MLB"
-                                                       class="btn btn-outline-primary btn-sm" data-sim-trigger>
-                                                        <i class="fas fa-baseball-ball me-1"></i> Game Simulation
-                                                    </a>
-                                                }
-                                                else
-                                                {
-                                                    <a asp-controller="Membership" asp-action="Join"
-                                                       class="btn btn-sm btn-warning d-flex flex-column align-items-center gap-1"
-                                                       title="Upgrade to view simulation">
-                                                        <i class="fas fa-dollar-sign"></i>
-                                                        <span class="small fw-semibold">Game Simulation</span>
-                                                    </a>
-                                                }
+                                                <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "MLB" }' />
                                             </div>
                                         </div>
                                     </div>

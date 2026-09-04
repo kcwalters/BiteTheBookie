@@ -11,7 +11,7 @@
     if (SignInManager.IsSignedIn(User))
     {
         var currentUser = await UserManager.GetUserAsync(User);
-        isPremiumOrVip = currentUser?.IsPremium == true;
+        isPremiumOrVip = currentUser?.IsPro == true;
     }
 
     var featured = Model.FeaturedHeadline;
@@ -92,19 +92,7 @@
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
                                 <div class="nfl-game-card__actions">
-                                    @if (isPremiumOrVip)
-                                    {
-                                        <a href="@Url.Action("Detail", "Picks", new { gameId = game.GameId, league = "NFL" })"
-                                           class="btn btn-sm btn-outline-primary w-100" data-sim-trigger>
-                                            <i class="fas fa-chart-line me-1"></i>Game Preview
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-controller="Membership" asp-action="Join" class="btn btn-sm btn-warning w-100">
-                                            <i class="fas fa-lock me-1"></i>Preview &amp; Picks
-                                        </a>
-                                    }
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL" }' />
                                 </div>
                             </div>
                         }
@@ -148,7 +136,7 @@
                     <li><a asp-controller="Odds" asp-action="Index"><i class="fas fa-percent"></i>NFL Odds</a></li>
                     <li><a asp-controller="Picks" asp-action="AgainstTheSpread"><i class="fas fa-balance-scale"></i>Against the Spread</a></li>
                     <li><a asp-controller="Experts" asp-action="Index"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
-                    <li><a href="https://www.espn.com/nfl/schedule" target="_blank" rel="noopener"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
+                    <li><a asp-controller="Schedule" asp-action="Index" asp-route-league="NFL"><i class="fas fa-calendar-alt"></i>Full Schedule</a></li>
                     <li><a href="https://www.espn.com/nfl/standings" target="_blank" rel="noopener"><i class="fas fa-list-ol"></i>Standings</a></li>
                 </ul>
             </div>

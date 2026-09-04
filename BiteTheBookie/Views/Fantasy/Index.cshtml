@@ -1,0 +1,84 @@
+@model BiteTheBookie.ViewModels.FantasyLobbyViewModel
+@{
+    ViewData["Title"] = "Daily Fantasy Football";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="text-uppercase text-muted small fw-bold">Daily Fantasy</div>
+                <h1 class="mb-2">DFS Salary-Cap Contests</h1>
+                <p class="text-muted mb-0">Build a lineup under the salary cap using real NFL players. Points are scored from live box-score data.</p>
+            </div>
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> New Contest
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["FantasyMessage"] is string okMsg)
+    {
+        <div class="alert alert-success">@okMsg</div>
+    }
+    @if (TempData["FantasyError"] is string errMsg)
+    {
+        <div class="alert alert-danger">@errMsg</div>
+    }
+
+    @if (!Model.Contests.Any())
+    {
+        <div class="content-card">
+            <p class="mb-0 text-muted">No contests are available yet. Check back soon.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var c in Model.Contests)
+            {
+                var locked = DateTime.UtcNow >= c.LockTime;
+                <div class="col-md-6 col-lg-4">
+                    <div class="content-card h-100 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-0">@c.Name</h5>
+                            @if (c.IsScored)
+                            {
+                                <span class="badge bg-secondary">Final</span>
+                            }
+                            else if (locked)
+                            {
+                                <span class="badge bg-warning text-dark">Locked</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Open</span>
+                            }
+                        </div>
+                        <div class="text-muted small mb-3">
+                            <div><i class="fas fa-football-ball me-1"></i> @c.League slate</div>
+                            <div><i class="fas fa-coins me-1"></i> Cap: $@c.SalaryCap.ToString("N0")</div>
+                            <div><i class="fas fa-lock me-1"></i> Locks: @c.LockTime.ToLocalTime().ToString("ddd MMM d, h:mm tt")</div>
+                        </div>
+                        <div class="mt-auto d-flex gap-2">
+                            @if (c.IsScored)
+                            {
+                                <a asp-action="Leaderboard" asp-route-id="@c.Id" class="btn btn-outline-primary btn-sm">Leaderboard</a>
+                            }
+                            else
+                            {
+                                <a asp-action="Contest" asp-route-id="@c.Id" class="btn btn-primary btn-sm">
+                                    @(locked ? "View" : "Build Lineup")
+                                </a>
+                                <a asp-action="Leaderboard" asp-route-id="@c.Id" class="btn btn-outline-secondary btn-sm">Entries</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

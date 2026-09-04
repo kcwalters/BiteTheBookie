@@ -238,6 +238,169 @@ namespace BiteTheBookie.Data.Migrations
                     b.ToTable("ExpertPosts");
                 });
 
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyContest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsScored")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("League")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("LockTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SalaryCap")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SlateKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("League");
+
+                    b.HasIndex("SlateKey");
+
+                    b.ToTable("FantasyContests");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FantasyContestId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<decimal?>("TotalPoints")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<int>("TotalSalary")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FantasyContestId", "UserId");
+
+                    b.ToTable("FantasyEntries");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyEntrySlot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FantasyEntryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FantasyPlayerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SlotLabel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FantasyEntryId");
+
+                    b.HasIndex("FantasyPlayerId");
+
+                    b.ToTable("FantasyEntrySlots");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyPlayer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FantasyContestId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("FantasyPoints")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("GameTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OpponentCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlayerName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Salary")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TeamCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TeamName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FantasyContestId");
+
+                    b.HasIndex("Position");
+
+                    b.ToTable("FantasyPlayers");
+                });
+
             modelBuilder.Entity("BiteTheBookie.Models.GameSimulation", b =>
                 {
                     b.Property<int>("Id")
@@ -516,6 +679,47 @@ namespace BiteTheBookie.Data.Migrations
                     b.Navigation("Author");
                 });
 
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyEntry", b =>
+                {
+                    b.HasOne("BiteTheBookie.Models.Fantasy.FantasyContest", "FantasyContest")
+                        .WithMany("Entries")
+                        .HasForeignKey("FantasyContestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FantasyContest");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyEntrySlot", b =>
+                {
+                    b.HasOne("BiteTheBookie.Models.Fantasy.FantasyEntry", "FantasyEntry")
+                        .WithMany("Slots")
+                        .HasForeignKey("FantasyEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BiteTheBookie.Models.Fantasy.FantasyPlayer", "FantasyPlayer")
+                        .WithMany()
+                        .HasForeignKey("FantasyPlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FantasyEntry");
+
+                    b.Navigation("FantasyPlayer");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyPlayer", b =>
+                {
+                    b.HasOne("BiteTheBookie.Models.Fantasy.FantasyContest", "FantasyContest")
+                        .WithMany("Players")
+                        .HasForeignKey("FantasyContestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FantasyContest");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -565,6 +769,18 @@ namespace BiteTheBookie.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyContest", b =>
+                {
+                    b.Navigation("Entries");
+
+                    b.Navigation("Players");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.Fantasy.FantasyEntry", b =>
+                {
+                    b.Navigation("Slots");
                 });
 #pragma warning restore 612, 618
         }
