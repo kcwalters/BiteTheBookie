@@ -14,19 +14,16 @@ namespace BiteTheBookie.Controllers
 
         private readonly IOddsService _odds;
         private readonly INewsService _news;
-        private readonly IBetSlipService _betSlip;
         private readonly IMLBGamesService _mlbService;
         private readonly ApplicationDbContext _db;
 
         public HomeController(IOddsService odds,
                               INewsService news,
-                              IBetSlipService betSlip,
                               IMLBGamesService mlbService,
                               ApplicationDbContext db)
         {
             _odds = odds;
             _news = news;
-            _betSlip = betSlip;
             _mlbService = mlbService;
             _db = db;
         }
@@ -37,9 +34,8 @@ namespace BiteTheBookie.Controllers
             var newsTask = WithTimeout(() => _news.GetLatestNewsAsync());
             var liveOddsTask = WithTimeout(() => _odds.GetLiveOddsAsync());
             var leagueOddsTask = WithTimeout(() => _odds.GetLeagueOddsAsync());
-            var betSlipTask = WithTimeout(() => _betSlip.GetBetSlipAsync());
 
-            await Task.WhenAll(heroOddsTask, newsTask, liveOddsTask, leagueOddsTask, betSlipTask);
+            await Task.WhenAll(heroOddsTask, newsTask, liveOddsTask, leagueOddsTask);
 
             // DbContext is not thread-safe, so the database-backed reads run
             // sequentially rather than inside the Task.WhenAll above.
@@ -52,7 +48,6 @@ namespace BiteTheBookie.Controllers
                 NewsFeed = newsTask.Result,
                 LiveOdds = liveOddsTask.Result,
                 LeagueOdds = leagueOddsTask.Result,
-                BetSlip = betSlipTask.Result,
                 ExpertPicks = expertPicks,
                 FeaturedVideo = videos.FirstOrDefault(v => v.IsFeatured) ?? videos.FirstOrDefault(),
                 RecentVideos = videos

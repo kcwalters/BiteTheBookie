@@ -86,7 +86,6 @@ builder.Services.AddHttpClient<EspnRssNewsService>();
 builder.Services.AddScoped<INewsService>(sp => sp.GetRequiredService<EspnRssNewsService>());
 
 // Bet slip
-builder.Services.AddScoped<IBetSlipService, BetSlipService>();
 
 // MLB
 builder.Services.AddHttpClient<IMLBGamesService, MLBGamesService>(c =>
