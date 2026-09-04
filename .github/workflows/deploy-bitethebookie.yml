@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  REGISTRY: btbregistry2026
+  REGISTRY: bitethebookieregistry
   IMAGE_NAME: bitethebookie
 
 jobs:
