@@ -11,11 +11,13 @@ namespace BiteTheBookie.Controllers
 
         private readonly INHLScoresService _scoresService;
         private readonly INewsService _newsService;
+        private readonly ILeagueScheduleService _scheduleService;
 
-        public NHLController(INHLScoresService scoresService, INewsService newsService)
+        public NHLController(INHLScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService)
         {
             _scoresService = scoresService;
             _newsService = newsService;
+            _scheduleService = scheduleService;
         }
         // Tuple: (Name, Division). Logo uses ESPN's lowercase code (with a few overrides).
         private static readonly Dictionary<string, (string Name, string Division)> Teams =
@@ -110,6 +112,15 @@ namespace BiteTheBookie.Controllers
 
             try
             {
+                model.UpcomingGames = await GetUpcomingGamesAsync("NHL", cancellationToken);
+            }
+            catch
+            {
+                // Upcoming games are optional; the view handles an empty list.
+            }
+
+            try
+            {
                 model.Headlines = (await _newsService.GetLatestNewsAsync(NewsFeedUrl, 9)).ToList();
             }
             catch
@@ -118,6 +129,21 @@ namespace BiteTheBookie.Controllers
             }
 
             return View("LeagueHome", model);
+        }
+
+        // Fetches upcoming (non-final) games for the current week from the live ESPN
+        // schedule feed: today through the next six days.
+        private async Task<List<NBAGameMatchup>> GetUpcomingGamesAsync(string league, CancellationToken cancellationToken)
+        {
+            var upcoming = new List<NBAGameMatchup>();
+            var today = DateTime.Today;
+            for (var i = 0; i < 7; i++)
+            {
+                var dayGames = await _scheduleService.GetGamesForDateAsync(league, today.AddDays(i), cancellationToken);
+                upcoming.AddRange(dayGames.Where(g => !g.IsFinal));
+            }
+
+            return upcoming;
         }
 
         public IActionResult AllTeams()
