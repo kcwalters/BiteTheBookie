@@ -22,6 +22,13 @@ namespace BiteTheBookie.ViewModels
                 .OrderBy(g => g.GameTime)
                 .GroupBy(g => g.GameTime.ToLocalTime().Date);
 
+        /// <summary>Every regular-season game grouped by NFL week number, ordered by week then start time.</summary>
+        public IEnumerable<IGrouping<int, NBAGameMatchup>> GamesByWeek =>
+            UpcomingGames
+                .OrderBy(g => g.Week)
+                .ThenBy(g => g.GameTime)
+                .GroupBy(g => g.Week);
+
         public IReadOnlyList<NewsItemViewModel> Headlines { get; set; } = new List<NewsItemViewModel>();
 
         public string? ErrorMessage { get; set; }

@@ -98,6 +98,86 @@ namespace BiteTheBookie.Services.Implementations
             return games;
         }
 
+        public async Task<List<NBAGameMatchup>> GetNflGamesByWeekAsync(CancellationToken cancellationToken = default)
+        {
+            const string path = "apis/site/v2/sports/football/nfl/scoreboard";
+            const int regularSeasonWeeks = 18;
+
+            var result = new List<NBAGameMatchup>();
+
+            // Determine the current NFL season year from the default scoreboard payload.
+            var seasonYear = DateTime.Today.Year;
+            try
+            {
+                using var seasonResponse = await _httpClient.GetAsync(path, cancellationToken);
+                seasonResponse.EnsureSuccessStatusCode();
+                await using var seasonStream = await seasonResponse.Content.ReadAsStreamAsync(cancellationToken);
+                using var seasonDoc = await JsonDocument.ParseAsync(seasonStream, cancellationToken: cancellationToken);
+                if (seasonDoc.RootElement.TryGetProperty("season", out var seasonEl) &&
+                    seasonEl.TryGetProperty("year", out var yearEl) &&
+                    yearEl.TryGetInt32(out var year))
+                {
+                    seasonYear = year;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not determine current NFL season year; defaulting to {Year}", seasonYear);
+            }
+
+            for (var week = 1; week <= regularSeasonWeeks; week++)
+            {
+                var cacheKey = $"nflweek:{seasonYear}:{week}";
+                if (_cache.TryGetValue(cacheKey, out List<NBAGameMatchup>? cached) && cached is not null)
+                {
+                    result.AddRange(cached);
+                    continue;
+                }
+
+                var weekGames = new List<NBAGameMatchup>();
+
+                try
+                {
+                    var url = $"{path}?dates={seasonYear}&seasontype=2&week={week}";
+                    using var response = await _httpClient.GetAsync(url, cancellationToken);
+                    response.EnsureSuccessStatusCode();
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("events", out var events) && events.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var ev in events.EnumerateArray())
+                        {
+                            var game = MapEvent(ev);
+                            if (game is not null)
+                            {
+                                game.Week = week;
+                                weekGames.Add(game);
+                            }
+                        }
+                    }
+
+                    weekGames = weekGames.OrderBy(g => g.GameTime).ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to fetch NFL schedule for {Season} week {Week}", seasonYear, week);
+                }
+
+                // Per-week schedules rarely change, so cache them longer than the daily feed.
+                _cache.Set(cacheKey, weekGames, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                });
+
+                result.AddRange(weekGames);
+            }
+
+            return result;
+        }
+
         private static NBAGameMatchup? MapEvent(JsonElement ev)
         {
             if (!ev.TryGetProperty("competitions", out var comps) ||
