@@ -28,6 +28,19 @@ namespace BiteTheBookie.ViewModels
 
         // Data
         public List<NBAGameMatchup> Games { get; set; } = new();
+
+        /// <summary>
+        /// Upcoming games for the current week (today through the next six days),
+        /// sourced live from ESPN. Finished games are excluded.
+        /// </summary>
+        public List<NBAGameMatchup> UpcomingGames { get; set; } = new();
+
+        /// <summary>Upcoming games grouped by their local calendar day, ordered by start time.</summary>
+        public IEnumerable<IGrouping<DateTime, NBAGameMatchup>> UpcomingGamesByDay =>
+            UpcomingGames
+                .OrderBy(g => g.GameTime)
+                .GroupBy(g => g.GameTime.ToLocalTime().Date);
+
         public IReadOnlyList<NewsItemViewModel> Headlines { get; set; } = new List<NewsItemViewModel>();
 
         public string? ErrorMessage { get; set; }

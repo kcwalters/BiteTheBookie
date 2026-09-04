@@ -101,6 +101,56 @@
                     </div>
                 }
             </div>
+
+            <!-- This week's upcoming games -->
+            <div class="nfl-games mt-4">
+                <div class="nfl-games__title">
+                    <span>This Week's Games</span>
+                    <small class="text-muted">Next 7 days</small>
+                </div>
+
+                @if (Model.UpcomingGames.Any())
+                {
+                    @foreach (var day in Model.UpcomingGamesByDay)
+                    {
+                        <h6 class="mt-3 mb-2 fw-bold">@day.Key.ToString("dddd, MMMM d")</h6>
+                        <div class="nfl-games__grid">
+                            @foreach (var game in day)
+                            {
+                                <div class="nfl-game-card">
+                                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? game.GameTimeDisplay : game.StatusDetail)
+                                    </div>
+                                    <div class="nfl-game-card__row">
+                                        <div class="nfl-game-card__team">
+                                            <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                                            <span>@game.AwayTeamName</span>
+                                        </div>
+                                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
+                                    </div>
+                                    <div class="nfl-game-card__row">
+                                        <div class="nfl-game-card__team">
+                                            <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                                            <span>@game.HomeTeamName</span>
+                                        </div>
+                                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.ExpertPicksLeague }' />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="nfl-games__empty">
+                        <img src="@Model.LeagueLogo" alt="@league" />
+                        <p class="mb-0 text-muted">No upcoming @league games scheduled this week.</p>
+                    </div>
+                }
+            </div>
         </div>
 
         <!-- RIGHT: headlines + quick links -->
