@@ -12,10 +12,10 @@ permissions:
 
 env:
   # ---- Update these to match your Azure resources ----
-  ACR_NAME: bitethebookieacr                       # Azure Container Registry name (without .azurecr.io)
+  ACR_NAME: bitethebookieregistry                  # Azure Container Registry name (without .azurecr.io)
   IMAGE_NAME: bitethebookie                         # Repository/image name inside the ACR
-  CONTAINER_APP_NAME: bitethebookie                 # Azure Container App name
-  RESOURCE_GROUP: BiteTheBookie-rg                  # Resource group containing the Container App
+  CONTAINER_APP_NAME: bitethebookieca              # Azure Container App name
+  RESOURCE_GROUP: BiteTheBookie-rg                  # Resource group containing the Container App (verify this!)
   DOCKERFILE_PATH: BiteTheBookie/Dockerfile         # Dockerfile location
   BUILD_CONTEXT: .                                  # Build context = repo root (Dockerfile copies BiteTheBookie/*)
 
