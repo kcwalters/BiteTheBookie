@@ -25,7 +25,7 @@ env:
   RESOURCE_GROUP: BiteTheBookie
   APP_NAME: bitethebookie-app
   # Container Apps environment + region used when the app must be created.
-  CONTAINERAPP_ENV: bitethebookie-env
+  CONTAINERAPP_ENV: bitebookie
   LOCATION: eastus
   # Port the container listens on (ASP.NET Core container default is 8080).
   TARGET_PORT: "8080"
@@ -164,6 +164,12 @@ jobs:
               "SeedAdmin__Password=secretref:seed-password"
         else
           echo "Container App does not exist — creating."
+
+          # Validate existence of required secrets before trying to create.
+          if [ -z "$SEED_EMAIL" ] || [ -z "$SEED_PASSWORD" ]; then
+            echo "Error: SEED_EMAIL and SEED_PASSWORD must be defined and non-empty in GitHub Secrets. Aborting." >&2
+            exit 1
+          fi
 
           # Create the app with a system-assigned identity used to pull from ACR,
           # secrets for sensitive values, and env vars referencing those secrets.
