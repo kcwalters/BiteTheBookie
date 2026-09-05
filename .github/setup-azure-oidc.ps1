@@ -43,13 +43,26 @@ $AadAppName        = 'bitethebookie-github-oidc'
 Write-Host "Using subscription: $SubscriptionId" -ForegroundColor Cyan
 az account set --subscription $SubscriptionId
 
+# Returns $true only if the given "az ... show" command succeeds (resource exists).
+# Fully swallows output/errors and checks the exit code, so a "not found" result
+# never terminates the script (regardless of $ErrorActionPreference).
+function Test-AzResourceExists {
+	param([Parameter(Mandatory)][string[]]$AzArgs)
+	$prev = $ErrorActionPreference
+	$ErrorActionPreference = 'Continue'
+	& az @AzArgs *> $null
+	$ok = ($LASTEXITCODE -eq 0)
+	$ErrorActionPreference = $prev
+	return $ok
+}
+
 # --- STEP 1: Ensure the Azure resources exist -------------------------------
 Write-Host "`n[1/3] Ensuring Azure resources exist..." -ForegroundColor Green
 
 az group create --name $ResourceGroup --location $Location | Out-Null
 
 # Azure Container Registry
-if (-not (az acr show --name $AcrName --resource-group $ResourceGroup 2>$null)) {
+if (-not (Test-AzResourceExists @('acr','show','--name',$AcrName,'--resource-group',$ResourceGroup))) {
 	Write-Host "Creating ACR $AcrName..."
 	az acr create --name $AcrName --resource-group $ResourceGroup --sku Basic --admin-enabled false | Out-Null
 }
@@ -59,13 +72,13 @@ az extension add --name containerapp --upgrade --only-show-errors | Out-Null
 az provider register --namespace Microsoft.App --wait | Out-Null
 az provider register --namespace Microsoft.OperationalInsights --wait | Out-Null
 
-if (-not (az containerapp env show --name $ContainerEnvName --resource-group $ResourceGroup 2>$null)) {
+if (-not (Test-AzResourceExists @('containerapp','env','show','--name',$ContainerEnvName,'--resource-group',$ResourceGroup))) {
 	Write-Host "Creating Container Apps environment $ContainerEnvName..."
 	az containerapp env create --name $ContainerEnvName --resource-group $ResourceGroup --location $Location | Out-Null
 }
 
 # Container App (initial placeholder image; the pipeline updates it on each deploy)
-if (-not (az containerapp show --name $ContainerAppName --resource-group $ResourceGroup 2>$null)) {
+if (-not (Test-AzResourceExists @('containerapp','show','--name',$ContainerAppName,'--resource-group',$ResourceGroup))) {
 	Write-Host "Creating Container App $ContainerAppName..."
 	az containerapp create `
 		--name $ContainerAppName `
