@@ -323,7 +323,7 @@
                 gameTimeInput.value = '';
                 return;
             }
-            var url = '@Url.Action("GetGameDetails", "AdminPicks")'
+            var url = '@Url.Action("GetGameDetails", "ExpertPicks")'
                 + '?league=' + encodeURIComponent(league)
                 + '&gameId=' + encodeURIComponent(selectedGameId);
             fetch(url)
@@ -345,7 +345,7 @@
             if (!gameId) return;
             summarySpinner.style.display = 'inline';
             analysisInput.value = '';
-            var url = '@Url.Action("GetMlbPregameSummary", "AdminPicks")'
+            var url = '@Url.Action("GetMlbPregameSummary", "ExpertPicks")'
                 + '?gameId=' + encodeURIComponent(gameId);
             fetch(url)
                 .then(function (response) {
