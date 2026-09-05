@@ -16,6 +16,8 @@ env:
   IMAGE_NAME: bitethebookie                         # Repository/image name inside the ACR
   CONTAINER_APP_NAME: bitethebookieca              # Azure Container App name
   RESOURCE_GROUP: BiteTheBookie-rg                  # Resource group containing the Container App (verify this!)
+  CONTAINER_ENV_NAME: bitethebookie-env            # Container Apps managed environment name
+  LOCATION: eastus                                  # Azure region for created resources
   DOCKERFILE_PATH: BiteTheBookie/Dockerfile         # Dockerfile location
   BUILD_CONTEXT: .                                  # Build context = repo root (Dockerfile copies BiteTheBookie/*)
 
@@ -47,6 +49,71 @@ jobs:
             --image "$IMAGE_NAME:latest" \
             --file "$DOCKERFILE_PATH" \
             "$BUILD_CONTEXT"
+
+      - name: Ensure Container Apps environment and app exist
+        run: |
+          # Make sure the containerapp CLI extension and required providers are available.
+          az extension add --name containerapp --upgrade --only-show-errors
+          az provider register --namespace Microsoft.App --wait
+          az provider register --namespace Microsoft.OperationalInsights --wait
+
+          # Ensure the resource group exists.
+          az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --only-show-errors
+
+          # Ensure the Container Apps managed environment exists (idempotent).
+          if ! az containerapp env show --name "$CONTAINER_ENV_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
+            echo "Creating Container Apps environment $CONTAINER_ENV_NAME..."
+            az containerapp env create \
+              --name "$CONTAINER_ENV_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --location "$LOCATION"
+          fi
+
+          # Ensure the Container App exists (idempotent). Created with a system-assigned
+          # identity that pulls from ACR; the deploy step updates it to the new image.
+          if ! az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
+            echo "Creating Container App $CONTAINER_APP_NAME..."
+            az containerapp create \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --environment "$CONTAINER_ENV_NAME" \
+              --image "$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ steps.vars.outputs.tag }}" \
+              --registry-server "$ACR_NAME.azurecr.io" \
+              --registry-identity system \
+              --target-port 8080 \
+              --ingress external \
+              --system-assigned
+          fi
+
+      - name: Ensure ACR pull access for the Container App
+        run: |
+          # Guarantee the app has a system-assigned identity.
+          az containerapp identity assign \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --system-assigned
+
+          PRINCIPAL_ID=$(az containerapp identity show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query principalId -o tsv)
+
+          ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
+
+          # Grant AcrPull to the app identity (idempotent; ignores "already exists").
+          az role assignment create \
+            --assignee-object-id "$PRINCIPAL_ID" \
+            --assignee-principal-type ServicePrincipal \
+            --role AcrPull \
+            --scope "$ACR_ID" \
+            --only-show-errors || true
+
+          # Point the app at ACR using its managed identity for pulls.
+          az containerapp registry set \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --server "$ACR_NAME.azurecr.io" \
+            --identity system
 
       - name: Configure app secrets and environment variables
         run: |

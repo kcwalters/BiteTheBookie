@@ -85,6 +85,11 @@ az role assignment create --assignee $appId --role "AcrPush" --scope $acrId --on
 az role assignment create --assignee $appId --role "Contributor" `
 	--scope "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup" --only-show-errors | Out-Null
 
+# User Access Administrator lets the pipeline's OIDC principal grant AcrPull to the
+# Container App identity (the "Ensure ACR pull access" workflow step) on its own.
+az role assignment create --assignee $appId --role "User Access Administrator" `
+	--scope "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup" --only-show-errors | Out-Null
+
 # Let the Container App pull from ACR using its system-assigned managed identity.
 az containerapp identity assign --name $ContainerAppName --resource-group $ResourceGroup --system-assigned | Out-Null
 $caPrincipalId = az containerapp identity show --name $ContainerAppName --resource-group $ResourceGroup --query principalId -o tsv
