@@ -1,4 +1,4 @@
-﻿name: Build and Deploy to Azure Container Apps (OIDC)
+name: Build and Deploy to Azure Container Apps
 
 on:
   push:
@@ -9,70 +9,345 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: deploy-bitethebookie-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  REGISTRY: bitethebookieregistry
+  AZURE_LOCATION: eastus
+  RESOURCE_GROUP: BiteTheBookie
+  CONTAINER_APP_ENVIRONMENT: btb-env
+  CONTAINER_APP_NAME: bitethebookie-app
+  REGISTRY_NAME: bitethebookieregistry
   IMAGE_NAME: bitethebookie
 
 jobs:
-  build-and-deploy:
+  validate:
+    name: Validate application
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # -------------------------
-    # 🔐 Azure Login (OIDC)
-    # -------------------------
-    - name: Azure Login (OIDC)
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
 
-    # -------------------------
-    # 🏗️ Build & Push via ACR (server-side build; uses ./BiteTheBookie/Dockerfile)
-    # Tags each image with the commit SHA (immutable) and 'latest'.
-    # -------------------------
-    - name: Build and push image via ACR
-      run: |
-        az acr build \
-          --registry "$REGISTRY" \
-          --image "$IMAGE_NAME:${{ github.sha }}" \
-          --image "$IMAGE_NAME:latest" \
-          --file BiteTheBookie/Dockerfile \
-          .
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: BiteTheBookie/package-lock.json
 
-    # -------------------------
-    # 🚀 Deploy to Azure Container Apps
-    # -------------------------
-    - name: Deploy to Azure Container Apps
-      env:
-        CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
-        OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-        ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-        SEED_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
-        SEED_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
-      run: |
-        # Ensure the app runs a single active revision so traffic always
-        # shifts to the newest deployment automatically.
-        az containerapp revision set-mode \
-          --name bitethebookie-app \
-          --resource-group BiteTheBookie \
-          --mode single
+      - name: Install frontend dependencies
+        working-directory: BiteTheBookie
+        run: npm ci
 
-        # Deploy the image built from this commit as a new revision.
-        # In single revision mode, Container Apps automatically routes
-        # 100% of traffic to this newest revision.
-        az containerapp update \
-          --name bitethebookie-app \
-          --resource-group BiteTheBookie \
-          --image "$REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}" \
-          --revision-suffix "sha-${GITHUB_SHA::7}" \
-          --set-env-vars \
-            "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
-            "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
-            "OddsApi__ApiKey=$ODDS_API_KEY" \
-            "SeedAdmin__Email=$SEED_EMAIL" \
-            "SeedAdmin__Password=$SEED_PASSWORD"
+      - name: Build frontend assets
+        working-directory: BiteTheBookie
+        run: npm run sass:build
+
+      - name: Restore .NET dependencies
+        run: dotnet restore /home/runner/work/BiteTheBookie/BiteTheBookie/BiteTheBookie/BiteTheBookie.csproj
+
+      - name: Build application
+        run: dotnet build /home/runner/work/BiteTheBookie/BiteTheBookie/BiteTheBookie/BiteTheBookie.csproj --configuration Release --no-restore
+
+      - name: Run tests when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t test_projects < <(find /home/runner/work/BiteTheBookie/BiteTheBookie -name '*.Tests.csproj' -o -name '*Tests*.csproj')
+          if [ "${#test_projects[@]}" -eq 0 ]; then
+            echo "No test projects found."
+            exit 0
+          fi
+          dotnet test "${test_projects[@]}" --configuration Release --no-build
+
+  deploy:
+    name: Deploy to Azure Container Apps
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate required deployment secrets
+        shell: bash
+        env:
+          CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          set -euo pipefail
+          required_vars=(
+            CONNECTION_STRING
+            AZURE_OPENAI_API_KEY
+            AZURE_OPENAI_ENDPOINT
+            AZURE_OPENAI_DEPLOYMENT
+            ODDS_API_KEY
+          )
+
+          missing=()
+          for var_name in "${required_vars[@]}"; do
+            if [ -z "${!var_name:-}" ]; then
+              missing+=("$var_name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "Missing required GitHub Actions secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Ensure Azure Container Apps prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          az extension add --name containerapp --upgrade --only-show-errors
+          az provider register --namespace Microsoft.App --wait
+          az provider register --namespace Microsoft.OperationalInsights --wait
+
+          az group create \
+            --name "$RESOURCE_GROUP" \
+            --location "$AZURE_LOCATION" \
+            --only-show-errors
+
+          if ! az acr show --name "$REGISTRY_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+            az acr create \
+              --name "$REGISTRY_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --location "$AZURE_LOCATION" \
+              --sku Basic \
+              --admin-enabled false \
+              --only-show-errors
+          fi
+
+          if ! az containerapp env show --name "$CONTAINER_APP_ENVIRONMENT" --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+            az containerapp env create \
+              --name "$CONTAINER_APP_ENVIRONMENT" \
+              --resource-group "$RESOURCE_GROUP" \
+              --location "$AZURE_LOCATION" \
+              --only-show-errors
+          fi
+
+          if ! az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+            az containerapp create \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --environment "$CONTAINER_APP_ENVIRONMENT" \
+              --image mcr.microsoft.com/k8se/quickstart:latest \
+              --target-port 8080 \
+              --ingress external \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1.0Gi \
+              --only-show-errors
+          fi
+
+          az containerapp identity assign \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --system-assigned \
+            --only-show-errors >/dev/null
+
+          ACR_ID=$(az acr show --name "$REGISTRY_NAME" --resource-group "$RESOURCE_GROUP" --query id --output tsv)
+          CONTAINER_APP_PRINCIPAL_ID=$(az containerapp identity show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" --query principalId --output tsv)
+
+          if [ -n "$CONTAINER_APP_PRINCIPAL_ID" ]; then
+            az role assignment create \
+              --assignee-object-id "$CONTAINER_APP_PRINCIPAL_ID" \
+              --assignee-principal-type ServicePrincipal \
+              --role AcrPull \
+              --scope "$ACR_ID" \
+              --only-show-errors >/dev/null 2>&1 || true
+          fi
+
+          az containerapp registry set \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --server "$REGISTRY_NAME.azurecr.io" \
+            --identity system \
+            --only-show-errors >/dev/null
+
+      - name: Build and push image via Azure Container Registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          az acr build \
+            --registry "$REGISTRY_NAME" \
+            --image "$IMAGE_NAME:${GITHUB_SHA}" \
+            --image "$IMAGE_NAME:latest" \
+            --file BiteTheBookie/Dockerfile \
+            /home/runner/work/BiteTheBookie/BiteTheBookie
+
+      - name: Deploy, validate, and rollback on failure
+        shell: bash
+        env:
+          CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          REGISTRY_LOGIN_SERVER="$REGISTRY_NAME.azurecr.io"
+          DEPLOYMENT_IMAGE="$REGISTRY_LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}"
+          PREVIOUS_IMAGE="$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query 'properties.template.containers[0].image' \
+            --output tsv 2>/dev/null || true)"
+
+          cleanup() {
+            local exit_code=$?
+            trap - EXIT
+
+            if [ "$exit_code" -ne 0 ]; then
+              echo "::group::Azure Container Apps diagnostics"
+              az containerapp show \
+                --name "$CONTAINER_APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --output json || true
+              az containerapp revision list \
+                --name "$CONTAINER_APP_NAME" \
+                --resource-group "$RESOURCE_GROUP" \
+                --output table || true
+              echo "::endgroup::"
+
+              if [ -n "$PREVIOUS_IMAGE" ] && [ "$PREVIOUS_IMAGE" != "$DEPLOYMENT_IMAGE" ]; then
+                echo "Rolling back to $PREVIOUS_IMAGE"
+                az containerapp update \
+                  --name "$CONTAINER_APP_NAME" \
+                  --resource-group "$RESOURCE_GROUP" \
+                  --image "$PREVIOUS_IMAGE" \
+                  --revision-suffix "rollback-${GITHUB_RUN_NUMBER}" \
+                  --set-env-vars "${env_vars[@]}" \
+                  --only-show-errors || true
+              fi
+            fi
+
+            exit "$exit_code"
+          }
+          trap cleanup EXIT
+
+          secrets=(
+            "connection-string=$CONNECTION_STRING"
+            "azure-openai-api-key=$AZURE_OPENAI_API_KEY"
+            "azure-openai-endpoint=$AZURE_OPENAI_ENDPOINT"
+            "azure-openai-deployment=$AZURE_OPENAI_DEPLOYMENT"
+            "odds-api-key=$ODDS_API_KEY"
+          )
+
+          env_vars=(
+            ConnectionStrings__DefaultConnection=secretref:connection-string
+            AzureOpenAI__ApiKey=secretref:azure-openai-api-key
+            AzureOpenAI__Endpoint=secretref:azure-openai-endpoint
+            AzureOpenAI__DeploymentName=secretref:azure-openai-deployment
+            OddsApi__ApiKey=secretref:odds-api-key
+          )
+
+          if [ -n "${PAYPAL_CLIENT_ID:-}" ] && [ -n "${PAYPAL_CLIENT_SECRET:-}" ]; then
+            secrets+=("paypal-client-id=$PAYPAL_CLIENT_ID" "paypal-client-secret=$PAYPAL_CLIENT_SECRET")
+            env_vars+=(PayPal__ClientId=secretref:paypal-client-id PayPal__ClientSecret=secretref:paypal-client-secret)
+          fi
+
+          az containerapp secret set \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --secrets "${secrets[@]}" \
+            --only-show-errors >/dev/null
+
+          az containerapp revision set-mode \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --mode single \
+            --only-show-errors
+
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$DEPLOYMENT_IMAGE" \
+            --revision-suffix "sha-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}" \
+            --min-replicas 1 \
+            --max-replicas 3 \
+            --cpu 0.5 \
+            --memory 1.0Gi \
+            --set-env-vars "${env_vars[@]}" \
+            --only-show-errors
+
+          EXPECTED_REVISION="$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query properties.latestRevisionName \
+            --output tsv)"
+
+          for attempt in {1..30}; do
+            READY_REVISION="$(az containerapp show \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --query properties.latestReadyRevisionName \
+              --output tsv 2>/dev/null || true)"
+
+            if [ -n "$READY_REVISION" ] && [ "$READY_REVISION" = "$EXPECTED_REVISION" ]; then
+              break
+            fi
+
+            echo "Waiting for revision $EXPECTED_REVISION to become ready (attempt $attempt/30)..."
+            sleep 10
+          done
+
+          READY_REVISION="$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query properties.latestReadyRevisionName \
+            --output tsv 2>/dev/null || true)"
+
+          if [ -z "$READY_REVISION" ] || [ "$READY_REVISION" != "$EXPECTED_REVISION" ]; then
+            echo "Deployment revision did not become ready." >&2
+            exit 1
+          fi
+
+          FQDN="$(az containerapp show \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv)"
+
+          if [ -z "$FQDN" ]; then
+            echo "Container App ingress FQDN was not found." >&2
+            exit 1
+          fi
+
+          curl --fail --silent --show-error \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 10 \
+            "https://$FQDN/health/live" >/dev/null
+
+          curl --fail --silent --show-error \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 10 \
+            "https://$FQDN/health/ready" >/dev/null
+
+          echo "Deployment succeeded: https://$FQDN"

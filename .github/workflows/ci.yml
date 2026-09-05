@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: BiteTheBookie/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: BiteTheBookie
+        run: npm ci
+
+      - name: Build frontend assets
+        working-directory: BiteTheBookie
+        run: npm run sass:build
+
+      - name: Restore .NET dependencies
+        run: dotnet restore /home/runner/work/BiteTheBookie/BiteTheBookie/BiteTheBookie/BiteTheBookie.csproj
+
+      - name: Build application
+        run: dotnet build /home/runner/work/BiteTheBookie/BiteTheBookie/BiteTheBookie/BiteTheBookie.csproj --configuration Release --no-restore
+
+      - name: Run tests when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t test_projects < <(find /home/runner/work/BiteTheBookie/BiteTheBookie -name '*.Tests.csproj' -o -name '*Tests*.csproj')
+          if [ "${#test_projects[@]}" -eq 0 ]; then
+            echo "No test projects found."
+            exit 0
+          fi
+          dotnet test "${test_projects[@]}" --configuration Release --no-build
