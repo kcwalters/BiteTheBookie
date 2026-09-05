@@ -100,8 +100,6 @@ jobs:
 
         # Make sure the containerapp CLI extension is available/current.
         az extension add --name containerapp --upgrade --only-show-errors || true
-        az provider register --namespace Microsoft.App --wait || true
-        az provider register --namespace Microsoft.OperationalInsights --wait || true
 
         # Ensure the resource group exists.
         if ! az group show --name "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
@@ -120,9 +118,14 @@ jobs:
             --location "$LOCATION" --only-show-errors
         fi
 
-        if az containerapp show \
-              --name "$APP_NAME" \
-              --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+        # Robustly detect whether the app already exists. Use a list name-query
+        # (returns a count) rather than `show`, which can exit non-zero for
+        # reasons other than "not found" and cause a false create attempt.
+        APP_COUNT=$(az containerapp list \
+          --resource-group "$RESOURCE_GROUP" \
+          --query "length([?name=='$APP_NAME'])" -o tsv 2>/dev/null || echo "0")
+
+        if [ "${APP_COUNT:-0}" != "0" ]; then
           echo "Container App exists — updating."
 
           # Ensure the app runs a single active revision so traffic always
