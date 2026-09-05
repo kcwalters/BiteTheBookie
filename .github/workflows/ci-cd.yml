@@ -50,73 +50,25 @@ jobs:
             --file "$DOCKERFILE_PATH" \
             "$BUILD_CONTEXT"
 
-      - name: Ensure Container Apps environment and app exist
+      - name: Verify Container Apps infrastructure exists
         run: |
           # Make sure the containerapp CLI extension is available.
           az extension add --name containerapp --upgrade --only-show-errors
-          # NOTE: Resource providers (Microsoft.App, Microsoft.OperationalInsights) are a
-          # one-time, subscription-level registration handled during setup
-          # (.github/setup-azure-oidc.ps1). They are intentionally NOT registered here,
-          # since the pipeline's OIDC principal is scoped to the resource group only.
 
-          # NOTE: The resource group is created during setup (subscription-scoped write).
-          # The pipeline principal is scoped to the resource group, so it does NOT
-          # create the group here.
-
-          # Ensure the Container Apps managed environment exists (idempotent).
+          # Infrastructure (resource group, Log Analytics workspace, Container Apps
+          # environment, and the Container App itself with its ACR-pull identity) is
+          # provisioned ONCE via .github/setup-azure-oidc.ps1, which is run with
+          # elevated credentials. The pipeline's OIDC principal is scoped to the
+          # resource group and only builds/updates the app, so it verifies rather
+          # than creates these resources.
           if ! az containerapp env show --name "$CONTAINER_ENV_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
-            echo "Creating Container Apps environment $CONTAINER_ENV_NAME..."
-            az containerapp env create \
-              --name "$CONTAINER_ENV_NAME" \
-              --resource-group "$RESOURCE_GROUP" \
-              --location "$LOCATION"
+            echo "::error::Container Apps environment '$CONTAINER_ENV_NAME' not found in '$RESOURCE_GROUP'. Run .github/setup-azure-oidc.ps1 first."
+            exit 1
           fi
-
-          # Ensure the Container App exists (idempotent). Created with a system-assigned
-          # identity that pulls from ACR; the deploy step updates it to the new image.
           if ! az containerapp show --name "$CONTAINER_APP_NAME" --resource-group "$RESOURCE_GROUP" >/dev/null 2>&1; then
-            echo "Creating Container App $CONTAINER_APP_NAME..."
-            az containerapp create \
-              --name "$CONTAINER_APP_NAME" \
-              --resource-group "$RESOURCE_GROUP" \
-              --environment "$CONTAINER_ENV_NAME" \
-              --image "$ACR_NAME.azurecr.io/$IMAGE_NAME:${{ steps.vars.outputs.tag }}" \
-              --registry-server "$ACR_NAME.azurecr.io" \
-              --registry-identity system \
-              --target-port 8080 \
-              --ingress external \
-              --system-assigned
+            echo "::error::Container App '$CONTAINER_APP_NAME' not found in '$RESOURCE_GROUP'. Run .github/setup-azure-oidc.ps1 first."
+            exit 1
           fi
-
-      - name: Ensure ACR pull access for the Container App
-        run: |
-          # Guarantee the app has a system-assigned identity.
-          az containerapp identity assign \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --system-assigned
-
-          PRINCIPAL_ID=$(az containerapp identity show \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query principalId -o tsv)
-
-          ACR_ID=$(az acr show --name "$ACR_NAME" --query id -o tsv)
-
-          # Grant AcrPull to the app identity (idempotent; ignores "already exists").
-          az role assignment create \
-            --assignee-object-id "$PRINCIPAL_ID" \
-            --assignee-principal-type ServicePrincipal \
-            --role AcrPull \
-            --scope "$ACR_ID" \
-            --only-show-errors || true
-
-          # Point the app at ACR using its managed identity for pulls.
-          az containerapp registry set \
-            --name "$CONTAINER_APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --server "$ACR_NAME.azurecr.io" \
-            --identity system
 
       - name: Configure app secrets and environment variables
         run: |
