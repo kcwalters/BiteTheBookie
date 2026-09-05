@@ -73,7 +73,7 @@ if (!string.IsNullOrEmpty(aoaiEndpoint) && !string.IsNullOrEmpty(aoaiApiKey) && 
 else
 {
     // Register a null instance so services can gracefully degrade
-    builder.Services.AddSingleton<ChatClient?>(sp => null);
+    builder.Services.AddSingleton(sp => (ChatClient?)null);
 }
 
 // Odds API options + client
@@ -132,7 +132,7 @@ builder.Services.AddMemoryCache();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 

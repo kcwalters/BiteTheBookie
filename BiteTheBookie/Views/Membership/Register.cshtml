@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Create Account";
     var plan = Model.SelectedPlan?.ToLower();
+    var returnUrl = Context.Request.Query["returnUrl"].ToString();
     var planName = plan switch
     {
         "pro" => "Pro",
@@ -149,7 +150,7 @@
 
                         <div class="text-center mt-3">
                             <span class="text-muted">Already have an account?</span>
-                            <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Query["returnUrl"]">Log In</a>
+                            <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@returnUrl">Log In</a>
                         </div>
                     </form>
                 </div>

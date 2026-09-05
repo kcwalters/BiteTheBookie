@@ -1,4 +1,4 @@
-﻿/* =================================
+/* =================================
 ------------------------------------
   Game Warrior Template
   Version: 1.0
@@ -407,7 +407,6 @@ ol {
 .news-ticker-contant .nt-item {
   margin-right: 35px;
   color: #fff;
-  display: inline-block;
 }
 .news-ticker-contant .nt-item span {
   margin-right: 35px;
@@ -426,6 +425,9 @@ ol {
 }
 .news-ticker-contant .nt-item span.racing {
   background: #694eae;
+}
+.news-ticker-contant .nt-item {
+  display: inline-block;
 }
 
 /*------------------
@@ -927,65 +929,20 @@ body {
   color: #007bff !important;
 }
 
-/* --------------------------------------------------------
-   SportsLine-style unified nav: section links on the left,
-   league quick-links (icon + name) on the right.
--------------------------------------------------------- */
-.main-nav .navbar-collapse {
-  align-items: center;
+.league-menu {
+  background: #0b0c0d;
+  padding: 6px 0;
 }
-.primary-nav .nav-link {
-  padding: 14px 16px !important;
-  font-size: 15px;
-}
-/* Vertical divider between the section links and the league quick-links */
-.league-nav {
-  align-items: center;
-  gap: 2px;
-  padding-left: 18px;
-  margin-left: 18px;
-  border-left: 1px solid rgba(255, 255, 255, 0.25);
-}
-.league-nav .nav-link {
-  padding: 10px 10px !important;
-  font-weight: 700;
-  font-size: 14px;
-}
-.league-link {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-.league-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  display: inline-block;
-}
-.league-more {
-  letter-spacing: 2px;
-  opacity: 0.75;
-}
-.league-more:hover {
-  opacity: 1;
-}
-.top-social {
+.league-menu a {
   color: #fff;
-  opacity: 0.85;
   text-decoration: none;
+  margin-right: 22px;
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.85;
 }
-.top-social:hover {
+.league-menu a:hover {
   opacity: 1;
-}
-
-@media (max-width: 991.98px) {
-  .league-nav {
-    border-left: 0;
-    margin-left: 0;
-    padding-left: 0;
-    flex-wrap: wrap;
-  }
 }
 
 .content-wrapper {
@@ -1000,6 +957,15 @@ body {
   display: block;
 }
 
+/* Menu links */
+.league-menu a {
+  color: #fff;
+  font-weight: 700;
+  opacity: 1;
+}
+.league-menu a:hover {
+  opacity: 1;
+}
 
 /* ---------------------------------
    ESPN News Feed component (migrated from inline styles)

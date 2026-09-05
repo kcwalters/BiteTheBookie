@@ -6,7 +6,7 @@
     "sass": "^1.70.0"
   },
   "scripts": {
-    "sass:build": "sass wwwroot/sass/styles.scss:wwwroot/css/styles.css",
-    "sass:watch": "sass --watch wwwroot/sass/styles.scss:wwwroot/css/styles.css"
+    "sass:build": "sass --no-source-map wwwroot/sass/style.scss:wwwroot/css/style.css",
+    "sass:watch": "sass --no-source-map --watch wwwroot/sass/style.scss:wwwroot/css/style.css"
   }
 }

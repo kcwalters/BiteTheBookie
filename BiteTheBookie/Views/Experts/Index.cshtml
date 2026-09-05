@@ -129,13 +129,11 @@
             <strong>No articles yet.</strong>
             @if (User.IsInRole("Expert") || User.IsInRole("Admin"))
             {
-                <text>
-                    <a asp-action="Create" class="alert-link">Create the first one</a>
-                </text>
+                <a asp-action="Create" class="alert-link">Create the first one</a>
             }
             else
             {
-                <text>Check back soon for expert insights!</text>
+                <span>Check back soon for expert insights!</span>
             }
         </div>
     }

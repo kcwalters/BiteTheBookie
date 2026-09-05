@@ -19,6 +19,5 @@
 @if (!string.IsNullOrEmpty(widgetKey))
 {
     var widgetSrc = $"https://widget.the-odds-api.com/v1/sports/americanfootball_nfl/events/?accessKey={widgetKey}&bookmakerKeys=draftkings&oddsFormat=american&markets=h2h%2Cspreads%2Ctotals&marketNames=h2h%3AMoneyline%2Cspreads%3ASpreads%2Ctotals%3AOver%2FUnder";
-    <iframe title="Sports Odds Widget" style="width: 20rem; background-color:white; height: 25rem; border: 1px solid white;" src="@widgetSrc"></iframe>
+    @:<iframe title="Sports Odds Widget" style="width: 20rem; background-color:white; height: 25rem; border: 1px solid white;" src="@widgetSrc"></iframe>
 }
-

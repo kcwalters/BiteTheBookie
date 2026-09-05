@@ -46,7 +46,7 @@
                                 @foreach (var game in Model.AvailableNbaGames)
                                 {
                                     <li>
-                                        <a class="dropdown-item nba-game-item" href="#" data-value="@game.Value" data-away="@game.AwayCode" data-home="@game.HomeCode" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                        <a class="dropdown-item nba-game-item" href="#" data-value="@game.Value" data-away="@game.AwayCode" data-home="@game.HomeCode" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime='@game.GameTime.ToString("o")'>
                                             <img src="https://a.espncdn.com/i/teamlogos/nba/500/@(game.AwayCode).png" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             <img src="https://a.espncdn.com/i/teamlogos/nba/500/@(game.HomeCode).png" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             @game.Text
@@ -74,7 +74,7 @@
                                 @foreach (var game in Model.AvailableMlbGames)
                                 {
                                     <li>
-                                        <a class="dropdown-item mlb-game-item" href="#" data-value="@game.Value" data-away="@game.AwayCode" data-home="@game.HomeCode" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                        <a class="dropdown-item mlb-game-item" href="#" data-value="@game.Value" data-away="@game.AwayCode" data-home="@game.HomeCode" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime='@game.GameTime.ToString("o")'>
                                             <img src="https://a.espncdn.com/i/teamlogos/mlb/500/@(game.AwayCode).png" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             <img src="https://a.espncdn.com/i/teamlogos/mlb/500/@(game.HomeCode).png" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             @game.Text
@@ -102,7 +102,7 @@
                                 @foreach (var game in Model.AvailableCbbGames)
                                 {
                                     <li>
-                                        <a class="dropdown-item cbb-game-item" href="#" data-value="@game.Value" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                        <a class="dropdown-item cbb-game-item" href="#" data-value="@game.Value" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime='@game.GameTime.ToString("o")'>
                                             <img src="@game.AwayLogo" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             <img src="@game.HomeLogo" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             @game.Text
@@ -130,7 +130,7 @@
                                 @foreach (var game in Model.AvailableCfbGames)
                                 {
                                     <li>
-                                        <a class="dropdown-item cfb-game-item" href="#" data-value="@game.Value" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime="@game.GameTime.ToString("o")">
+                                        <a class="dropdown-item cfb-game-item" href="#" data-value="@game.Value" data-away-name="@game.AwayName" data-home-name="@game.HomeName" data-gametime='@game.GameTime.ToString("o")'>
                                             <img src="@game.AwayLogo" alt="@game.AwayName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             <img src="@game.HomeLogo" alt="@game.HomeName" style="width:28px;height:28px;margin-right:8px;" loading="lazy" />
                                             @game.Text
