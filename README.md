@@ -10,8 +10,8 @@ The repository ships with two GitHub Actions workflows:
 
 | Workflow | File | Trigger |
 |----------|------|---------|
-| **CI** | `/home/runner/work/BiteTheBookie/BiteTheBookie/.github/workflows/ci.yml` | Push or PR → `master` |
-| **Deploy to Azure Container Apps** | `/home/runner/work/BiteTheBookie/BiteTheBookie/.github/workflows/deploy-bitethebookie.yml` | Push or manual dispatch → `master` |
+| **CI** | `.github/workflows/ci.yml` | Push or PR → `master` |
+| **Deploy to Azure Container Apps** | `.github/workflows/deploy-bitethebookie.yml` | Push or manual dispatch → `master` |
 
 ### Deployment flow
 
@@ -59,7 +59,7 @@ Go to **Settings → Secrets and variables → Actions** and add:
 
 ## One-time Azure Setup
 
-Use `/home/runner/work/BiteTheBookie/BiteTheBookie/.github/setup-azure-oidc.ps1` to:
+Use `.github/setup-azure-oidc.ps1` to:
 
 - create or confirm the Azure resource group, ACR, Container Apps environment, and app
 - create the Azure AD app and federated credential for `master`

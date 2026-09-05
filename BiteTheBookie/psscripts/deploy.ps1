@@ -29,7 +29,8 @@ $envVars = @(
     "AzureOpenAI__ApiKey=secretref:azure-openai-api-key",
     "AzureOpenAI__Endpoint=secretref:azure-openai-endpoint",
     "AzureOpenAI__DeploymentName=secretref:azure-openai-deployment",
-    "OddsApi__ApiKey=secretref:odds-api-key"
+    "OddsApi__ApiKey=secretref:odds-api-key",
+    "ForwardedHeaders__TrustAllProxies=true"
 )
 
 $secrets = @(

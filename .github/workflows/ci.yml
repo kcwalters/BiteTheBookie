@@ -38,16 +38,16 @@ jobs:
         run: npm run sass:build
 
       - name: Restore .NET dependencies
-        run: dotnet restore /home/runner/work/BiteTheBookie/BiteTheBookie/BiteTheBookie/BiteTheBookie.csproj
+        run: dotnet restore BiteTheBookie/BiteTheBookie.csproj
 
       - name: Build application
-        run: dotnet build /home/runner/work/BiteTheBookie/BiteTheBookie/BiteTheBookie/BiteTheBookie.csproj --configuration Release --no-restore
+        run: dotnet build BiteTheBookie/BiteTheBookie.csproj --configuration Release --no-restore
 
       - name: Run tests when present
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t test_projects < <(find /home/runner/work/BiteTheBookie/BiteTheBookie -name '*.Tests.csproj' -o -name '*Tests*.csproj')
+          mapfile -t test_projects < <(find . -name '*.Tests.csproj' -o -name '*Tests*.csproj')
           if [ "${#test_projects[@]}" -eq 0 ]; then
             echo "No test projects found."
             exit 0

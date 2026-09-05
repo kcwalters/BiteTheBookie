@@ -129,11 +129,16 @@ builder.Services.AddRazorPages();
 // Caching
 builder.Services.AddMemoryCache();
 
+var trustAllForwardedProxies = builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies");
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    if (trustAllForwardedProxies)
+    {
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
 });
 
 builder.Services.AddHealthChecks()
