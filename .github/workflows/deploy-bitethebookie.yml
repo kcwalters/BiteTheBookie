@@ -3,23 +3,55 @@
 on:
   push:
     branches: [ "master" ]
+    # Only build/deploy when source, Dockerfile, or this workflow changes.
+    paths:
+      - "BiteTheBookie/**"
+      - ".github/workflows/deploy-bitethebookie.yml"
   workflow_dispatch:
 
 permissions:
   id-token: write
   contents: read
 
+# Prevent overlapping deployments from racing to shift traffic.
+# Queue runs instead of cancelling an in-flight production deploy.
+concurrency:
+  group: deploy-bitethebookie
+  cancel-in-progress: false
+
 env:
   REGISTRY: bitethebookieregistry
   IMAGE_NAME: bitethebookie
+  RESOURCE_GROUP: BiteTheBookie
+  APP_NAME: bitethebookie-app
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Gate production deploys behind an Environment so you can add
+    # required reviewers / protection rules in the repo settings.
+    environment: production
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
+    # -------------------------
+    # ✅ Build & test gate (fail fast before touching Azure)
+    # -------------------------
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore
+      run: dotnet restore BiteTheBookie.sln
+
+    - name: Build
+      run: dotnet build BiteTheBookie.sln --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test BiteTheBookie.sln --configuration Release --no-build --verbosity normal
 
     # -------------------------
     # 🔐 Azure Login (OIDC)
@@ -37,6 +69,7 @@ jobs:
     # -------------------------
     - name: Build and push image via ACR
       run: |
+        set -euo pipefail
         az acr build \
           --registry "$REGISTRY" \
           --image "$IMAGE_NAME:${{ github.sha }}" \
@@ -55,24 +88,81 @@ jobs:
         SEED_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
         SEED_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
       run: |
+        set -euo pipefail
+
         # Ensure the app runs a single active revision so traffic always
         # shifts to the newest deployment automatically.
         az containerapp revision set-mode \
-          --name bitethebookie-app \
-          --resource-group BiteTheBookie \
+          --name "$APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
           --mode single
+
+        # Store sensitive values as Container Apps secrets rather than
+        # plaintext env vars in the revision definition.
+        az containerapp secret set \
+          --name "$APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --secrets \
+            "connection-string=$CONNECTION_STRING" \
+            "openai-api-key=$OPENAI_API_KEY" \
+            "odds-api-key=$ODDS_API_KEY" \
+            "seed-email=$SEED_EMAIL" \
+            "seed-password=$SEED_PASSWORD"
 
         # Deploy the image built from this commit as a new revision.
         # In single revision mode, Container Apps automatically routes
         # 100% of traffic to this newest revision.
+        # The suffix includes the run number so re-running the same commit
+        # (retry / workflow_dispatch) never collides with an existing suffix.
+        REVISION_SUFFIX="sha-${GITHUB_SHA::7}-${{ github.run_number }}"
         az containerapp update \
-          --name bitethebookie-app \
-          --resource-group BiteTheBookie \
+          --name "$APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
           --image "$REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}" \
-          --revision-suffix "sha-${GITHUB_SHA::7}" \
+          --revision-suffix "$REVISION_SUFFIX" \
           --set-env-vars \
-            "ConnectionStrings__DefaultConnection=$CONNECTION_STRING" \
-            "AzureOpenAI__ApiKey=$OPENAI_API_KEY" \
-            "OddsApi__ApiKey=$ODDS_API_KEY" \
-            "SeedAdmin__Email=$SEED_EMAIL" \
-            "SeedAdmin__Password=$SEED_PASSWORD"
+            "ConnectionStrings__DefaultConnection=secretref:connection-string" \
+            "AzureOpenAI__ApiKey=secretref:openai-api-key" \
+            "OddsApi__ApiKey=secretref:odds-api-key" \
+            "SeedAdmin__Email=secretref:seed-email" \
+            "SeedAdmin__Password=secretref:seed-password"
+
+    # -------------------------
+    # 🩺 Verify the new revision became healthy
+    # -------------------------
+    - name: Verify deployment health
+      run: |
+        set -euo pipefail
+        REVISION_NAME="$APP_NAME--sha-${GITHUB_SHA::7}-${{ github.run_number }}"
+        echo "Waiting for revision $REVISION_NAME to become healthy..."
+
+        for i in $(seq 1 30); do
+          STATE=$(az containerapp revision show \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --revision "$REVISION_NAME" \
+            --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
+
+          HEALTH=$(az containerapp revision show \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --revision "$REVISION_NAME" \
+            --query "properties.healthState" -o tsv 2>/dev/null || echo "Unknown")
+
+          echo "Attempt $i: provisioningState=$STATE healthState=$HEALTH"
+
+          if [ "$STATE" = "Provisioned" ] && { [ "$HEALTH" = "Healthy" ] || [ "$HEALTH" = "None" ]; }; then
+            echo "Revision is healthy. ✅"
+            exit 0
+          fi
+
+          if [ "$STATE" = "Failed" ]; then
+            echo "Revision provisioning failed. ❌"
+            exit 1
+          fi
+
+          sleep 10
+        done
+
+        echo "Timed out waiting for revision to become healthy. ❌"
+        exit 1
