@@ -195,7 +195,7 @@ jobs:
             --image "$IMAGE_NAME:${GITHUB_SHA}" \
             --image "$IMAGE_NAME:latest" \
             --file BiteTheBookie/Dockerfile \
-            /home/runner/work/BiteTheBookie/BiteTheBookie
+            .
 
       - name: Deploy, validate, and rollback on failure
         shell: bash

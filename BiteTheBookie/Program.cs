@@ -136,6 +136,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     if (trustAllForwardedProxies)
     {
+        options.ForwardLimit = null;
         options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     }
