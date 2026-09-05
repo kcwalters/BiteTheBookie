@@ -1,34 +1,133 @@
-﻿$tenantId       = "2e7660ae-d674-4c1b-93fc-d2dceeb36812"
-$subscriptionId = "e1d9ef80-dcea-41ea-b053-ea32d3530915"
-$rgName         = "BiteTheBookie"
-$appName        = "bitethebookie-app-20260216193509"
-$acrName        = "registry20260214124314"
-$acrLogin       = "$acrName.azurecr.io"
-$imageName      = "bitethebookie"
-$imageTag       = git rev-parse --short HEAD   # unique per commit
+﻿trigger:
+  branches:
+    include:
+      - master
 
-Write-Host "🔐 Logging in..." -ForegroundColor Cyan
-az login --tenant $tenantId | Out-Null
-az account set --subscription $subscriptionId
-az acr login --name $acrName
+pool:
+  vmImage: ubuntu-latest
 
-Write-Host "🐳 Building image..." -ForegroundColor Cyan
-docker build -f BiteTheBookie/Dockerfile -t "$acrLogin/${imageName}:$imageTag" .
-if ($LASTEXITCODE -ne 0) { throw "Docker build failed." }
+variables:
+  tenantId: "2e7660ae-d674-4c1b-93fc-d2dceeb36812"
+  subscriptionId: "e1d9ef80-dcea-41ea-b053-ea32d3530915"
+  rgName: "BiteTheBookie"
+  location: "eastus"
+  acrName: "btbregistry2026"
+  acrLogin: "btbregistry2026.azurecr.io"
+  envName: "btb-env"
+  appName: "bitethebookie-app"
+  imageName: "bitethebookie"
+  imageTag: "$(Build.BuildId)"
 
-Write-Host "📤 Pushing image..." -ForegroundColor Cyan
-docker push "$acrLogin/${imageName}:$imageTag"
-if ($LASTEXITCODE -ne 0) { throw "Docker push failed." }
+stages:
+  # ── Stage 1: Build & Push Docker Image ──────────────────────────────────────
+  - stage: Build
+    displayName: "Build & Push to ACR"
+    jobs:
+      - job: BuildAndPush
+        displayName: "Docker Build & Push"
+        steps:
+          - task: AzureCLI@2
+            displayName: "Ensure Resource Group & ACR"
+            inputs:
+              azureSubscription: "BiteTheBookie-ServiceConnection"
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az group create --name $(rgName) --location $(location)
+                az acr create \
+                  --resource-group $(rgName) \
+                  --name $(acrName) \
+                  --sku Basic \
+                  --admin-enabled true || true
 
-Write-Host "🚀 Updating Container App..." -ForegroundColor Cyan
-az containerapp update `
-  --resource-group $rgName `
-  --name $appName `
-  --image "$acrLogin/${imageName}:$imageTag"
+          - task: AzureCLI@2
+            displayName: "Build & Push Docker Image"
+            inputs:
+              azureSubscription: "BiteTheBookie-ServiceConnection"
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az acr login --name $(acrName)
+                docker build \
+                  -f BiteTheBookie/Dockerfile \
+                  -t $(acrLogin)/$(imageName):$(imageTag) \
+                  -t $(acrLogin)/$(imageName):latest \
+                  .
+                docker push $(acrLogin)/$(imageName):$(imageTag)
+                docker push $(acrLogin)/$(imageName):latest
 
-Write-Host "`n✅ Deployment complete!" -ForegroundColor Green
-az containerapp show `
-  --resource-group $rgName `
-  --name $appName `
-  --query "properties.configuration.ingress.fqdn" `
-  --output tsv
+  # ── Stage 2: Deploy to Azure Container Apps ──────────────────────────────────
+  - stage: Deploy
+    displayName: "Deploy to Azure Container Apps"
+    dependsOn: Build
+    jobs:
+      - deployment: DeployToACA
+        displayName: "Deploy Container App"
+        environment: "production"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: "Ensure Container Apps Environment"
+                  inputs:
+                    azureSubscription: "BiteTheBookie-ServiceConnection"
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az containerapp env create \
+                        --name $(envName) \
+                        --resource-group $(rgName) \
+                        --location $(location) || true
+
+                - task: AzureCLI@2
+                  displayName: "Create or Update Container App"
+                  inputs:
+                    azureSubscription: "BiteTheBookie-ServiceConnection"
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      ACR_PASSWORD=$(az acr credential show --name $(acrName) --query "passwords[0].value" --output tsv)
+
+                      # Try update first; create if it doesn't exist yet
+                      az containerapp update \
+                        --name $(appName) \
+                        --resource-group $(rgName) \
+                        --image $(acrLogin)/$(imageName):$(imageTag) \
+                      || \
+                      az containerapp create \
+                        --name $(appName) \
+                        --resource-group $(rgName) \
+                        --environment $(envName) \
+                        --image $(acrLogin)/$(imageName):$(imageTag) \
+                        --registry-server $(acrLogin) \
+                        --registry-username $(acrName) \
+                        --registry-password "$ACR_PASSWORD" \
+                        --target-port 8080 \
+                        --ingress external \
+                        --cpu 0.5 \
+                        --memory 1.0Gi \
+                        --min-replicas 0 \
+                        --max-replicas 3 \
+                        --env-vars \
+                          OddsApi__BaseUrl="https://api.the-odds-api.com/v4/" \
+                          OddsApi__ApiKey="$(OddsApi__ApiKey)" \
+                          OddsApi__Regions="us" \
+                          OddsApi__Markets="h2h,spreads,totals" \
+                          OddsApi__OddsFormat="american" \
+                          OddsApi__CacheSeconds="30"
+
+                - task: AzureCLI@2
+                  displayName: "Print App URL"
+                  inputs:
+                    azureSubscription: "BiteTheBookie-ServiceConnection"
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      FQDN=$(az containerapp show \
+                        --resource-group $(rgName) \
+                        --name $(appName) \
+                        --query "properties.configuration.ingress.fqdn" \
+                        --output tsv)
+                      echo "✅ App URL: https://$FQDN"
+                      echo "##vso[task.setvariable variable=AppUrl]https://$FQDN"
