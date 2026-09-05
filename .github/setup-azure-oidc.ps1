@@ -14,6 +14,20 @@
 
 $ErrorActionPreference = 'Stop'
 
+# Existence checks below run "az ... show" and rely on a non-zero exit code to
+# mean "not found". Newer PowerShell turns native non-zero exits into terminating
+# errors, which would break those checks, so opt out of that behavior here.
+$PSNativeCommandUseErrorActionPreference = $false
+
+# ---- Guard: run az against a clean extension directory --------------------
+# Works around a corrupt local 'containerapp' extension (WinError 5 / access
+# denied on containerapp-*.dist-info) that otherwise breaks every az command.
+# Using a separate dir lets az install a fresh extension without touching the
+# locked one. Remove/reset AZURE_EXTENSION_DIR once the corrupt folder is gone.
+$env:AZURE_EXTENSION_DIR = "$env:USERPROFILE\.azure\cliextensions_clean"
+New-Item -ItemType Directory -Force -Path $env:AZURE_EXTENSION_DIR | Out-Null
+# --------------------------------------------------------------------------
+
 # ---- EDIT THESE to match (or create) your Azure resources ------------------
 $SubscriptionId    = (az account show --query id -o tsv)
 $ResourceGroup     = 'BiteTheBookie-rg'

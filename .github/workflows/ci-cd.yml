@@ -52,10 +52,12 @@ jobs:
 
       - name: Ensure Container Apps environment and app exist
         run: |
-          # Make sure the containerapp CLI extension and required providers are available.
+          # Make sure the containerapp CLI extension is available.
           az extension add --name containerapp --upgrade --only-show-errors
-          az provider register --namespace Microsoft.App --wait
-          az provider register --namespace Microsoft.OperationalInsights --wait
+          # NOTE: Resource providers (Microsoft.App, Microsoft.OperationalInsights) are a
+          # one-time, subscription-level registration handled during setup
+          # (.github/setup-azure-oidc.ps1). They are intentionally NOT registered here,
+          # since the pipeline's OIDC principal is scoped to the resource group only.
 
           # Ensure the resource group exists.
           az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --only-show-errors
