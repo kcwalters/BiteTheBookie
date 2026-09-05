@@ -30,8 +30,8 @@ New-Item -ItemType Directory -Force -Path $env:AZURE_EXTENSION_DIR | Out-Null
 
 # ---- EDIT THESE to match (or create) your Azure resources ------------------
 $SubscriptionId    = (az account show --query id -o tsv)
-$ResourceGroup     = 'BiteTheBookie-rg'
-$Location          = 'eastus'
+$ResourceGroup     = 'BiteTheBookie'
+$Location          = 'centralus'
 $AcrName           = 'bitethebookieregistry'  # must be globally unique, alphanumeric
 $ContainerAppName  = 'bitethebookieca'
 $ContainerEnvName  = 'bitethebookie-env'     # Container Apps managed environment

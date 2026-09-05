@@ -15,9 +15,9 @@ env:
   ACR_NAME: bitethebookieregistry                  # Azure Container Registry name (without .azurecr.io)
   IMAGE_NAME: bitethebookie                         # Repository/image name inside the ACR
   CONTAINER_APP_NAME: bitethebookieca              # Azure Container App name
-  RESOURCE_GROUP: BiteTheBookie-rg                  # Resource group containing the Container App (verify this!)
+  RESOURCE_GROUP: BiteTheBookie                     # Resource group containing the Container App
   CONTAINER_ENV_NAME: bitethebookie-env            # Container Apps managed environment name
-  LOCATION: eastus                                  # Azure region for created resources
+  LOCATION: centralus                               # Azure region for created resources
   DOCKERFILE_PATH: BiteTheBookie/Dockerfile         # Dockerfile location
   BUILD_CONTEXT: .                                  # Build context = repo root (Dockerfile copies BiteTheBookie/*)
 
