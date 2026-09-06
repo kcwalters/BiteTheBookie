@@ -10,7 +10,7 @@ variables:
   tenantId: "2e7660ae-d674-4c1b-93fc-d2dceeb36812"
   subscriptionId: "e1d9ef80-dcea-41ea-b053-ea32d3530915"
   rgName: "BiteTheBookie"
-  location: "eastus"
+  location: "centeralus"
   acrName: "bitethebookieregistry"
   acrLogin: "bitethebookieregistry.azurecr.io"
   envName: "btb-env"
