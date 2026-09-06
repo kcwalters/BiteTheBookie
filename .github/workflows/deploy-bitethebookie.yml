@@ -26,7 +26,7 @@ env:
   APP_NAME: bitethebookie-app
   # Container Apps environment + region used when the app must be created.
   CONTAINERAPP_ENV: bitebookie
-  LOCATION: eastus
+  LOCATION: centralus
   # Port the container listens on (ASP.NET Core container default is 8080).
   TARGET_PORT: "8080"
 
