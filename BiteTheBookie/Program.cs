@@ -1,13 +1,11 @@
 using Azure;
 using Azure.AI.OpenAI;
-using Azure.Identity;
 using BiteTheBookie;
 using BiteTheBookie.Data;
 using BiteTheBookie.Models;
 using BiteTheBookie.Services;
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
