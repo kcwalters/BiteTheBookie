@@ -24,7 +24,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Persist Data Protection keys to the database so they survive container restarts
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<ApplicationDbContext>();
-
+ 
 // Identity with ApplicationUser and Roles
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 {
