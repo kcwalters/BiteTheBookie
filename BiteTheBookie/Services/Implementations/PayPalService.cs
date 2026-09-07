@@ -37,13 +37,18 @@ namespace BiteTheBookie.Services.Implementations
                 ? "https://api-m.paypal.com"
                 : "https://api-m.sandbox.paypal.com";
 
-            if (!_clientId.StartsWith("YOUR-", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(_clientId))
             {
-                _logger.LogInformation("Loaded valid PayPal ClientId: {ClientIdPrefix}", _clientId.Substring(0, 6) + "***");
+                _logger.LogWarning("PayPal ClientId is missing from configuration.");
+            }
+            else if (_clientId.StartsWith("YOUR-", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("The PayPal ClientId in the configuration appears to be a placeholder.");
             }
             else
             {
-                _logger.LogWarning("The PayPal ClientId in the configuration appears to be a placeholder.");
+                var prefix = _clientId.Length >= 6 ? _clientId.Substring(0, 6) : _clientId;
+                _logger.LogInformation("Loaded valid PayPal ClientId: {ClientIdPrefix}", prefix + "***");
             }
             
             if (string.IsNullOrWhiteSpace(_clientSecret))
