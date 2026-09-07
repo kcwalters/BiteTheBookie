@@ -204,4 +204,4 @@ jobs:
           done
 
           echo "Timed out waiting for revision to become healthy."
-          exit 1
+          exit 1 
