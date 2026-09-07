@@ -19,16 +19,16 @@ concurrency:
 env:
   REGISTRY: bitethebookieregistry
   IMAGE_NAME: bitethebookie
-  RESOURCE_GROUP: BiteTheBookie
+  RESOURCE_GROUP: bitethebookierg
   APP_NAME: bitethebookie-app
-  CONTAINERAPP_ENV: bitebookie
+  CONTAINERAPP_ENV: btb-env
   LOCATION: centralus
   TARGET_PORT: "8080"
   # Subscription that actually contains the ACR, Container App, and identity.
   # Pinned explicitly so az never drifts to a different accessible subscription.
   SUBSCRIPTION_ID: e1d9ef80-dcea-41ea-b053-ea32d3530915
   # User-assigned identity that holds AcrPull on the registry.
-  USER_ASSIGNED_IDENTITY: /subscriptions/e1d9ef80-dcea-41ea-b053-ea32d3530915/resourceGroups/BiteTheBookie/providers/Microsoft.ManagedIdentity/userAssignedIdentities/btb-envbitethebookieregistryBiteTheBookieOidc
+  USER_ASSIGNED_IDENTITY: /subscriptions/e1d9ef80-dcea-41ea-b053-ea32d3530915/resourceGroups/bitethebookierg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/btb-identity
 
 jobs:
   build-and-deploy:
@@ -73,6 +73,7 @@ jobs:
           set -euo pipefail
           az acr build \
             --registry "$REGISTRY" \
+            --subscription "$SUBSCRIPTION_ID" \
             --image "$IMAGE_NAME:${{ github.sha }}" \
             --image "$IMAGE_NAME:latest" \
             --file BiteTheBookie/Dockerfile \
