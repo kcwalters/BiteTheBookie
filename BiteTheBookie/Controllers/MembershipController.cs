@@ -122,12 +122,13 @@ namespace BiteTheBookie.Controllers
         }
 
         /// <summary>
-        /// On-site payment page: renders PayPal hosted card fields + button so the user can
-        /// subscribe with a debit/credit card without leaving the site or creating a PayPal account.
+        /// <summary>
+        /// On-site payment page: renders the PayPal subscribe button + a debit/credit card
+        /// button so the user can subscribe without leaving the site or creating a PayPal account.
         /// </summary>
         [Authorize]
         [HttpGet]
-        public async Task<IActionResult> Payment(string plan)
+        public IActionResult Payment(string plan)
         {
             var selectedPlan = plan?.ToLowerInvariant();
             var isPaidPlan = selectedPlan == "pro" || selectedPlan == "allaccess";
@@ -151,22 +152,9 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("Join");
             }
 
-            string clientToken;
-            try
-            {
-                clientToken = await _payPalService.GenerateClientTokenAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to generate PayPal client token for plan {Plan}.", selectedPlan);
-                TempData["PaymentError"] = "There was an issue starting checkout. Please try again later.";
-                return RedirectToAction("Join");
-            }
-
             ViewBag.Plan = selectedPlan;
             ViewBag.PlanId = planId;
             ViewBag.ClientId = _payPalService.ClientId;
-            ViewBag.ClientToken = clientToken;
             ViewBag.PlanName = selectedPlan == "allaccess" ? "All Access" : "Pro";
             ViewBag.PlanPrice = selectedPlan == "allaccess" ? "$19.99" : "$9.99";
 

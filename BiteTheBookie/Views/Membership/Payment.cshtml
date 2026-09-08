@@ -54,8 +54,7 @@
 </form>
 
 @section Scripts {
-    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons&intent=subscription&vault=true"
-            data-client-token="@clientToken"
+    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons&intent=subscription&vault=true&enable-funding=card"
             data-sdk-integration-source="integrationbuilder_sc"></script>
     <script>
         (function () {
@@ -86,6 +85,9 @@
                 },
                 onApprove: function (data) {
                     completeSubscription(data.subscriptionID);
+                },
+                onCancel: function () {
+                    showError('Checkout was cancelled before payment was completed.');
                 },
                 onError: function (err) {
                     console.error(err);
