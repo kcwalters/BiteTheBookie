@@ -33,7 +33,10 @@ namespace BiteTheBookie.Services.Implementations
 
             _clientId = configuration["PayPal:ClientId"] ?? string.Empty;
             _clientSecret = configuration["PayPal:ClientSecret"] ?? string.Empty;
-            _baseUrl = string.Equals(configuration["PayPal:Environment"], "live", StringComparison.OrdinalIgnoreCase)
+            var environment = configuration["PayPal:Environment"];
+            var isLive = string.Equals(environment, "live", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(environment, "production", StringComparison.OrdinalIgnoreCase);
+            _baseUrl = isLive
                 ? "https://api-m.paypal.com"
                 : "https://api-m.sandbox.paypal.com";
 
