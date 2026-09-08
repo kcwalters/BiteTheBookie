@@ -7,6 +7,7 @@ using BiteTheBookie.Services;
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
@@ -146,6 +147,20 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+
+// Azure Container Apps (and most cloud hosts) sit behind a reverse proxy that
+// terminates TLS and forwards requests to the container over plain HTTP.
+// Honor X-Forwarded-Proto/For so the app knows the original request was HTTPS.
+// Without this, HTTPS redirection loops and auth cookies fail to round-trip,
+// which sends logged-in users back to the login screen repeatedly.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
