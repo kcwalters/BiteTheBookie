@@ -34,11 +34,14 @@ namespace BiteTheBookie.Services.Implementations
             _clientId = configuration["PayPal:ClientId"] ?? string.Empty;
             _clientSecret = configuration["PayPal:ClientSecret"] ?? string.Empty;
             var environment = configuration["PayPal:Environment"];
-            var isLive = string.Equals(environment, "live", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(environment, "production", StringComparison.OrdinalIgnoreCase);
-            _baseUrl = isLive
-                ? "https://api-m.paypal.com"
-                : "https://api-m.sandbox.paypal.com";
+            // Always target PayPal live/production.
+            _baseUrl = "https://api-m.paypal.com";
+            if (!string.IsNullOrWhiteSpace(environment)
+                && !string.Equals(environment, "live", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(environment, "production", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("PayPal:Environment is set to '{Environment}'; forcing live endpoint {BaseUrl}.", environment, _baseUrl);
+            }
 
             if (string.IsNullOrWhiteSpace(_clientId))
             {

@@ -4,9 +4,8 @@
 	and activates them, then prints the resulting plan IDs to paste into appsettings.json.
 
 .DESCRIPTION
-	Uses the PayPal REST API directly. Works against the sandbox by default; pass -Live to target
-	production. The ClientId/ClientSecret MUST belong to the same environment you target, and the
-	resulting P-... plan IDs only work with that same account/environment.
+	Uses the PayPal REST API directly. Always targets PayPal live/production. The ClientId/ClientSecret
+	MUST be your live credentials, and the resulting P-... plan IDs only work with that same live account.
 
 .EXAMPLE
 	./create-paypal-plans.ps1 -ClientId "Axxxx" -ClientSecret "Exxxx"
@@ -18,7 +17,6 @@
 param(
 	[Parameter(Mandatory = $true)] [string] $ClientId,
 	[Parameter(Mandatory = $true)] [string] $ClientSecret,
-	[switch] $Live,
 	[string] $CurrencyCode = "USD",
 	[decimal] $ProPrice = 9.99,
 	[decimal] $AllAccessPrice = 19.99
@@ -26,8 +24,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$baseUrl = if ($Live) { "https://api-m.paypal.com" } else { "https://api-m.sandbox.paypal.com" }
-Write-Host "Targeting PayPal environment: $baseUrl" -ForegroundColor Cyan
+$baseUrl = "https://api-m.paypal.com"
+Write-Host "Targeting PayPal environment (live): $baseUrl" -ForegroundColor Cyan
 
 # 1) OAuth token ------------------------------------------------------------
 $basic = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${ClientId}:${ClientSecret}"))
@@ -93,7 +91,7 @@ Write-Host " Paste these into appsettings.json / appsettings.Development.json:" 
 Write-Host "==================================================================" -ForegroundColor Yellow
 $snippet = @{
 	PayPal = @{
-		Environment = if ($Live) { "live" } else { "sandbox" }
+		Environment = "live"
 		PlanId      = @{
 			Pro       = $proPlanId
 			AllAccess = $allAccessPlanId
