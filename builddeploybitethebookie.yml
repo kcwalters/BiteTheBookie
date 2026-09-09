@@ -1,0 +1,213 @@
+name: Build and Deploy to Azure Container Apps (OIDC)
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - "BiteTheBookie/**"
+      - ".github/workflows/deploy-bitethebookie.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-bitethebookie
+  cancel-in-progress: false
+
+env:
+  REGISTRY: bitethebookieregistry
+  IMAGE_NAME: bitethebookie
+  RESOURCE_GROUP: bitethebookierg
+  APP_NAME: bitethebookie-app
+  CONTAINERAPP_ENV: btb-env
+  LOCATION: centralus
+  TARGET_PORT: "8080"
+  # Subscription that actually contains the ACR, Container App, and identity.
+  # Pinned explicitly so az never drifts to a different accessible subscription.
+  SUBSCRIPTION_ID: e1d9ef80-dcea-41ea-b053-ea32d3530915
+  # User-assigned identity that holds AcrPull on the registry.
+  USER_ASSIGNED_IDENTITY: /subscriptions/e1d9ef80-dcea-41ea-b053-ea32d3530915/resourceGroups/bitethebookierg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/btb-identity
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---------- Build & test gate ----------
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore BiteTheBookie.sln
+
+      - name: Build
+        run: dotnet build BiteTheBookie.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test BiteTheBookie.sln --configuration Release --no-build --verbosity normal
+
+      # ---------- Azure Login (OIDC) ----------
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Pin the active subscription so all az calls target the one that
+      # holds the ACR, Container App, and managed identity.
+      - name: Select subscription
+        run: az account set --subscription "$SUBSCRIPTION_ID"
+
+      # ---------- Build & push image via ACR (server-side) ----------
+      - name: Build and push image to ACR
+        run: |
+          az acr build \
+            --registry bitethebookieregistry \
+            --image bitethebookie:latest \
+            --file BiteTheBookie/Dockerfile \
+            .
+
+      # ---------- Deploy to Azure Container Apps ----------
+      - name: Deploy to Azure Container Apps
+        env:
+          CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+          OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          SEED_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
+          SEED_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          IMAGE="$REGISTRY.azurecr.io/$IMAGE_NAME:${{ github.sha }}"
+          REVISION_SUFFIX="sha-${GITHUB_SHA::7}-${{ github.run_number }}"
+
+          az extension add --name containerapp --upgrade --only-show-errors || true
+
+          # Validate required secrets up front.
+          if [ -z "$SEED_EMAIL" ] || [ -z "$SEED_PASSWORD" ]; then
+            echo "Error: SEED_EMAIL and SEED_PASSWORD must be set (non-empty) in GitHub Secrets." >&2
+            exit 1
+          fi
+
+          # Ensure resource group exists.
+          if ! az group show --name "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+            az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --only-show-errors
+          fi
+
+          # Ensure Container Apps environment exists.
+          if ! az containerapp env show --name "$CONTAINERAPP_ENV" \
+                --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+            az containerapp env create --name "$CONTAINERAPP_ENV" \
+              --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --only-show-errors
+          fi
+
+          APP_COUNT=$(az containerapp list --resource-group "$RESOURCE_GROUP" \
+            --query "length([?name=='$APP_NAME'])" -o tsv 2>/dev/null || echo "0")
+
+          if [ "${APP_COUNT:-0}" != "0" ]; then
+            echo "Container App exists — updating."
+
+            az containerapp revision set-mode \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --mode single
+
+            # Make sure the identity is attached and bound to the registry.
+            az containerapp identity assign \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --user-assigned "$USER_ASSIGNED_IDENTITY" || true
+
+            az containerapp registry set \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --server "$REGISTRY.azurecr.io" \
+              --identity "$USER_ASSIGNED_IDENTITY"
+
+            az containerapp secret set \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --secrets \
+                "connection-string=$CONNECTION_STRING" \
+                "openai-api-key=$OPENAI_API_KEY" \
+                "odds-api-key=$ODDS_API_KEY" \
+                "seed-email=$SEED_EMAIL" \
+                "seed-password=$SEED_PASSWORD"
+
+            az containerapp update \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --image "$IMAGE" \
+              --revision-suffix "$REVISION_SUFFIX" \
+              --set-env-vars \
+                "ConnectionStrings__DefaultConnection=secretref:connection-string" \
+                "AzureOpenAI__ApiKey=secretref:openai-api-key" \
+                "OddsApi__ApiKey=secretref:odds-api-key" \
+                "SeedAdmin__Email=secretref:seed-email" \
+                "SeedAdmin__Password=secretref:seed-password"
+          else
+            echo "Container App does not exist — creating."
+
+            az containerapp create \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --environment "$CONTAINERAPP_ENV" \
+              --image "$IMAGE" \
+              --revision-suffix "$REVISION_SUFFIX" \
+              --target-port "$TARGET_PORT" \
+              --ingress external \
+              --user-assigned "$USER_ASSIGNED_IDENTITY" \
+              --registry-server "$REGISTRY.azurecr.io" \
+              --registry-identity "$USER_ASSIGNED_IDENTITY" \
+              --secrets \
+                "connection-string=$CONNECTION_STRING" \
+                "openai-api-key=$OPENAI_API_KEY" \
+                "odds-api-key=$ODDS_API_KEY" \
+                "seed-email=$SEED_EMAIL" \
+                "seed-password=$SEED_PASSWORD" \
+              --env-vars \
+                "ConnectionStrings__DefaultConnection=secretref:connection-string" \
+                "AzureOpenAI__ApiKey=secretref:openai-api-key" \
+                "OddsApi__ApiKey=secretref:odds-api-key" \
+                "SeedAdmin__Email=secretref:seed-email" \
+                "SeedAdmin__Password=secretref:seed-password"
+
+            az containerapp revision set-mode \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --mode single
+          fi
+
+      # ---------- Verify the new revision is healthy ----------
+      - name: Verify deployment health
+        run: |
+          set -euo pipefail
+          REVISION_NAME="$APP_NAME--sha-${GITHUB_SHA::7}-${{ github.run_number }}"
+          echo "Waiting for revision $REVISION_NAME to become healthy..."
+
+          for i in $(seq 1 30); do
+            STATE=$(az containerapp revision show \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --revision "$REVISION_NAME" \
+              --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
+
+            HEALTH=$(az containerapp revision show \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --revision "$REVISION_NAME" \
+              --query "properties.healthState" -o tsv 2>/dev/null || echo "Unknown")
+
+            echo "Attempt $i: provisioningState=$STATE healthState=$HEALTH"
+
+            if [ "$STATE" = "Provisioned" ] && { [ "$HEALTH" = "Healthy" ] || [ "$HEALTH" = "None" ]; }; then
+              echo "Revision is healthy."
+              exit 0
+            fi
+            if [ "$STATE" = "Failed" ]; then
+              echo "Revision provisioning failed."
+              exit 1
+            fi
+            sleep 10
+          done
+
+          echo "Timed out waiting for revision to become healthy."
+          exit 1
