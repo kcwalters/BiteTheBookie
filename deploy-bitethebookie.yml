@@ -68,14 +68,11 @@ jobs:
         run: az account set --subscription "$SUBSCRIPTION_ID"
 
       # ---------- Build & push image via ACR (server-side) ----------
-      - name: Build and push image via ACR
+      - name: Build and push image to ACR
         run: |
-          set -euo pipefail
           az acr build \
-            --registry "$REGISTRY" \
-            --subscription "$SUBSCRIPTION_ID" \
-            --image "$IMAGE_NAME:${{ github.sha }}" \
-            --image "$IMAGE_NAME:latest" \
+            --registry bitethebookieregistry \
+            --image bitethebookie:latest \
             --file BiteTheBookie/Dockerfile \
             .
 
