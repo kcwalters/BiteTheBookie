@@ -72,6 +72,7 @@ jobs:
         run: |
           az acr build \
             --registry bitethebookieregistry \
+            --image bitethebookie:${{ github.sha }} \
             --image bitethebookie:latest \
             --file BiteTheBookie/Dockerfile \
             .
