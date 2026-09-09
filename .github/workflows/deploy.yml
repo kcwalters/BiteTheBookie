@@ -74,7 +74,6 @@ jobs:
     needs: build
     # Only deploy from the default branch, never from pull requests.
     if: github.event_name != 'pull_request'
-    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
