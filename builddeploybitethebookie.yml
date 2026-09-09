@@ -117,8 +117,12 @@ jobs:
           if [ "${APP_COUNT:-0}" != "0" ]; then
             echo "Container App exists — updating."
 
+            # NOTE: these pre-update calls are made non-fatal (|| true) so that a
+            # previously Failed ProvisioningState cannot abort the job before the
+            # `az containerapp update --image` step below, which is what actually
+            # recovers the app by deploying a valid image.
             az containerapp revision set-mode \
-              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --mode single
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --mode single || true
 
             # Make sure the identity is attached and bound to the registry.
             az containerapp identity assign \
@@ -128,7 +132,7 @@ jobs:
             az containerapp registry set \
               --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
               --server "$REGISTRY.azurecr.io" \
-              --identity "$USER_ASSIGNED_IDENTITY"
+              --identity "$USER_ASSIGNED_IDENTITY" || true
 
             az containerapp secret set \
               --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
@@ -137,7 +141,7 @@ jobs:
                 "openai-api-key=$OPENAI_API_KEY" \
                 "odds-api-key=$ODDS_API_KEY" \
                 "seed-email=$SEED_EMAIL" \
-                "seed-password=$SEED_PASSWORD"
+                "seed-password=$SEED_PASSWORD" || true
 
             az containerapp update \
               --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
