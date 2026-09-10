@@ -1248,10 +1248,19 @@ FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL
 private static string StripCodeFences(string text)
         {
             text = text.Trim();
-            if (text.StartsWith("```html", StringComparison.OrdinalIgnoreCase))
-                text = text["```html".Length..].Trim();
-            else if (text.StartsWith("```"))
-                text = text[3..].Trim();
+            if (text.StartsWith("```"))
+            {
+                text = text[3..];
+
+                // Strip an optional language identifier (e.g. "json", "html")
+                // that immediately follows the opening fence on the same line.
+                var newlineIndex = text.IndexOf('\n');
+                var firstLine = (newlineIndex >= 0 ? text[..newlineIndex] : text).Trim();
+                if (firstLine.Length > 0 && firstLine.All(char.IsLetter))
+                    text = newlineIndex >= 0 ? text[(newlineIndex + 1)..] : string.Empty;
+
+                text = text.Trim();
+            }
             if (text.EndsWith("```"))
                 text = text[..^3].Trim();
             return text;
