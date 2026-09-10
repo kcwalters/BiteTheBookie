@@ -98,7 +98,7 @@ builder.Services.AddSportsTickers(builder.Configuration);
 
 // Daily Fantasy Football (DFS)
 builder.Services.AddFantasyFootball(builder.Configuration);
-
+ 
 // Game services
 builder.Services.AddScoped<IGameSimulationService, GameSimulationService>();
 builder.Services.AddScoped<INBARosterService, NBARosterService>();
