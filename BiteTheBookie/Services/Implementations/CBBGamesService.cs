@@ -8,14 +8,17 @@ namespace BiteTheBookie.Services.Implementations
     {
         private readonly ILogger<CBBGamesService> _logger;
         private readonly TheOddsApiClient _oddsApiClient;
+        private readonly ILeagueScheduleService _scheduleService;
         private readonly Dictionary<string, (string Name, string Logo, string Code)> _teamInfo;
 
         public CBBGamesService(
             ILogger<CBBGamesService> logger,
-            TheOddsApiClient oddsApiClient)
+            TheOddsApiClient oddsApiClient,
+            ILeagueScheduleService scheduleService)
         {
             _logger = logger;
             _oddsApiClient = oddsApiClient;
+            _scheduleService = scheduleService;
             _teamInfo = InitializeTeamInfo();
         }
 
@@ -23,18 +26,62 @@ namespace BiteTheBookie.Services.Implementations
         {
             _logger.LogInformation("Fetching NCAA Men's Basketball games from The Odds API");
 
-            var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_ncaab/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
-
-            var games = ParseCBBOddsApiResponse(oddsData);
-
-            if (games.Any())
+            try
             {
-                _logger.LogInformation("Successfully fetched {Count} CBB games from The Odds API", games.Count);
-                return games;
+                var oddsData = await _oddsApiClient.GetAsync("/v4/sports/basketball_ncaab/odds?regions=us&markets=spreads,totals,h2h&oddsFormat=american", cancellationToken);
+
+                var games = ParseCBBOddsApiResponse(oddsData);
+
+                if (games.Any())
+                {
+                    _logger.LogInformation("Successfully fetched {Count} CBB games from The Odds API", games.Count);
+                    return games;
+                }
+
+                _logger.LogWarning("No CBB games available from The Odds API — falling back to ESPN schedule");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "The Odds API unavailable for CBB — falling back to ESPN schedule");
             }
 
-            _logger.LogWarning("No CBB games available from The Odds API");
-            return new List<CBBGameMatchup>();
+            return await GetCBBGamesFromEspnAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Fallback source: fetches today's college basketball games from the free ESPN
+        /// scoreboard when The Odds API is unavailable or returns no games. Betting lines
+        /// (spread/total/moneyline) are not provided by this source.
+        /// </summary>
+        private async Task<List<CBBGameMatchup>> GetCBBGamesFromEspnAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var espnGames = await _scheduleService.GetGamesForDateAsync("CBB", DateTime.Today, cancellationToken);
+
+                var games = espnGames.Select(g => new CBBGameMatchup
+                {
+                    GameId = g.GameId,
+                    AwayTeamCode = g.AwayTeamCode,
+                    AwayTeamName = g.AwayTeamName,
+                    AwayTeamLogo = g.AwayTeamLogo,
+                    HomeTeamCode = g.HomeTeamCode,
+                    HomeTeamName = g.HomeTeamName,
+                    HomeTeamLogo = g.HomeTeamLogo,
+                    GameTime = g.GameTime,
+                    AwayScore = g.AwayScore,
+                    HomeScore = g.HomeScore,
+                    Status = g.Status
+                }).ToList();
+
+                _logger.LogInformation("ESPN fallback returned {Count} CBB games", games.Count);
+                return games;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ESPN fallback failed for CBB");
+                return new List<CBBGameMatchup>();
+            }
         }
 
         private List<CBBGameMatchup> ParseCBBOddsApiResponse(JsonElement oddsData)
