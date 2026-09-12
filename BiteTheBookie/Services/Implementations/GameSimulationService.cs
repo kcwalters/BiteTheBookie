@@ -438,15 +438,31 @@ Rules:
 
                 var fetchResponse = await _chatClient.CompleteChatAsync(
                     fetchMessages, new ChatCompletionOptions { Temperature = 0.0f }, cancellationToken);
-                var rawJson = StripCodeFences(fetchResponse.Value.Content[0].Text);
+                var rawResponseText = fetchResponse.Value.Content[0].Text ?? string.Empty;
+                _logger.LogDebug("OpenAI raw roster response for {Team} (preview): {Preview}",
+                    teamName, rawResponseText.Length > 2000 ? rawResponseText[..2000] : rawResponseText);
+                var rawJson = StripCodeFences(rawResponseText);
 
-                using var doc  = JsonDocument.Parse(rawJson);
-                var root        = doc.RootElement;
-
-                if (!root.TryGetProperty("players", out var playersEl))
+                JsonElement playersEl;
+                try
                 {
-                    _logger.LogWarning("OpenAI roster response for {Team} missing 'players' array", teamName);
-                    return null;
+                    using var doc = JsonDocument.Parse(rawJson);
+                    var root = doc.RootElement;
+
+                    if (!root.TryGetProperty("players", out var playersProperty))
+                    {
+                        _logger.LogWarning("OpenAI roster response for {Team} missing 'players' array", teamName);
+                        return null;
+                    }
+
+                    playersEl = playersProperty.Clone();
+                }
+                catch (JsonException jex)
+                {
+                    _logger.LogError(jex,
+                        "Failed to parse OpenAI roster JSON for {Team}. Stripped response preview: {Preview}",
+                        teamName, rawJson.Length > 2000 ? rawJson[..2000] : rawJson);
+                    throw;
                 }
 
                 var candidates = new List<NBAPlayer>();
@@ -757,54 +773,74 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
                 var fetchResponse = await _chatClient.CompleteChatAsync(
                     fetchMessages, new ChatCompletionOptions { Temperature = 0.0f }, cancellationToken);
 
-                var json = StripCodeFences(fetchResponse.Value.Content[0].Text).Trim();
-                using var doc = JsonDocument.Parse(json);
+                var rawResponseText = fetchResponse.Value.Content[0].Text ?? string.Empty;
+                _logger.LogDebug("OpenAI raw MLB roster response for {Team} (preview): {Preview}",
+                    teamName, rawResponseText.Length > 2000 ? rawResponseText[..2000] : rawResponseText);
 
-                var candidates = new List<string>();
-                foreach (var el in doc.RootElement.EnumerateArray())
+                var json = StripCodeFences(rawResponseText).Trim();
+                JsonDocument doc;
+                try
                 {
-                    var name = el.GetString();
-                    if (!string.IsNullOrWhiteSpace(name))
-                        candidates.Add(name);
+                    doc = JsonDocument.Parse(json);
+                }
+                catch (JsonException jex)
+                {
+                    _logger.LogError(jex, "Failed to parse OpenAI MLB roster JSON for {Team}. Stripped response preview: {Preview}",
+                        teamName, json.Length > 2000 ? json[..2000] : json);
+                    throw;
                 }
 
-                if (candidates.Count == 0)
+                using (doc)
                 {
-                    _logger.LogWarning("OpenAI returned zero MLB players for {Team}", teamName);
-                    // Try fallback to MLB Stats API
-                    var fallback = await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
-                    if (fallback != null && fallback.Count > 0)
+                    var candidates = new List<string>();
+                    foreach (var el in doc.RootElement.EnumerateArray())
                     {
-                        _logger.LogInformation("Fetched {Count} roster players from MLB Stats API for {Team}", fallback.Count, teamName);
-                        return fallback;
+                        var name = el.GetString();
+                        if (!string.IsNullOrWhiteSpace(name))
+                            candidates.Add(name);
                     }
-                    return new List<string>();
-                }
 
-                // ── Pass 2: Validate ──────────────────────────────────────────
-                var invalid = await GetInactiveMLBPlayersAsync(candidates, teamName, today, cancellationToken);
-
-                var validated = candidates
-                    .Where(p => !invalid.Contains(p))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                if (invalid.Count > 0)
-                    _logger.LogWarning(
-                        "MLB roster validation removed {Count} invalid player(s) from {Team}: {Names}",
-                        invalid.Count, teamName, string.Join(", ", invalid));
-
-                _logger.LogInformation("MLB roster: {Count} active players confirmed for {Team}", validated.Count, teamName);
-                if (validated.Count == 0)
-                {
-                    var fallback2 = await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
-                    if (fallback2 != null && fallback2.Count > 0)
+                    if (candidates.Count == 0)
                     {
-                        _logger.LogInformation("Using MLB Stats API fallback roster ({Count}) for {Team}", fallback2.Count, teamName);
-                        return fallback2;
+                        _logger.LogWarning("OpenAI returned zero MLB players for {Team}", teamName);
+                        // Try fallback to MLB Stats API
+                        var fallback = await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
+                        if (fallback != null && fallback.Count > 0)
+                        {
+                            _logger.LogInformation("Fetched {Count} roster players from MLB Stats API for {Team}", fallback.Count, teamName);
+                            return fallback;
+                        }
+                        return new List<string>();
                     }
+
+                    // ── Pass 2: Validate ──────────────────────────────────────────
+                    var invalid = await GetInactiveMLBPlayersAsync(candidates, teamName, today, cancellationToken);
+
+                    var validated = candidates
+                        .Where(p => !invalid.Contains(p))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    if (invalid.Count > 0)
+                        _logger.LogWarning(
+                            "MLB roster validation removed {Count} invalid player(s) from {Team}: {Names}",
+                            invalid.Count, teamName, string.Join(", ", invalid));
+
+                    _logger.LogInformation("MLB roster: {Count} active players confirmed for {Team}", validated.Count, teamName);
+                    if (validated.Count == 0)
+                    {
+                        var fallback2 = await FetchMlbRosterFromStatsApiAsync(teamName, cancellationToken);
+                        if (fallback2 != null && fallback2.Count > 0)
+                        {
+                            _logger.LogInformation("Using MLB Stats API fallback roster ({Count}) for {Team}", fallback2.Count, teamName);
+                            return fallback2;
+                        }
+                    }
+
+                    return validated;
                 }
-                return validated;
+
+
             }
             catch (Exception ex)
             {

@@ -1,14 +1,6 @@
 @model BiteTheBookie.ViewModels.GameSimulationViewModel
 
 <div class="simulation-shell">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
-        <div>
-            <div class="simulation-kicker">AI Game Simulation</div>
-            <h4 class="simulation-title mb-1">@Model.AwayTeam vs @Model.HomeTeam</h4>
-            <span class="simulation-badge">@Model.League</span>
-        </div>
-    </div>
-
     @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
     {
         <div class="alert alert-danger mb-0">

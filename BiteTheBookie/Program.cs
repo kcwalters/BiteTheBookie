@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenAI.Chat;
+using Serilog;
+using Serilog.Sinks.MSSqlServer;
+using Serilog.Events;
 var builder = WebApplication.CreateBuilder(args); 
  
 // Add services to the container.
@@ -125,6 +128,20 @@ builder.Services.AddRazorPages();
 // Caching
 builder.Services.AddMemoryCache();
 
+// Serilog: write logs to console and to SQL Server (Logs table). Uses DefaultConnection.
+var sqlConnectionString = connectionString;
+var sinkOptions = new MSSqlServerSinkOptions { TableName = "Logs", AutoCreateSqlTable = true };
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Is(LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.MSSqlServer(sqlConnectionString, sinkOptions)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -184,4 +201,11 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
