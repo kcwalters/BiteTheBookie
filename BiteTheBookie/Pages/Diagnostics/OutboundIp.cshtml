@@ -1,0 +1,16 @@
+@page
+@model BiteTheBookie.Pages.Diagnostics.OutboundIpModel
+@{
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2>Outbound IP Diagnostic</h2>
+    <p class="text-muted">This is the public IP address your deployed app uses for outbound calls. Add this exact IP to the Azure OpenAI firewall allow list.</p>
+
+    <div class="card">
+        <div class="card-body">
+            <p class="mb-0">@Model.ResultMessage</p>
+        </div>
+    </div>
+</div>
