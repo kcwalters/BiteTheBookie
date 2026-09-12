@@ -116,26 +116,33 @@ namespace BiteTheBookie.Services.Implementations
                     var homeTeamCode = MapTeamNameToCode(homeTeam);
                     var awayTeamCode = MapTeamNameToCode(awayTeam);
 
+                    // The Odds API can include FBS/FCS teams not present in our static
+                    // lookup. Rather than dropping the game, synthesize a code/name from
+                    // the raw team name so the matchup still appears (logo may be blank).
+                    if (string.IsNullOrEmpty(homeTeamCode))
+                    {
+                        homeTeamCode = MakeFallbackCode(homeTeam);
+                        if (!string.IsNullOrEmpty(homeTeam)) unmappedTeams.Add(homeTeam);
+                    }
+                    if (string.IsNullOrEmpty(awayTeamCode))
+                    {
+                        awayTeamCode = MakeFallbackCode(awayTeam);
+                        if (!string.IsNullOrEmpty(awayTeam)) unmappedTeams.Add(awayTeam);
+                    }
+
                     if (string.IsNullOrEmpty(homeTeamCode) || string.IsNullOrEmpty(awayTeamCode))
                     {
-                        _logger.LogWarning("Could not map CFB teams: {Home} / {Away}", homeTeam, awayTeam);
-
-                        if (string.IsNullOrEmpty(homeTeamCode)) unmappedTeams.Add(homeTeam);
-                        if (string.IsNullOrEmpty(awayTeamCode)) unmappedTeams.Add(awayTeam);
-
+                        _logger.LogWarning("Skipping CFB game with missing team name(s): {Home} / {Away}", homeTeam, awayTeam);
                         skippedGames++;
                         continue;
                     }
 
-                    var homeInfo = _teamInfo.GetValueOrDefault(homeTeamCode);
-                    var awayInfo = _teamInfo.GetValueOrDefault(awayTeamCode);
-
-                    if (homeInfo == default || awayInfo == default)
-                    {
-                        _logger.LogWarning("CFB team code lookup failed: {HomeCode} or {AwayCode}", homeTeamCode, awayTeamCode);
-                        skippedGames++;
-                        continue;
-                    }
+                    var homeInfo = _teamInfo.TryGetValue(homeTeamCode, out var hi) && hi != default
+                        ? hi
+                        : (Name: homeTeam, Logo: string.Empty, Code: homeTeamCode);
+                    var awayInfo = _teamInfo.TryGetValue(awayTeamCode, out var ai) && ai != default
+                        ? ai
+                        : (Name: awayTeam, Logo: string.Empty, Code: awayTeamCode);
 
                     decimal? spread = null;
                     decimal? overUnder = null;
@@ -232,6 +239,21 @@ namespace BiteTheBookie.Services.Implementations
         private string MapTeamNameToCode(string teamName)
         {
             return TeamNameToCode.GetValueOrDefault(teamName, "");
+        }
+
+        // Builds a short, deterministic team code from a raw Odds API team name when the
+        // team is not present in the static lookup (e.g. FCS opponents). This keeps the
+        // matchup visible instead of silently discarding it.
+        private static string MakeFallbackCode(string teamName)
+        {
+            if (string.IsNullOrWhiteSpace(teamName))
+                return string.Empty;
+
+            var letters = new string(teamName.Where(char.IsLetterOrDigit).ToArray());
+            if (letters.Length == 0)
+                return string.Empty;
+
+            return (letters.Length <= 8 ? letters : letters[..8]).ToUpperInvariant();
         }
 
         // Shared instance used by callers (e.g. simulation view models) to resolve a team

@@ -23,6 +23,7 @@ namespace BiteTheBookie.Controllers
         private readonly IGameSimulationService _simulationService;
         private readonly INewsService _newsService;
         private readonly ApplicationDbContext _db;
+        private readonly ILogger<PicksController> _logger;
 
         public PicksController(
             ILeagueScheduleService scheduleService,
@@ -32,7 +33,8 @@ namespace BiteTheBookie.Controllers
             ISpreadAnalysisService spreadAnalysisService,
             IGameSimulationService simulationService,
             INewsService newsService,
-            ApplicationDbContext db)
+            ApplicationDbContext db,
+            ILogger<PicksController> logger)
         {
             _scheduleService = scheduleService;
             _nflScoresService = nflScoresService;
@@ -42,6 +44,7 @@ namespace BiteTheBookie.Controllers
             _simulationService = simulationService;
             _newsService = newsService;
             _db = db;
+            _logger = logger;
         }
 
         /// <summary>
@@ -161,8 +164,9 @@ namespace BiteTheBookie.Controllers
             {
                 model.Games = await _cfbGamesService.GetUpcomingCFBGamesAsync(cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to load CFB games for pick sheet");
                 // View handles an empty list.
             }
 
