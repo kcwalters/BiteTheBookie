@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using OpenAI.Chat;
 
 namespace BiteTheBookie.Pages.Diagnostics
 {
+    [Authorize(Roles = "Admin")]
     public class OpenAITestModel : PageModel
     {
         private readonly ChatClient? _chatClient;

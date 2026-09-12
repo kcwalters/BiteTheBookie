@@ -1,11 +1,13 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 
 namespace BiteTheBookie.Pages.Diagnostics
 {
+    [Authorize(Roles = "Admin")]
     public class OutboundIpModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
