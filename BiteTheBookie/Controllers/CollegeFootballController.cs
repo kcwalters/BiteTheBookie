@@ -187,6 +187,8 @@ namespace BiteTheBookie.Controllers
                 }
 
                 viewModel.TeamNews = await _espnApiClient.GetNewsHeadlinesAsync("football/college-football", espnId, 5, cancellationToken);
+
+                viewModel.Schedule = await _espnApiClient.GetTeamScheduleAsync("football/college-football", espnId, cancellationToken);
             }
 
             viewModel.LeagueNews = await _espnApiClient.GetNewsHeadlinesAsync("football/college-football", null, 5, cancellationToken);

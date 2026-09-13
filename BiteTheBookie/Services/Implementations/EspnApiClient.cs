@@ -469,5 +469,203 @@ namespace BiteTheBookie.Services.Implementations
 
             return headlines;
         }
+
+        /// <summary>
+        /// Fetches a team's current-season schedule (games and results) from the ESPN Site API.
+        /// <paramref name="sportLeaguePath"/> is the ESPN segment such as "football/college-football"
+        /// or "football/nfl". <paramref name="teamIdOrCode"/> is the ESPN numeric id or abbreviation.
+        /// Returns an empty list if the request fails.
+        /// </summary>
+        public async Task<List<EspnScheduleEntry>> GetTeamScheduleAsync(string sportLeaguePath, string teamIdOrCode, CancellationToken cancellationToken = default)
+        {
+            var entries = new List<EspnScheduleEntry>();
+            if (string.IsNullOrWhiteSpace(sportLeaguePath) || string.IsNullOrWhiteSpace(teamIdOrCode))
+                return entries;
+
+            try
+            {
+                var url = $"https://site.api.espn.com/apis/site/v2/sports/{sportLeaguePath}/teams/{teamIdOrCode}/schedule";
+                var response = await _httpClient.GetAsync(url, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN schedule API returned {Status} for {Path}/{Team}",
+                        response.StatusCode, sportLeaguePath, teamIdOrCode);
+                    return entries;
+                }
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                if (!doc.RootElement.TryGetProperty("events", out var events) || events.ValueKind != JsonValueKind.Array)
+                    return entries;
+
+                foreach (var ev in events.EnumerateArray())
+                {
+                    var entry = ParseScheduleEvent(ev, teamIdOrCode);
+                    if (entry != null)
+                        entries.Add(entry);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch ESPN schedule for {Path}/{Team}", sportLeaguePath, teamIdOrCode);
+            }
+
+            return entries;
+        }
+
+        private static EspnScheduleEntry? ParseScheduleEvent(JsonElement ev, string teamIdOrCode)
+        {
+            if (ev.ValueKind != JsonValueKind.Object)
+                return null;
+
+            if (!ev.TryGetProperty("competitions", out var competitions) ||
+                competitions.ValueKind != JsonValueKind.Array ||
+                competitions.GetArrayLength() == 0)
+                return null;
+
+            var comp = competitions[0];
+            if (!comp.TryGetProperty("competitors", out var competitors) ||
+                competitors.ValueKind != JsonValueKind.Array)
+                return null;
+
+            var entry = new EspnScheduleEntry();
+
+            if (ev.TryGetProperty("date", out var dateEl) &&
+                dateEl.ValueKind == JsonValueKind.String &&
+                DateTime.TryParse(dateEl.GetString(), out var parsedDate))
+            {
+                entry.Date = parsedDate;
+            }
+
+            JsonElement teamSide = default, oppSide = default;
+            bool foundTeam = false, foundOpp = false;
+
+            foreach (var competitor in competitors.EnumerateArray())
+            {
+                var isThisTeam = CompetitorMatches(competitor, teamIdOrCode);
+                if (isThisTeam && !foundTeam)
+                {
+                    teamSide = competitor;
+                    foundTeam = true;
+                }
+                else if (!foundOpp)
+                {
+                    oppSide = competitor;
+                    foundOpp = true;
+                }
+            }
+
+            // Fallback: if we couldn't positively identify our team, treat first as team, second as opponent.
+            if (!foundTeam && competitors.GetArrayLength() >= 2)
+            {
+                teamSide = competitors[0];
+                oppSide = competitors[1];
+                foundTeam = foundOpp = true;
+            }
+
+            if (!foundOpp)
+                return null;
+
+            if (teamSide.ValueKind == JsonValueKind.Object &&
+                teamSide.TryGetProperty("homeAway", out var homeAway))
+            {
+                entry.IsHome = string.Equals(homeAway.GetString(), "home", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (oppSide.TryGetProperty("team", out var oppTeam) && oppTeam.ValueKind == JsonValueKind.Object)
+            {
+                entry.OpponentName = GetString(oppTeam, "displayName");
+                if (string.IsNullOrEmpty(entry.OpponentName))
+                    entry.OpponentName = GetString(oppTeam, "name");
+                entry.OpponentLogo = GetString(oppTeam, "logo");
+            }
+
+            // Venue.
+            if (comp.TryGetProperty("venue", out var venue) && venue.ValueKind == JsonValueKind.Object)
+                entry.Venue = GetString(venue, "fullName");
+
+            // Status / completion.
+            if (comp.TryGetProperty("status", out var status) && status.ValueKind == JsonValueKind.Object)
+            {
+                if (status.TryGetProperty("type", out var statusType) && statusType.ValueKind == JsonValueKind.Object)
+                {
+                    if (statusType.TryGetProperty("completed", out var completedEl) &&
+                        (completedEl.ValueKind == JsonValueKind.True || completedEl.ValueKind == JsonValueKind.False))
+                    {
+                        entry.IsCompleted = completedEl.GetBoolean();
+                    }
+                    entry.StatusDetail = GetString(statusType, "shortDetail");
+                }
+            }
+
+            if (entry.IsCompleted)
+                entry.ResultText = BuildResultText(teamSide, oppSide);
+
+            return entry;
+        }
+
+        private static bool CompetitorMatches(JsonElement competitor, string teamIdOrCode)
+        {
+            if (competitor.ValueKind != JsonValueKind.Object)
+                return false;
+
+            if (competitor.TryGetProperty("id", out var idEl) &&
+                string.Equals(idEl.GetString(), teamIdOrCode, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (competitor.TryGetProperty("team", out var team) && team.ValueKind == JsonValueKind.Object)
+            {
+                if (team.TryGetProperty("id", out var teamId) &&
+                    string.Equals(teamId.GetString(), teamIdOrCode, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (string.Equals(GetString(team, "abbreviation"), teamIdOrCode, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string BuildResultText(JsonElement teamSide, JsonElement oppSide)
+        {
+            var teamScore = GetScore(teamSide);
+            var oppScore = GetScore(oppSide);
+            if (teamScore == null || oppScore == null)
+                return string.Empty;
+
+            string outcome;
+            if (teamScore > oppScore) outcome = "W";
+            else if (teamScore < oppScore) outcome = "L";
+            else outcome = "T";
+
+            return $"{outcome} {teamScore}-{oppScore}";
+        }
+
+        private static int? GetScore(JsonElement competitor)
+        {
+            if (competitor.ValueKind != JsonValueKind.Object ||
+                !competitor.TryGetProperty("score", out var score))
+                return null;
+
+            // Score can be an object { value, displayValue } or a plain string/number.
+            if (score.ValueKind == JsonValueKind.Object)
+            {
+                if (score.TryGetProperty("value", out var val) && val.ValueKind == JsonValueKind.Number)
+                    return (int)val.GetDouble();
+                if (score.TryGetProperty("displayValue", out var disp) &&
+                    int.TryParse(disp.GetString(), out var dispVal))
+                    return dispVal;
+                return null;
+            }
+
+            if (score.ValueKind == JsonValueKind.Number)
+                return (int)score.GetDouble();
+
+            if (score.ValueKind == JsonValueKind.String && int.TryParse(score.GetString(), out var strVal))
+                return strVal;
+
+            return null;
+        }
     }
 }

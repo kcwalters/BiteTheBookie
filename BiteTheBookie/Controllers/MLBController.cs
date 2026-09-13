@@ -12,12 +12,14 @@ namespace BiteTheBookie.Controllers
         private readonly IMLBGamesService _gamesService;
         private readonly INewsService _newsService;
         private readonly ILeagueScheduleService _scheduleService;
+        private readonly BiteTheBookie.Services.Implementations.EspnApiClient _espnApiClient;
 
-        public MLBController(IMLBGamesService gamesService, INewsService newsService, ILeagueScheduleService scheduleService)
+        public MLBController(IMLBGamesService gamesService, INewsService newsService, ILeagueScheduleService scheduleService, BiteTheBookie.Services.Implementations.EspnApiClient espnApiClient)
         {
             _gamesService = gamesService;
             _newsService = newsService;
             _scheduleService = scheduleService;
+            _espnApiClient = espnApiClient;
         }
 
         // Tuple: (Name, Division). Logo uses ESPN's lowercase abbreviation code.
@@ -206,7 +208,7 @@ namespace BiteTheBookie.Controllers
             return Json(teams);
         }
 
-        public IActionResult Team(string code)
+        public async Task<IActionResult> Team(string code)
         {
             if (string.IsNullOrWhiteSpace(code) || !Teams.TryGetValue(code, out var info))
             {
@@ -221,6 +223,8 @@ namespace BiteTheBookie.Controllers
                 Conference = info.Division,
                 EspnUrl = string.Empty
             };
+
+            viewModel.Schedule = await _espnApiClient.GetTeamScheduleAsync("baseball/mlb", code);
 
             ViewData["League"] = "MLB";
             ViewData["GameCenterController"] = "Picks";

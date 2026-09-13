@@ -1,0 +1,42 @@
+@model BiteTheBookie.ViewModels.CFBTeamViewModel
+
+<div class="content-card p-4 mb-4">
+    <h2 class="h5 mb-3">@DateTime.Now.Year Schedule</h2>
+    @if (Model.Schedule != null && Model.Schedule.Any())
+    {
+        <div class="list-group list-group-flush" style="max-height:520px; overflow-y:auto;">
+            @foreach (var game in Model.Schedule.OrderBy(g => g.Date))
+            {
+                <div class="list-group-item px-0 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        @if (!string.IsNullOrEmpty(game.OpponentLogo))
+                        {
+                            <img src="@game.OpponentLogo" alt="@game.OpponentName" style="width:28px; height:28px; object-fit:contain;" />
+                        }
+                        <div>
+                            <div class="fw-semibold" style="font-size:.9rem;">@game.OpponentDisplay</div>
+                            <div class="text-muted" style="font-size:.75rem;">@game.DateDisplay</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        @if (game.IsCompleted && !string.IsNullOrEmpty(game.ResultText))
+                        {
+                            var isWin = game.ResultText.StartsWith("W");
+                            var isLoss = game.ResultText.StartsWith("L");
+                            var badgeClass = isWin ? "bg-success" : (isLoss ? "bg-danger" : "bg-secondary");
+                            <span class="badge @badgeClass">@game.ResultText</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted" style="font-size:.75rem;">@game.StatusDetail</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="text-muted mb-0" style="font-size:.9rem;">Schedule is currently unavailable. Check back soon.</p>
+    }
+</div>

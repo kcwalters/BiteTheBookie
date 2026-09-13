@@ -22,6 +22,9 @@ namespace BiteTheBookie.ViewModels
         public List<string> TeamNews { get; set; } = new();
         public List<string> LeagueNews { get; set; } = new();
 
+        // Current-season schedule and results (from ESPN); shown in the right column.
+        public List<BiteTheBookie.Models.EspnScheduleEntry> Schedule { get; set; } = new();
+
         /// <summary>True when at least one live team-info field is available to display.</summary>
         public bool HasTeamInfo =>
             !string.IsNullOrWhiteSpace(Location) ||

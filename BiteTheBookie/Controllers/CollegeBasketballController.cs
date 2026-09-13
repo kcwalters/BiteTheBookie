@@ -260,6 +260,8 @@ namespace BiteTheBookie.Controllers
                 }
 
                 viewModel.TeamNews = await _espnApiClient.GetNewsHeadlinesAsync("basketball/mens-college-basketball", info.EspnId, 5, cancellationToken);
+
+                viewModel.Schedule = await _espnApiClient.GetTeamScheduleAsync("basketball/mens-college-basketball", info.EspnId, cancellationToken);
             }
 
             viewModel.LeagueNews = await _espnApiClient.GetNewsHeadlinesAsync("basketball/mens-college-basketball", null, 5, cancellationToken);
