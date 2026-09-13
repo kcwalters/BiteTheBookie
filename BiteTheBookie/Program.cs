@@ -132,8 +132,15 @@ builder.Services.AddMemoryCache();
 var sqlConnectionString = connectionString;
 var sinkOptions = new MSSqlServerSinkOptions { TableName = "Logs", AutoCreateSqlTable = true };
 
+// Configurable minimum level. Set "Serilog:MinimumLevel" to "Error" to log errors only,
+// or "Information" (default) to capture all logging. Any valid LogEventLevel is accepted.
+var configuredLevel = builder.Configuration["Serilog:MinimumLevel"];
+var minimumLevel = Enum.TryParse<LogEventLevel>(configuredLevel, ignoreCase: true, out var parsedLevel)
+    ? parsedLevel
+    : LogEventLevel.Information;
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Is(LogEventLevel.Information)
+    .MinimumLevel.Is(minimumLevel)
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .Enrich.FromLogContext()
     .WriteTo.Console()

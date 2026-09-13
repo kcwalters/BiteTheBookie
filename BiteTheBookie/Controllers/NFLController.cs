@@ -1,5 +1,6 @@
 using BiteTheBookie.ViewModels;
 using BiteTheBookie.Models;
+using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,12 +13,14 @@ namespace BiteTheBookie.Controllers
         private readonly INFLScoresService _scoresService;
         private readonly INewsService _newsService;
         private readonly ILeagueScheduleService _scheduleService;
+        private readonly EspnApiClient _espnApiClient;
 
-        public NFLController(INFLScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService)
+        public NFLController(INFLScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService, EspnApiClient espnApiClient)
         {
             _scoresService = scoresService;
             _newsService = newsService;
             _scheduleService = scheduleService;
+            _espnApiClient = espnApiClient;
         }
 
         // Codes MUST match wwwroot/js/nfl-team-modal.js nflTeams / nflColumns.
@@ -67,7 +70,7 @@ namespace BiteTheBookie.Controllers
             { "SF",  ("San Francisco 49ers", "NFC West") },
         };
 
-        public IActionResult Team(string code)
+        public async Task<IActionResult> Team(string code, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(code) || !Teams.TryGetValue(code, out var info))
             {
@@ -82,8 +85,22 @@ namespace BiteTheBookie.Controllers
                 Logo = $"https://a.espncdn.com/i/teamlogos/nfl/500/{espnCode}.png",
                 Code = code.ToUpperInvariant(),
                 Conference = info.Division,
+                ConferenceDescription = ConferenceInfo.GetDescription(info.Division),
                 EspnUrl = BuildEspnUrl(espnCode, info.Name)
             };
+
+            var details = await _espnApiClient.GetTeamDetailsAsync("football/nfl", espnCode, cancellationToken);
+            if (details is not null)
+            {
+                viewModel.Location = details.Location;
+                viewModel.Venue = details.Venue;
+                viewModel.VenueCity = details.VenueCity;
+                viewModel.RecordSummary = details.RecordSummary;
+                viewModel.StandingSummary = details.StandingSummary;
+            }
+
+            viewModel.TeamNews = await _espnApiClient.GetNewsHeadlinesAsync("football/nfl", espnCode, 5, cancellationToken);
+            viewModel.LeagueNews = await _espnApiClient.GetNewsHeadlinesAsync("football/nfl", null, 5, cancellationToken);
 
             return View(viewModel);
         }

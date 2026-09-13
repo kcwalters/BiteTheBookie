@@ -13,12 +13,14 @@ namespace BiteTheBookie.Controllers
         private readonly ICFBScoresService _scoresService;
         private readonly INewsService _newsService;
         private readonly ILeagueScheduleService _scheduleService;
+        private readonly EspnApiClient _espnApiClient;
 
-        public CollegeFootballController(ICFBScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService)
+        public CollegeFootballController(ICFBScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService, EspnApiClient espnApiClient)
         {
             _scoresService = scoresService;
             _newsService = newsService;
             _scheduleService = scheduleService;
+            _espnApiClient = espnApiClient;
         }
 
         public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
@@ -146,7 +148,7 @@ namespace BiteTheBookie.Controllers
             return View(viewModel);
         }
 
-        public IActionResult Team(string code)
+        public async Task<IActionResult> Team(string code, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(code) || !CFBGamesService.IsKnownTeamCode(code))
             {
@@ -166,8 +168,28 @@ namespace BiteTheBookie.Controllers
                 Logo = info.Logo,
                 Code = info.Code,
                 Conference = conference,
+                ConferenceDescription = ConferenceInfo.GetDescription(conference),
                 EspnUrl = BuildEspnUrl(info.Code, info.Name)
             };
+
+            // Pull live team details from ESPN (numeric id lives in the logo URL).
+            var espnId = ExtractEspnId(info.Logo);
+            if (!string.IsNullOrEmpty(espnId))
+            {
+                var details = await _espnApiClient.GetTeamDetailsAsync("football/college-football", espnId, cancellationToken);
+                if (details is not null)
+                {
+                    viewModel.Location = details.Location;
+                    viewModel.Venue = details.Venue;
+                    viewModel.VenueCity = details.VenueCity;
+                    viewModel.RecordSummary = details.RecordSummary;
+                    viewModel.StandingSummary = details.StandingSummary;
+                }
+
+                viewModel.TeamNews = await _espnApiClient.GetNewsHeadlinesAsync("football/college-football", espnId, 5, cancellationToken);
+            }
+
+            viewModel.LeagueNews = await _espnApiClient.GetNewsHeadlinesAsync("football/college-football", null, 5, cancellationToken);
 
             return View(viewModel);
         }

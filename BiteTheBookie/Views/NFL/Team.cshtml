@@ -21,11 +21,67 @@
         <div class="col-12 col-lg-8">
             <div class="content-card p-4">
                 <h2 class="h4 mb-3">Team Overview</h2>
-                <p class="text-muted mb-0">
-                    Information and matchups for the <strong>@Model.Name</strong>. Check the game center for upcoming
-                    games, odds, and simulations.
-                </p>
+                @if (Model.TeamNews.Any())
+                {
+                    <p class="mb-3">
+                        <strong>Recent @Model.Name news:</strong>
+                        @string.Join(" • ", Model.TeamNews)
+                    </p>
+                }
+                else
+                {
+                    <p class="text-muted mb-3">
+                        Information and matchups for the <strong>@Model.Name</strong>. Check the game center for upcoming
+                        games, odds, and simulations.
+                    </p>
+                }
+                @if (Model.LeagueNews.Any())
+                {
+                    <p class="mb-0">
+                        <strong>Around the NFL:</strong>
+                        @string.Join(" • ", Model.LeagueNews)
+                    </p>
+                }
             </div>
+
+            @if (Model.HasTeamInfo)
+            {
+                <div class="content-card p-4 mt-4">
+                    <h2 class="h4 mb-3">Team Information</h2>
+                    <dl class="row mb-0">
+                        @if (!string.IsNullOrEmpty(Model.Location))
+                        {
+                            <dt class="col-sm-4">Location</dt>
+                            <dd class="col-sm-8">@Model.Location</dd>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Venue))
+                        {
+                            <dt class="col-sm-4">Stadium</dt>
+                            <dd class="col-sm-8">
+                                @Model.Venue@(string.IsNullOrEmpty(Model.VenueCity) ? "" : $" — {Model.VenueCity}")
+                            </dd>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.RecordSummary))
+                        {
+                            <dt class="col-sm-4">Record</dt>
+                            <dd class="col-sm-8">@Model.RecordSummary</dd>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.StandingSummary))
+                        {
+                            <dt class="col-sm-4">Standing</dt>
+                            <dd class="col-sm-8">@Model.StandingSummary</dd>
+                        }
+                    </dl>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.ConferenceDescription))
+            {
+                <div class="content-card p-4 mt-4">
+                    <h2 class="h4 mb-3">@Model.Conference</h2>
+                    <p class="text-muted mb-0">@Model.ConferenceDescription</p>
+                </div>
+            }
         </div>
         <div class="col-12 col-lg-4">
             <div class="content-card p-4">

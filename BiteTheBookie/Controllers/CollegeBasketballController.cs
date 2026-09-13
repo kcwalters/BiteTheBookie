@@ -1,4 +1,5 @@
 using BiteTheBookie.Models;
+using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
 using BiteTheBookie.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,14 @@ namespace BiteTheBookie.Controllers
         private readonly INCAAScoresService _scoresService;
         private readonly INewsService _newsService;
         private readonly ILeagueScheduleService _scheduleService;
+        private readonly EspnApiClient _espnApiClient;
 
-        public CollegeBasketballController(INCAAScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService)
+        public CollegeBasketballController(INCAAScoresService scoresService, INewsService newsService, ILeagueScheduleService scheduleService, EspnApiClient espnApiClient)
         {
             _scoresService = scoresService;
             _newsService = newsService;
             _scheduleService = scheduleService;
+            _espnApiClient = espnApiClient;
         }
 
         public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
@@ -227,7 +230,7 @@ namespace BiteTheBookie.Controllers
             { "XAV",  ("Xavier", "Big East", "2752") },
         };
 
-        public IActionResult Team(string code)
+        public async Task<IActionResult> Team(string code, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(code) || !Teams.TryGetValue(code, out var info))
             {
@@ -240,8 +243,26 @@ namespace BiteTheBookie.Controllers
                 Logo = $"https://a.espncdn.com/i/teamlogos/ncaa/500/{info.EspnId}.png",
                 Code = code.ToUpperInvariant(),
                 Conference = info.Conference,
+                ConferenceDescription = ConferenceInfo.GetDescription(info.Conference),
                 EspnUrl = BuildEspnUrl(info.EspnId, info.Name)
             };
+
+            if (!string.IsNullOrEmpty(info.EspnId))
+            {
+                var details = await _espnApiClient.GetTeamDetailsAsync("basketball/mens-college-basketball", info.EspnId, cancellationToken);
+                if (details is not null)
+                {
+                    viewModel.Location = details.Location;
+                    viewModel.Venue = details.Venue;
+                    viewModel.VenueCity = details.VenueCity;
+                    viewModel.RecordSummary = details.RecordSummary;
+                    viewModel.StandingSummary = details.StandingSummary;
+                }
+
+                viewModel.TeamNews = await _espnApiClient.GetNewsHeadlinesAsync("basketball/mens-college-basketball", info.EspnId, 5, cancellationToken);
+            }
+
+            viewModel.LeagueNews = await _espnApiClient.GetNewsHeadlinesAsync("basketball/mens-college-basketball", null, 5, cancellationToken);
 
             return View(viewModel);
         }

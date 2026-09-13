@@ -321,5 +321,153 @@ namespace BiteTheBookie.Services.Implementations
             var roster = await GetTeamRosterAsync(teamCode, cancellationToken);
             return roster?.Players.Select(p => p.Name).ToList() ?? new List<string>();
         }
+
+        /// <summary>
+        /// Fetches live team details (location, venue, record, standing) from the ESPN Site
+        /// API. <paramref name="sportLeaguePath"/> is the ESPN segment such as
+        /// "football/college-football", "basketball/mens-college-basketball", or
+        /// "football/nfl". <paramref name="teamIdOrCode"/> is the ESPN numeric id or code.
+        /// Returns null if the request fails so callers can degrade gracefully.
+        /// </summary>
+        public async Task<EspnTeamDetails?> GetTeamDetailsAsync(string sportLeaguePath, string teamIdOrCode, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(sportLeaguePath) || string.IsNullOrWhiteSpace(teamIdOrCode))
+                return null;
+
+            try
+            {
+                var response = await _httpClient.GetAsync(
+                    $"apis/site/v2/sports/{sportLeaguePath}/teams/{teamIdOrCode}",
+                    cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN team-details API returned {Status} for {Path}/{Team}",
+                        response.StatusCode, sportLeaguePath, teamIdOrCode);
+                    return null;
+                }
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                if (!doc.RootElement.TryGetProperty("team", out var team) || team.ValueKind != JsonValueKind.Object)
+                    return null;
+
+                var details = new EspnTeamDetails
+                {
+                    DisplayName = GetString(team, "displayName"),
+                    Location = GetString(team, "location"),
+                    Nickname = GetString(team, "nickname"),
+                    Color = GetString(team, "color")
+                };
+
+                // Venue (may be nested with an address).
+                if (team.TryGetProperty("franchise", out var franchise) &&
+                    franchise.TryGetProperty("venue", out var fvenue))
+                {
+                    ParseVenue(fvenue, details);
+                }
+                else if (team.TryGetProperty("venue", out var venue))
+                {
+                    ParseVenue(venue, details);
+                }
+
+                // Record + standing summaries.
+                if (team.TryGetProperty("record", out var record) &&
+                    record.TryGetProperty("items", out var items) &&
+                    items.ValueKind == JsonValueKind.Array &&
+                    items.GetArrayLength() > 0)
+                {
+                    var first = items[0];
+                    details.RecordSummary = GetString(first, "summary");
+                }
+
+                if (team.TryGetProperty("standingSummary", out var standingEl))
+                {
+                    details.StandingSummary = standingEl.GetString() ?? string.Empty;
+                }
+
+                return details;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch ESPN team details for {Path}/{Team}", sportLeaguePath, teamIdOrCode);
+                return null;
+            }
+        }
+
+        private static void ParseVenue(JsonElement venue, EspnTeamDetails details)
+        {
+            if (venue.ValueKind != JsonValueKind.Object) return;
+
+            details.Venue = GetString(venue, "fullName");
+
+            if (venue.TryGetProperty("address", out var address) && address.ValueKind == JsonValueKind.Object)
+            {
+                var city = GetString(address, "city");
+                var state = GetString(address, "state");
+                details.VenueCity = (city, state) switch
+                {
+                    (not "", not "") => $"{city}, {state}",
+                    (not "", "") => city,
+                    _ => state
+                };
+            }
+        }
+
+        private static string GetString(JsonElement element, string property) =>
+            element.TryGetProperty(property, out var prop) && prop.ValueKind == JsonValueKind.String
+                ? prop.GetString() ?? string.Empty
+                : string.Empty;
+
+        /// <summary>
+        /// Fetches recent news headlines from the ESPN Site API. <paramref name="sportLeaguePath"/>
+        /// is the ESPN segment such as "football/college-football". When
+        /// <paramref name="teamId"/> is supplied, results are filtered to that team.
+        /// Returns an empty list if the request fails.
+        /// </summary>
+        public async Task<List<string>> GetNewsHeadlinesAsync(string sportLeaguePath, string? teamId = null, int count = 5, CancellationToken cancellationToken = default)
+        {
+            var headlines = new List<string>();
+            if (string.IsNullOrWhiteSpace(sportLeaguePath))
+                return headlines;
+
+            try
+            {
+                var url = $"apis/site/v2/sports/{sportLeaguePath}/news?limit={Math.Max(1, count)}";
+                if (!string.IsNullOrWhiteSpace(teamId))
+                    url += $"&team={teamId}";
+
+                var response = await _httpClient.GetAsync(url, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN news API returned {Status} for {Path} (team {Team})",
+                        response.StatusCode, sportLeaguePath, teamId ?? "all");
+                    return headlines;
+                }
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                if (doc.RootElement.TryGetProperty("articles", out var articles) &&
+                    articles.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var article in articles.EnumerateArray())
+                    {
+                        var headline = GetString(article, "headline");
+                        if (!string.IsNullOrWhiteSpace(headline))
+                            headlines.Add(headline);
+                        if (headlines.Count >= count)
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch ESPN news for {Path} (team {Team})", sportLeaguePath, teamId ?? "all");
+            }
+
+            return headlines;
+        }
     }
 }
