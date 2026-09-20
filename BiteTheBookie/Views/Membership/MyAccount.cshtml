@@ -92,6 +92,34 @@
                             </a>
                         </div>
                     }
+                    else
+                    {
+                        @if (Model.SubscriptionCancelled)
+                        {
+                            <div class="alert alert-warning" role="alert">
+                                <i class="fas fa-circle-info me-2"></i>
+                                Your subscription is cancelled and will not renew. You keep access until
+                                @(Model.SubscriptionExpiry.HasValue ? Model.SubscriptionExpiry.Value.ToString("MMMM dd, yyyy") : "the end of your billing period").
+                            </div>
+                        }
+
+                        <hr />
+                        <div class="d-flex flex-wrap gap-2 justify-content-center">
+                            @if (Model.CanUpgradeToAllAccess)
+                            {
+                                <a asp-controller="Membership" asp-action="Upgrade" class="btn btn-warning fw-bold">
+                                    <i class="fas fa-crown me-2"></i>Upgrade to AllAccess
+                                </a>
+                            }
+
+                            @if (!Model.SubscriptionCancelled)
+                            {
+                                <a asp-controller="Membership" asp-action="Unsubscribe" class="btn btn-outline-danger">
+                                    <i class="fas fa-ban me-2"></i>Unsubscribe
+                                </a>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>

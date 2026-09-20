@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Upgrade to AllAccess";
+    var planId = (string)ViewBag.PlanId;
+    var clientId = (string)ViewBag.ClientId;
+    var subscriptionId = (string)ViewBag.SubscriptionId;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+
+            <div class="selected-tier mb-4">
+                <div class="selected-tier__label"><i class="fas fa-arrow-up me-2"></i>Upgrade Your Plan</div>
+                <div class="selected-tier__row">
+                    <div>
+                        <div class="selected-tier__name">AllAccess Plan</div>
+                        <div class="selected-tier__tagline">Everything in Pro, plus AllAccess-only perks. Cancel anytime.</div>
+                    </div>
+                    <div class="selected-tier__price">
+                        $19.99<span class="selected-tier__period"> per month</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold text-center mb-2">Confirm Your Upgrade</h2>
+                    <p class="text-muted text-center mb-4">
+                        Approve the change with PayPal to update your recurring payment to $19.99/month.
+                    </p>
+
+                    <div id="payment-error" class="alert alert-danger d-none" role="alert"></div>
+
+                    <div id="paypal-button-container" class="mb-3"></div>
+
+                    <div class="text-center mt-3">
+                        <a asp-controller="Membership" asp-action="MyAccount" class="selected-tier__change">
+                            <i class="fas fa-arrow-left me-1"></i>Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Hidden form used to post the revised subscription to the server for verification/activation. *@
+<form id="confirm-form" asp-controller="Membership" asp-action="ConfirmUpgrade" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="subscriptionId" id="confirm-subscription-id" value="@subscriptionId" />
+</form>
+
+@section Scripts {
+    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons&intent=subscription&vault=true"
+            data-sdk-integration-source="integrationbuilder_sc"></script>
+    <script>
+        (function () {
+            const planId = '@planId';
+            const currentSubscriptionId = '@subscriptionId';
+            const errorBox = document.getElementById('payment-error');
+
+            function showError(message) {
+                errorBox.textContent = message || 'Something went wrong processing your upgrade. Please try again.';
+                errorBox.classList.remove('d-none');
+                errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function completeUpgrade(subscriptionId) {
+                document.getElementById('confirm-subscription-id').value = subscriptionId || currentSubscriptionId;
+                document.getElementById('confirm-form').submit();
+            }
+
+            if (typeof paypal === 'undefined') {
+                showError('Unable to load the payment provider. Please refresh and try again.');
+                return;
+            }
+
+            paypal.Buttons({
+                style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
+                // Revise the existing subscription to the AllAccess plan (same subscription id).
+                createSubscription: function (data, actions) {
+                    return actions.subscription.revise(currentSubscriptionId, { plan_id: planId });
+                },
+                onApprove: function (data) {
+                    completeUpgrade(data.subscriptionID);
+                },
+                onCancel: function () {
+                    showError('Upgrade was cancelled before it was completed.');
+                },
+                onError: function (err) {
+                    console.error(err);
+                    showError('There was a problem starting the PayPal upgrade.');
+                }
+            }).render('#paypal-button-container');
+
+        })();
+    </script>
+}

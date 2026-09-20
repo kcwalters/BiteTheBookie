@@ -1,5 +1,43 @@
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
 @{
     ViewData["Title"] = "Join BiteTheBookie";
+
+    ApplicationUser currentUser = null;
+    if (SignInManager.IsSignedIn(User))
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+    }
+    var canUpgrade = currentUser != null
+        && currentUser.SubscriptionTier == SubscriptionTier.Pro
+        && currentUser.IsPro
+        && !currentUser.SubscriptionCancelled;
+    var canUnsubscribe = currentUser != null && currentUser.IsPro && !currentUser.SubscriptionCancelled;
+}
+
+@if (canUpgrade || canUnsubscribe)
+{
+    <div class="container pt-4">
+        <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+            <span><i class="fas fa-circle-info me-2"></i>You already have an active subscription.</span>
+            <span class="d-flex flex-wrap gap-2">
+                @if (canUpgrade)
+                {
+                    <a asp-controller="Membership" asp-action="Upgrade" class="btn btn-sm btn-warning fw-bold">
+                        <i class="fas fa-crown me-1"></i>Upgrade to AllAccess
+                    </a>
+                }
+                @if (canUnsubscribe)
+                {
+                    <a asp-controller="Membership" asp-action="Unsubscribe" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-ban me-1"></i>Unsubscribe
+                    </a>
+                }
+            </span>
+        </div>
+    </div>
 }
 
 <section class="join-hero">

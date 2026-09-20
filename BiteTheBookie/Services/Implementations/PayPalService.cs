@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace BiteTheBookie.Services.Implementations
@@ -25,7 +26,7 @@ namespace BiteTheBookie.Services.Implementations
         private readonly string _clientSecret;
         private readonly string _baseUrl;
 
-        public PayPalService(HttpClient httpClient, IConfiguration configuration, ILogger<PayPalService> logger)
+        public PayPalService(HttpClient httpClient, IConfiguration configuration, ILogger<PayPalService> logger, IHostEnvironment hostEnvironment)
         {
             _httpClient = httpClient;
             _configuration = configuration;
@@ -34,14 +35,29 @@ namespace BiteTheBookie.Services.Implementations
             _clientId = configuration["PayPal:ClientId"] ?? string.Empty;
             _clientSecret = configuration["PayPal:ClientSecret"] ?? string.Empty;
             var environment = configuration["PayPal:Environment"];
-            // Always target PayPal live/production.
-            _baseUrl = "https://api-m.paypal.com";
-            if (!string.IsNullOrWhiteSpace(environment)
-                && !string.Equals(environment, "live", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(environment, "production", StringComparison.OrdinalIgnoreCase))
+
+            // Decide whether to use the PayPal sandbox or live endpoint.
+            // Rules:
+            //  - If PayPal:Environment is explicitly set, honor it ("sandbox" -> sandbox, "live"/"production" -> live).
+            //  - Otherwise, fall back to the host environment: use sandbox in Development, live elsewhere.
+            const string sandboxUrl = "https://api-m.sandbox.paypal.com";
+            const string liveUrl = "https://api-m.paypal.com";
+
+            bool useSandbox;
+            if (!string.IsNullOrWhiteSpace(environment))
             {
-                _logger.LogWarning("PayPal:Environment is set to '{Environment}'; forcing live endpoint {BaseUrl}.", environment, _baseUrl);
+                useSandbox = string.Equals(environment, "sandbox", StringComparison.OrdinalIgnoreCase)
+                             || string.Equals(environment, "development", StringComparison.OrdinalIgnoreCase)
+                             || string.Equals(environment, "test", StringComparison.OrdinalIgnoreCase);
             }
+            else
+            {
+                useSandbox = hostEnvironment.IsDevelopment();
+            }
+
+            _baseUrl = useSandbox ? sandboxUrl : liveUrl;
+            _logger.LogInformation("PayPal environment resolved to {Mode} (config: '{Environment}', host: '{HostEnv}').",
+                useSandbox ? "SANDBOX" : "LIVE", environment ?? "(none)", hostEnvironment.EnvironmentName);
 
             if (string.IsNullOrWhiteSpace(_clientId))
             {
@@ -185,77 +201,6 @@ namespace BiteTheBookie.Services.Implementations
         }
 
         /// <summary>
-        /// Creates a PayPal subscription for the given app plan and returns the approval URL
-        /// the user must be redirected to in order to approve/pay.
-        /// </summary>
-        public async Task<string> CreateSubscription(string plan, string returnUrl, string cancelUrl)
-        {
-            if (!IsConfigured)
-            {
-                throw new InvalidOperationException("PayPal is not configured.");
-            }
-
-            var planId = GetPlanId(plan);
-            if (string.IsNullOrWhiteSpace(planId))
-            {
-                throw new InvalidOperationException($"No PayPal plan id configured for plan '{plan}'.");
-            }
-
-            var accessToken = await GetAccessTokenAsync();
-
-            var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/v1/billing/subscriptions");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            var payload = new
-            {
-                plan_id = planId,
-                application_context = new
-                {
-                    brand_name = "BiteTheBookie",
-                    user_action = "SUBSCRIBE_NOW",
-                    // Don't ask for a shipping address for a digital subscription.
-                    shipping_preference = "NO_SHIPPING",
-                    // UNRESTRICTED lets buyers pay by debit/credit card without a PayPal
-                    // account (guest checkout), provided "PayPal Account Optional" is enabled
-                    // on the merchant account.
-                    payment_method = new
-                    {
-                        payer_selected = "PAYPAL",
-                        payee_preferred = "UNRESTRICTED"
-                    },
-                    return_url = returnUrl,
-                    cancel_url = cancelUrl
-                }
-            };
-
-            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError("PayPal subscription creation failed: {Status} {Body}", response.StatusCode, body);
-                throw new InvalidOperationException($"Unable to create PayPal subscription ({(int)response.StatusCode}). {ExtractErrorDetail(body)}");
-            }
-
-            using var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("links", out var links))
-            {
-                foreach (var link in links.EnumerateArray())
-                {
-                    if (link.TryGetProperty("rel", out var rel) &&
-                        string.Equals(rel.GetString(), "approve", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return link.GetProperty("href").GetString()!;
-                    }
-                }
-            }
-
-            throw new InvalidOperationException("PayPal did not return an approval URL.");
-        }
-
-        /// <summary>
         /// Checks each configured billing plan (Pro / AllAccess) at startup and logs a clear
         /// warning if it is missing, unreadable, or not in ACTIVE status. Purely diagnostic;
         /// it never throws so it can't block application startup.
@@ -355,6 +300,54 @@ namespace BiteTheBookie.Services.Implementations
 
             return string.Equals(status, "ACTIVE", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(status, "APPROVED", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Cancels an active PayPal billing subscription so no further recurring payments
+        /// are taken. Returns true when PayPal accepts the cancellation (HTTP 204).
+        /// </summary>
+        public async Task<bool> CancelSubscription(string subscriptionId, string? reason = null)
+        {
+            if (string.IsNullOrWhiteSpace(subscriptionId))
+            {
+                return false;
+            }
+
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException("PayPal is not configured.");
+            }
+
+            var accessToken = await GetAccessTokenAsync();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/v1/billing/subscriptions/{subscriptionId}/cancel");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var payload = new { reason = string.IsNullOrWhiteSpace(reason) ? "Cancelled by member." : reason };
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+
+            // A successful cancel returns 204 No Content.
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+
+            // Treat an already-cancelled/inactive subscription as success so the member
+            // isn't blocked from downgrading in our system.
+            var detail = ExtractErrorDetail(body);
+            if (detail.Contains("SUBSCRIPTION_STATUS_INVALID", StringComparison.OrdinalIgnoreCase)
+                || body.Contains("SUBSCRIPTION_STATUS_INVALID", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("PayPal subscription {SubscriptionId} was already inactive when cancelling.", subscriptionId);
+                return true;
+            }
+
+            _logger.LogError("PayPal subscription cancel failed: {Status} {Body}", response.StatusCode, body);
+            return false;
         }
     }
 }

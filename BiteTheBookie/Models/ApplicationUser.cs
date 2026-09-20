@@ -28,7 +28,19 @@ namespace BiteTheBookie.Models
         /// When the paid subscription expires (null for free users)
         /// </summary>
         public DateTime? SubscriptionExpiry { get; set; }
-        
+
+        /// <summary>
+        /// The active PayPal billing subscription id (I-XXXX...). Needed to revise
+        /// (upgrade) or cancel the recurring subscription. Null for free users.
+        /// </summary>
+        public string? PayPalSubscriptionId { get; set; }
+
+        /// <summary>
+        /// True once the user has cancelled recurring billing. They keep paid access
+        /// until <see cref="SubscriptionExpiry"/>, after which they revert to Free.
+        /// </summary>
+        public bool SubscriptionCancelled { get; set; }
+
         /// <summary>
         /// When the user first registered
         /// </summary>

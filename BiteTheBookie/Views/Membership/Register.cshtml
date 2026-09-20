@@ -151,6 +151,11 @@
                             <span class="text-muted">Already have an account?</span>
                             <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Query["returnUrl"]">Log In</a>
                         </div>
+
+                        <div class="text-center mt-2">
+                            <span class="text-muted small">Need to cancel your membership?</span>
+                            <a asp-controller="Membership" asp-action="Unsubscribe" class="small">Unsubscribe</a>
+                        </div>
                     </form>
                 </div>
             </div>

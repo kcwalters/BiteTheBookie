@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Cancel Subscription";
+    var planName = (string)ViewBag.PlanName;
+    var accessUntil = ViewBag.AccessUntil as DateTime?;
+    var alreadyCancelled = ViewBag.AlreadyCancelled is bool b && b;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-heart-crack fa-2x mb-2" style="color: var(--btb-primary);"></i>
+                        <h2 class="fw-bold">Cancel Your Subscription</h2>
+                        <p class="text-muted mb-0">We're sorry to see you go.</p>
+                    </div>
+
+                    @if (alreadyCancelled)
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-circle-info me-2"></i>
+                            Your subscription is already cancelled. You keep access until
+                            @(accessUntil.HasValue ? accessUntil.Value.ToString("MMMM dd, yyyy") : "the end of your billing period").
+                        </div>
+                        <div class="text-center">
+                            <a asp-controller="Membership" asp-action="MyAccount" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to My Account
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            <p class="mb-1"><strong>Your @planName plan will not renew.</strong></p>
+                            <p class="mb-0">
+                                You'll keep full access until
+                                <strong>@(accessUntil.HasValue ? accessUntil.Value.ToString("MMMM dd, yyyy") : "the end of your current billing period")</strong>,
+                                after which your account reverts to Free.
+                            </p>
+                        </div>
+
+                        <form asp-controller="Membership" asp-action="CancelSubscription" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="fas fa-ban me-2"></i>Cancel My Subscription
+                                </button>
+                                <a asp-controller="Membership" asp-action="MyAccount" class="btn btn-outline-secondary">
+                                    Keep My Subscription
+                                </a>
+                            </div>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
