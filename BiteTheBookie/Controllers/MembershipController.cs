@@ -44,9 +44,16 @@ namespace BiteTheBookie.Controllers
         [HttpGet]
         public IActionResult Register(string? plan)
         {
+            var selectedPlan = plan?.ToLowerInvariant();
+            if (selectedPlan != "pro" && selectedPlan != "allaccess")
+            {
+                // No free tier: a valid paid plan must be chosen before registering.
+                return RedirectToAction("Join");
+            }
+
             var model = new RegisterViewModel
             {
-                SelectedPlan = plan ?? "free"
+                SelectedPlan = selectedPlan
             };
             return View(model);
         }
@@ -63,10 +70,34 @@ namespace BiteTheBookie.Controllers
                 return View(model);
             }
 
-            var user = new ApplicationUser
+            var selectedPlan = model.SelectedPlan?.ToLowerInvariant();
+            if (selectedPlan != "pro" && selectedPlan != "allaccess")
             {
-                UserName = model.Email,
-                Email = model.Email,
+                // No free tier: only paid plans can be registered.
+                ModelState.AddModelError(string.Empty, "Please choose a Pro or All Access plan.");
+                return View(model);
+            }
+
+            if (!_payPalService.IsConfigured)
+            {
+                _logger.LogWarning("PayPal is not configured; cannot start subscription for plan {Plan}.", selectedPlan);
+                ModelState.AddModelError(string.Empty, "Online payments are not currently available. Please try again later.");
+                return View(model);
+            }
+
+            // Reject duplicate emails up front so the user isn't sent through payment
+            // only to fail account creation afterward.
+            var existing = await _userManager.FindByEmailAsync(model.Email);
+            if (existing != null)
+            {
+                ModelState.AddModelError(nameof(model.Email), "An account with this email already exists. Please log in instead.");
+                return View(model);
+            }
+
+            // Do NOT create the account yet. Stash the registration details in session and
+            // only create the user after PayPal approves the subscription payment.
+            var pending = new PendingRegistration
+            {
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 DateOfBirth = model.DateOfBirth,
@@ -75,65 +106,38 @@ namespace BiteTheBookie.Controllers
                 State = model.State,
                 ZipCode = model.ZipCode,
                 PhoneNumber = model.PhoneNumber,
-                // Everyone starts as Free. Paid tiers are granted only after PayPal confirms payment.
-                SubscriptionTier = SubscriptionTier.Free,
-                SubscriptionExpiry = null,
-                CreatedAt = DateTime.UtcNow
+                Email = model.Email,
+                Password = model.Password,
+                Plan = selectedPlan
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            HttpContext.Session.SetString(PendingRegistration.SessionKey,
+                System.Text.Json.JsonSerializer.Serialize(pending));
 
-            if (result.Succeeded)
-            {
-                _logger.LogInformation("User {Email} created a new account with plan {Plan}.", model.Email, model.SelectedPlan);
+            _logger.LogInformation("Captured pending registration for {Email} (plan {Plan}); awaiting PayPal payment.", model.Email, selectedPlan);
 
-                // Everyone is created as Free; paid access is granted only after payment is confirmed.
-                await _userManager.AddToRoleAsync(user, "Free");
-
-                // Add subscription claim
-                await _userManager.AddClaimAsync(user,
-                    new System.Security.Claims.Claim("SubscriptionTier", SubscriptionTier.Free.ToString()));
-
-                await _signInManager.SignInAsync(user, isPersistent: false);
-
-                var selectedPlan = model.SelectedPlan?.ToLowerInvariant();
-                var isPaidPlan = selectedPlan == "pro" || selectedPlan == "allaccess";
-
-                // If a paid plan was chosen, send the user to the on-site payment page
-                // (PayPal hosted card fields) so they can pay by card without a PayPal account.
-                if (isPaidPlan)
-                {
-                    if (!_payPalService.IsConfigured)
-                    {
-                        _logger.LogWarning("PayPal is not configured; cannot start subscription for plan {Plan}.", selectedPlan);
-                        ModelState.AddModelError(string.Empty, "Online payments are not currently available. Please try again later.");
-                        return View(model);
-                    }
-
-                    return RedirectToAction("Payment", new { plan = selectedPlan });
-                }
-
-                return RedirectToAction("Index", "Home");
-            }
-
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-
-            return View(model);
+            return RedirectToAction("Payment", new { plan = selectedPlan });
         }
 
         /// <summary>
         /// <summary>
-        /// On-site payment page: renders the PayPal subscribe button + a debit/credit card
-        /// button so the user can subscribe without leaving the site or creating a PayPal account.
+        /// On-site payment page: renders the PayPal subscribe button so a prospective member
+        /// can pay before an account exists. The plan comes from the pending registration held
+        /// in session; the account is only created after PayPal approves the payment.
         /// </summary>
-        [Authorize]
+        [AllowAnonymous]
         [HttpGet]
-        public IActionResult Payment(string plan)
+        public async Task<IActionResult> Payment(string plan)
         {
-            var selectedPlan = plan?.ToLowerInvariant();
+            var pending = GetPendingRegistration();
+            if (pending == null)
+            {
+                TempData["PaymentError"] = "Your session expired. Please start your registration again.";
+                return RedirectToAction("Join");
+            }
+
+            // The plan is authoritative from the pending registration, not the query string.
+            var selectedPlan = pending.Plan;
             var isPaidPlan = selectedPlan == "pro" || selectedPlan == "allaccess";
             if (!isPaidPlan)
             {
@@ -155,6 +159,21 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("Join");
             }
 
+            // Verify the plan id actually exists (and is ACTIVE) in the PayPal account tied to the
+            // configured credentials. Without this, a plan id that belongs to a different account or
+            // environment surfaces later as a cryptic "subscriptions#RESOURCE_NOT_FOUND" error in the
+            // browser when the PayPal button is clicked. Catching it here gives the user a clear message
+            // and logs an actionable server-side error for the operator.
+            if (!await _payPalService.IsPlanActiveAsync(planId))
+            {
+                _logger.LogError(
+                    "PayPal plan id '{PlanId}' for plan {Plan} could not be verified against the configured PayPal account. " +
+                    "Ensure PayPal:PlanId matches the account/environment of PayPal:ClientId (re-run create-paypal-plans.ps1 with the live credentials and update configuration).",
+                    planId, selectedPlan);
+                TempData["PaymentError"] = "This plan is not available right now. Please try again later.";
+                return RedirectToAction("Join");
+            }
+
             ViewBag.Plan = selectedPlan;
             ViewBag.PlanId = planId;
             ViewBag.ClientId = _payPalService.ClientId;
@@ -162,6 +181,28 @@ namespace BiteTheBookie.Controllers
             ViewBag.PlanPrice = selectedPlan == "allaccess" ? "$19.99" : "$9.99";
 
             return View();
+        }
+
+        /// <summary>
+        /// Reads the pending registration (captured on the sign-up form) from session.
+        /// Returns null if none is present or it can't be deserialized.
+        /// </summary>
+        private PendingRegistration? GetPendingRegistration()
+        {
+            var json = HttpContext.Session.GetString(PendingRegistration.SessionKey);
+            if (string.IsNullOrEmpty(json))
+            {
+                return null;
+            }
+
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<PendingRegistration>(json);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -208,7 +249,8 @@ namespace BiteTheBookie.Controllers
         }
 
         /// <summary>
-        /// Reverts a user to the Free tier/role once their paid access has expired. This is a
+        /// Revokes paid access once a subscription has lapsed (e.g. after cancelling). There is
+        /// no Free tier, so the paid role and SubscriptionTier claim are simply removed. This is a
         /// lazy check (no background job) invoked when the user visits their account.
         /// </summary>
         private async Task EnsureSubscriptionCurrentAsync(ApplicationUser user)
@@ -220,62 +262,147 @@ namespace BiteTheBookie.Controllers
 
             if (isPaidTier && expired)
             {
-                _logger.LogInformation("Paid access expired for {Email}; reverting to Free.", user.Email);
+                _logger.LogInformation("Paid access expired for {Email}; revoking access.", user.Email);
                 user.PayPalSubscriptionId = null;
                 user.SubscriptionCancelled = false;
-                await ApplyTierAsync(user, SubscriptionTier.Free);
+                user.SubscriptionExpiry = null;
+                // Free is used only as an internal "no paid access" sentinel; it is not a
+                // sign-up tier and grants no roles.
+                user.SubscriptionTier = SubscriptionTier.Free;
+                await _userManager.UpdateAsync(user);
+
+                // Remove any subscription/access roles the user currently holds.
+                var subscriptionRoles = new[] { "Pro", "AllAccess" };
+                var currentRoles = await _userManager.GetRolesAsync(user);
+                var rolesToRemove = currentRoles.Where(r => subscriptionRoles.Contains(r)).ToList();
+                if (rolesToRemove.Count > 0)
+                {
+                    await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                }
+
+                // Drop the SubscriptionTier claim so paid-only policies no longer pass.
+                var claims = await _userManager.GetClaimsAsync(user);
+                var tierClaim = claims.FirstOrDefault(c => c.Type == "SubscriptionTier");
+                if (tierClaim != null)
+                {
+                    await _userManager.RemoveClaimAsync(user, tierClaim);
+                }
+
                 await _signInManager.RefreshSignInAsync(user);
             }
         }
 
         /// <summary>
-        /// Validate PayPal subscription and apply selected tier
+        /// Validate the PayPal subscription and, once payment is confirmed, create the account
+        /// from the pending registration held in session, assign the paid role, and sign the
+        /// new member in. No account exists before this point.
         /// </summary>
-        [Authorize]
+        [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmSubscription(string subscriptionId, string plan)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            if (string.IsNullOrWhiteSpace(subscriptionId)) return BadRequest("Missing subscription ID.");
-
-            try
+            var pending = GetPendingRegistration();
+            if (pending == null)
             {
-                var isValid = await _payPalService.VerifySubscription(subscriptionId);
-                if (!isValid) return StatusCode(403, "Failed to verify subscription.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to verify PayPal subscription with ID {SubscriptionId}.", subscriptionId);
-                return StatusCode(500, "Error verifying subscription.");
+                _logger.LogWarning("ConfirmSubscription called with no pending registration in session (subscription {SubscriptionId}).", subscriptionId);
+                TempData["PaymentError"] = "Your session expired before we could finish. Please register again. If you were charged, please contact support.";
+                return RedirectToAction("Join");
             }
 
-            var tier = plan?.ToLower() switch
+            var selectedPlan = pending.Plan;
+
+            if (string.IsNullOrWhiteSpace(subscriptionId))
+            {
+                _logger.LogWarning("ConfirmSubscription called without a subscription id for {Email} (plan {Plan}).", pending.Email, selectedPlan);
+                TempData["PaymentError"] = "We didn't receive your payment confirmation from PayPal. If you were charged, please contact support.";
+                return RedirectToAction("Payment");
+            }
+
+            var tier = selectedPlan switch
             {
                 "pro" => SubscriptionTier.Pro,
                 "allaccess" => SubscriptionTier.AllAccess,
-                "admin" => SubscriptionTier.Admin,
                 _ => SubscriptionTier.Free
             };
 
             if (tier == SubscriptionTier.Free)
             {
-                return BadRequest("Invalid plan for paid subscription.");
+                _logger.LogWarning("ConfirmSubscription received an invalid paid plan '{Plan}' for {Email}.", selectedPlan, pending.Email);
+                TempData["PaymentError"] = "That plan isn't valid for a paid subscription. Please try again.";
+                return RedirectToAction("Join");
             }
 
-            // Persist the PayPal subscription id so we can later revise (upgrade) or cancel it.
-            user.PayPalSubscriptionId = subscriptionId;
-            user.SubscriptionCancelled = false;
+            // Verify the subscription is real and active before creating any account.
+            try
+            {
+                var isValid = await _payPalService.VerifySubscription(subscriptionId);
+                if (!isValid)
+                {
+                    _logger.LogWarning("PayPal subscription {SubscriptionId} for {Email} did not verify as active.", subscriptionId, pending.Email);
+                    TempData["PaymentError"] = "We couldn't confirm your subscription with PayPal yet. If you were charged, it may take a moment to activate — please refresh or contact support.";
+                    return RedirectToAction("Payment");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to verify PayPal subscription with ID {SubscriptionId}.", subscriptionId);
+                TempData["PaymentError"] = "Something went wrong confirming your subscription. If you were charged, please contact support.";
+                return RedirectToAction("Payment");
+            }
+
+            // Guard against a duplicate account (e.g. double submit or an account created meanwhile).
+            var existing = await _userManager.FindByEmailAsync(pending.Email);
+            if (existing != null)
+            {
+                _logger.LogWarning("Account already exists for {Email} at ConfirmSubscription; not creating a duplicate.", pending.Email);
+                HttpContext.Session.Remove(PendingRegistration.SessionKey);
+                TempData["PaymentError"] = "An account with this email already exists. Please log in.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Payment confirmed — NOW create the account.
+            var user = new ApplicationUser
+            {
+                UserName = pending.Email,
+                Email = pending.Email,
+                FirstName = pending.FirstName,
+                LastName = pending.LastName,
+                DateOfBirth = pending.DateOfBirth,
+                StreetAddress = pending.StreetAddress,
+                City = pending.City,
+                State = pending.State,
+                ZipCode = pending.ZipCode,
+                PhoneNumber = pending.PhoneNumber,
+                SubscriptionTier = tier,
+                PayPalSubscriptionId = subscriptionId,
+                SubscriptionCancelled = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var createResult = await _userManager.CreateAsync(user, pending.Password);
+            if (!createResult.Succeeded)
+            {
+                _logger.LogError("Payment confirmed but account creation failed for {Email}: {Errors}",
+                    pending.Email, string.Join("; ", createResult.Errors.Select(e => e.Description)));
+                TempData["PaymentError"] = "Your payment went through but we couldn't create your account. Please contact support and we'll fix it right away.";
+                return RedirectToAction("Join");
+            }
 
             var applied = await ApplyTierAsync(user, tier);
             if (!applied)
             {
-                return StatusCode(500, "Failed to activate subscription. Please contact support.");
+                _logger.LogError("Failed to apply tier {Tier} for {Email} after PayPal subscription {SubscriptionId} verified.", tier, user.Email, subscriptionId);
+                TempData["PaymentError"] = "Your payment went through but we couldn't activate your plan. Please contact support and we'll fix it right away.";
+                return RedirectToAction("Login", "Account");
             }
 
-            await _signInManager.RefreshSignInAsync(user);
-            _logger.LogInformation("Subscription successfully activated for {Email}, tier: {Tier}.", user.Email, tier);
+            // Registration complete — clear the pending data and sign the new member in.
+            HttpContext.Session.Remove(PendingRegistration.SessionKey);
+            await _signInManager.SignInAsync(user, isPersistent: false);
+
+            _logger.LogInformation("Account created and subscription activated for {Email}, tier: {Tier}.", user.Email, tier);
+            TempData["PaymentMessage"] = $"Your {(tier == SubscriptionTier.AllAccess ? "All Access" : "Pro")} membership is now active. Welcome aboard!";
             return RedirectToAction("MyAccount");
         }
 

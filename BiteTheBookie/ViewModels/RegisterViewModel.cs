@@ -63,8 +63,10 @@ namespace BiteTheBookie.ViewModels
         public string ConfirmPassword { get; set; } = string.Empty;
 
         /// <summary>
-        /// free, pro, or vip
+        /// The paid plan being purchased: "pro" or "allaccess". There is no free tier;
+        /// an account is only created after payment for one of these plans is approved.
         /// </summary>
-        public string? SelectedPlan { get; set; } = "free";
+        [Required]
+        public string? SelectedPlan { get; set; } = "pro";
     }
 }

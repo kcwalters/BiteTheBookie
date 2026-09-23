@@ -139,6 +139,67 @@ namespace BiteTheBookie.Services.Implementations
             _ => null
         };
 
+        /// <summary>
+        /// Verifies that the given billing plan id actually exists (and is ACTIVE) in the
+        /// PayPal account tied to the configured credentials/environment.
+        ///
+        /// This guards against the common misconfiguration where the plan id in appsettings
+        /// was created under a different account/environment than the current ClientId. In that
+        /// case PayPal's JS SDK fails at checkout time with a cryptic
+        /// "subscriptions#RESOURCE_NOT_FOUND" error in the browser. Calling this on the server
+        /// lets us detect the problem up front and show the user a clear message instead.
+        /// </summary>
+        /// <returns>True when the plan exists and is ACTIVE; otherwise false.</returns>
+        public async Task<bool> IsPlanActiveAsync(string? planId)
+        {
+            if (string.IsNullOrWhiteSpace(planId) || !IsConfigured)
+            {
+                return false;
+            }
+
+            try
+            {
+                var accessToken = await GetAccessTokenAsync();
+
+                var request = new HttpRequestMessage(HttpMethod.Get, $"{_baseUrl}/v1/billing/plans/{planId}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                var response = await _httpClient.SendAsync(request);
+                var body = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // 404 here almost always means the plan id does not belong to the live/sandbox
+                    // account that owns the current ClientId (or was never created / was deleted).
+                    _logger.LogError(
+                        "PayPal plan verification failed for {PlanId} on {BaseUrl}: {Status} {Body}. " +
+                        "The plan id likely does not exist in this PayPal account/environment. " +
+                        "Re-create the plans with the current live credentials and update PayPal:PlanId in configuration.",
+                        planId, _baseUrl, response.StatusCode, body);
+                    return false;
+                }
+
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("status", out var status))
+                {
+                    var value = status.GetString();
+                    var isActive = string.Equals(value, "ACTIVE", StringComparison.OrdinalIgnoreCase);
+                    if (!isActive)
+                    {
+                        _logger.LogWarning("PayPal plan {PlanId} exists but is not ACTIVE (status: {Status}).", planId, value);
+                    }
+                    return isActive;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while verifying PayPal plan {PlanId}.", planId);
+                return false;
+            }
+        }
+
         private static string ExtractErrorDetail(string body)
         {
             if (string.IsNullOrWhiteSpace(body)) return string.Empty;
@@ -298,8 +359,15 @@ namespace BiteTheBookie.Services.Implementations
                 ? statusEl.GetString()
                 : null;
 
-            return string.Equals(status, "ACTIVE", StringComparison.OrdinalIgnoreCase)
+            var isActive = string.Equals(status, "ACTIVE", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(status, "APPROVED", StringComparison.OrdinalIgnoreCase);
+
+            if (!isActive)
+            {
+                _logger.LogWarning("PayPal subscription {SubscriptionId} is not active yet (status '{Status}').", subscriptionId, status ?? "(none)");
+            }
+
+            return isActive;
         }
 
         /// <summary>

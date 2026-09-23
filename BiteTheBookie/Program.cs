@@ -42,6 +42,16 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+// Server-side session used to hold pending registration details while the user
+// completes PayPal checkout (the account is only created after payment is approved).
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // Authorization policies for Free vs Paid access
 builder.Services.AddAuthorization(options =>
 {
@@ -158,7 +168,7 @@ using (var scope = app.Services.CreateScope())
 
     // Ensure the subscription/access roles exist so AddToRoleAsync never fails.
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var roleName in new[] { "Free", "Pro", "AllAccess", "Admin" })
+    foreach (var roleName in new[] { "Pro", "AllAccess", "Admin" })
     {
         if (!await roleManager.RoleExistsAsync(roleName))
             await roleManager.CreateAsync(new IdentityRole(roleName));
@@ -199,6 +209,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();

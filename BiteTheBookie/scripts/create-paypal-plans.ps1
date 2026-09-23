@@ -4,11 +4,17 @@
 	and activates them, then prints the resulting plan IDs to paste into appsettings.json.
 
 .DESCRIPTION
-	Uses the PayPal REST API directly. Always targets PayPal live/production. The ClientId/ClientSecret
-	MUST be your live credentials, and the resulting P-... plan IDs only work with that same live account.
+	Uses the PayPal REST API directly. Targets PayPal live/production by default, or sandbox when the
+	-Sandbox switch is supplied. The ClientId/ClientSecret MUST match the chosen environment, and the
+	resulting P-... plan IDs only work with that same account/environment.
 
 .EXAMPLE
+	# Live plans (default)
 	./create-paypal-plans.ps1 -ClientId "Axxxx" -ClientSecret "Exxxx"
+
+.EXAMPLE
+	# Sandbox plans for local testing
+	./create-paypal-plans.ps1 -ClientId "Axxxx" -ClientSecret "Exxxx" -Sandbox
 
 .EXAMPLE
 	./create-paypal-plans.ps1 -ClientId "Axxxx" -ClientSecret "Exxxx" -ProPrice 9.99 -AllAccessPrice 19.99
@@ -17,6 +23,7 @@
 param(
 	[Parameter(Mandatory = $true)] [string] $ClientId,
 	[Parameter(Mandatory = $true)] [string] $ClientSecret,
+	[switch] $Sandbox,
 	[string] $CurrencyCode = "USD",
 	[decimal] $ProPrice = 9.99,
 	[decimal] $AllAccessPrice = 19.99
@@ -24,8 +31,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$baseUrl = "https://api-m.paypal.com"
-Write-Host "Targeting PayPal environment (live): $baseUrl" -ForegroundColor Cyan
+if ($Sandbox) {
+	$baseUrl = "https://api-m.sandbox.paypal.com"
+	$envName = "sandbox"
+}
+else {
+	$baseUrl = "https://api-m.paypal.com"
+	$envName = "live"
+}
+Write-Host "Targeting PayPal environment ($envName): $baseUrl" -ForegroundColor Cyan
 
 # 1) OAuth token ------------------------------------------------------------
 $basic = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("${ClientId}:${ClientSecret}"))
@@ -91,7 +105,7 @@ Write-Host " Paste these into appsettings.json / appsettings.Development.json:" 
 Write-Host "==================================================================" -ForegroundColor Yellow
 $snippet = @{
 	PayPal = @{
-		Environment = "live"
+		Environment = $envName
 		PlanId      = @{
 			Pro       = $proPlanId
 			AllAccess = $allAccessPlanId

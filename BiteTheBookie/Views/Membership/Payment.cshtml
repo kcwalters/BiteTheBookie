@@ -30,6 +30,11 @@
                 <div class="card-body p-4">
                     <h2 class="fw-bold text-center mb-4">Complete Your Payment</h2>
 
+                    @if (TempData["PaymentError"] is string paymentError)
+                    {
+                        <div class="alert alert-danger" role="alert">@paymentError</div>
+                    }
+
                     <div id="payment-error" class="alert alert-danger d-none" role="alert"></div>
 
                     <!-- PayPal button (account or guest) -->
@@ -77,6 +82,11 @@
                 return;
             }
 
+            if (!planId) {
+                showError('This plan is not available right now. Please try again later.');
+                return;
+            }
+
             // Use PayPal Buttons only (no hosted card fields)
             paypal.Buttons({
                 style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
@@ -91,7 +101,8 @@
                 },
                 onError: function (err) {
                     console.error(err);
-                    showError('There was a problem starting the PayPal checkout.');
+                    var detail = (err && (err.message || err.toString())) || '';
+                    showError('There was a problem starting the PayPal checkout.' + (detail ? ' (' + detail + ')' : ''));
                 }
             }).render('#paypal-button-container');
 
