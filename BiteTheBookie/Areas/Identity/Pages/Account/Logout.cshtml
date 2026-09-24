@@ -1,0 +1,22 @@
+@page
+@model LogoutModel
+@{
+    ViewData["Title"] = "Log Out";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <i class="fas fa-sign-out-alt fa-2x mb-2" style="color: var(--btb-primary);"></i>
+                    <h2 class="fw-bold">Signed Out</h2>
+                    <p class="text-muted">You have successfully logged out of BiteTheBookie.</p>
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-2">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

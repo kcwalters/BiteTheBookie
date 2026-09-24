@@ -150,21 +150,61 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="mainNav">
+                    @{
+                        var navIsSignedIn = SignInManager.IsSignedIn(User);
+                        var navMember = navIsSignedIn ? await UserManager.GetUserAsync(User) : null;
+                        var navIsPro = navMember?.IsPro == true || (navMember?.SubscriptionTier == SubscriptionTier.Admin);
+                    }
                     <!-- Primary section links (SportsLine-style flat nav) -->
                     <ul class="navbar-nav primary-nav">
                         <li class="nav-item dropdown picks-dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Picks</a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NFL">NFL Picks</a>
-                                <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NBA">NBA Picks</a>
-                                <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="MLB">MLB Picks</a>
-                                <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NHL">NHL Picks</a>
-                                <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="CFB">CFB Picks</a>
-                                <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="CBB">CBB Picks</a>
+                                @if (navIsPro)
+                                {
+                                    <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NFL">NFL Picks</a>
+                                    <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NBA">NBA Picks</a>
+                                    <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="MLB">MLB Picks</a>
+                                    <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="NHL">NHL Picks</a>
+                                    <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="CFB">CFB Picks</a>
+                                    <a class="dropdown-item" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="CBB">CBB Picks</a>
+                                }
+                                else
+                                {
+                                    <a class="dropdown-item" asp-controller="Membership" asp-action="Join"><i class="fas fa-lock me-2"></i>NFL Picks</a>
+                                    <a class="dropdown-item" asp-controller="Membership" asp-action="Join"><i class="fas fa-lock me-2"></i>NBA Picks</a>
+                                    <a class="dropdown-item" asp-controller="Membership" asp-action="Join"><i class="fas fa-lock me-2"></i>MLB Picks</a>
+                                    <a class="dropdown-item" asp-controller="Membership" asp-action="Join"><i class="fas fa-lock me-2"></i>NHL Picks</a>
+                                    <a class="dropdown-item" asp-controller="Membership" asp-action="Join"><i class="fas fa-lock me-2"></i>CFB Picks</a>
+                                    <a class="dropdown-item" asp-controller="Membership" asp-action="Join"><i class="fas fa-lock me-2"></i>CBB Picks</a>
+                                }
                             </div>
                         </li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Odds" asp-action="Index">Odds</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Fantasy" asp-action="Index">Fantasy</a></li>
+                        @if (navIsPro)
+                        {
+                            <li class="nav-item dropdown members-dropdown">
+                                <a class="nav-link dropdown-toggle text-warning fw-bold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-crown me-1"></i>Members
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" asp-controller="Fantasy" asp-action="Index">
+                                        <i class="fas fa-football me-2"></i>Fantasy Contests
+                                    </a>
+                                    <a class="dropdown-item" asp-controller="Home" asp-action="Index">
+                                        <i class="fas fa-desktop me-2"></i>Game Simulations
+                                    </a>
+                                </div>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Membership" asp-action="Join">
+                                    <i class="fas fa-lock me-1"></i>Fantasy
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item"><a class="nav-link" asp-controller="Experts" asp-action="Index">Experts</a></li>
                         <li class="nav-item"><a class="nav-link" href="#">Analysis</a></li>
                     </ul>

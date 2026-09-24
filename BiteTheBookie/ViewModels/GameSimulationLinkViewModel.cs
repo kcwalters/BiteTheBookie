@@ -10,5 +10,11 @@ namespace BiteTheBookie.ViewModels
         public string HomeTeam { get; set; } = string.Empty;
         public string AwayTeam { get; set; } = string.Empty;
         public string League { get; set; } = string.Empty;
+
+        /// <summary>
+        /// True when the game has already finished. A completed game can't be simulated,
+        /// so the link is suppressed.
+        /// </summary>
+        public bool IsFinal { get; set; }
     }
 }

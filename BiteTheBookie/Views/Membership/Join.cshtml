@@ -81,10 +81,26 @@
                     </ul>
                 </div>
                 <div class="pricing-card__foot">
-                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="pro"
-                       class="btn btn-primary btn-lg w-100 fw-bold">
-                        Get Pro
-                    </a>
+                    @if (currentUser == null)
+                    {
+                        <a asp-controller="Membership" asp-action="Register" asp-route-plan="pro"
+                           class="btn btn-primary btn-lg w-100 fw-bold">
+                            Get Pro
+                        </a>
+                    }
+                    else if (currentUser.SubscriptionTier == SubscriptionTier.Pro || currentUser.SubscriptionTier == SubscriptionTier.AllAccess)
+                    {
+                        <button class="btn btn-outline-secondary btn-lg w-100 fw-bold" disabled>
+                            Current Plan
+                        </button>
+                    }
+                    else
+                    {
+                        <a asp-controller="Membership" asp-action="Subscribe" asp-route-plan="pro"
+                           class="btn btn-primary btn-lg w-100 fw-bold">
+                            Get Pro
+                        </a>
+                    }
                 </div>
             </div>
         </div>
@@ -108,10 +124,33 @@
                     </ul>
                 </div>
                 <div class="pricing-card__foot">
-                    <a asp-controller="Membership" asp-action="Register" asp-route-plan="allaccess"
-                       class="btn btn-warning btn-lg w-100 fw-bold">
-                        Get All Access
-                    </a>
+                    @if (currentUser == null)
+                    {
+                        <a asp-controller="Membership" asp-action="Register" asp-route-plan="allaccess"
+                           class="btn btn-warning btn-lg w-100 fw-bold">
+                            Get All Access
+                        </a>
+                    }
+                    else if (currentUser.SubscriptionTier == SubscriptionTier.AllAccess)
+                    {
+                        <button class="btn btn-outline-secondary btn-lg w-100 fw-bold" disabled>
+                            Current Plan
+                        </button>
+                    }
+                    else if (currentUser.SubscriptionTier == SubscriptionTier.Pro && !currentUser.SubscriptionCancelled)
+                    {
+                        <a asp-controller="Membership" asp-action="Upgrade"
+                           class="btn btn-warning btn-lg w-100 fw-bold">
+                            Upgrade to All Access
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Membership" asp-action="Subscribe" asp-route-plan="allaccess"
+                           class="btn btn-warning btn-lg w-100 fw-bold">
+                            Get All Access
+                        </a>
+                    }
                 </div>
             </div>
         </div>

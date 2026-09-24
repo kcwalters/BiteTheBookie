@@ -1,12 +1,9 @@
 @{
     ViewData["Title"] = "Complete Your Payment";
     var plan = (string)ViewBag.Plan;
-    var planId = (string)ViewBag.PlanId;
-    var clientId = (string)ViewBag.ClientId;
-    var clientToken = (string)ViewBag.ClientToken;
-    var sdkToken = (string)ViewBag.SdkToken;
     var planName = (string)ViewBag.PlanName;
     var planPrice = (string)ViewBag.PlanPrice;
+    var isUpgrade = ViewBag.IsUpgrade is bool b && b;
 }
 
 <div class="container py-5">
@@ -18,7 +15,9 @@
                 <div class="selected-tier__row">
                     <div>
                         <div class="selected-tier__name">@planName Plan</div>
-                        <div class="selected-tier__tagline">Cancel anytime.</div>
+                        <div class="selected-tier__tagline">
+                            @(isUpgrade ? "Upgrade your current subscription. Cancel anytime." : "Cancel anytime.")
+                        </div>
                     </div>
                     <div class="selected-tier__price">
                         @planPrice<span class="selected-tier__period"> per month</span>
@@ -28,17 +27,27 @@
 
             <div class="card shadow-sm">
                 <div class="card-body p-4">
-                    <h2 class="fw-bold text-center mb-4">Complete Your Payment</h2>
+                    <h2 class="fw-bold text-center mb-4">@(isUpgrade ? "Confirm Your Upgrade" : "Complete Your Payment")</h2>
 
                     @if (TempData["PaymentError"] is string paymentError)
                     {
                         <div class="alert alert-danger" role="alert">@paymentError</div>
                     }
 
-                    <div id="payment-error" class="alert alert-danger d-none" role="alert"></div>
+                    <p class="text-center text-muted mb-4">
+                        You'll be securely redirected to PayPal to
+                        @(isUpgrade ? "approve the change to your subscription." : "approve your subscription.")
+                        Once payment is confirmed, PayPal returns you here and your membership is activated.
+                    </p>
 
-                    <!-- PayPal button (account or guest) -->
-                    <div id="paypal-button-container" class="mb-3"></div>
+                    @* Posting to StartCheckout creates/revises the subscription server-side and
+                       redirects the browser to PayPal's approval page. *@
+                    <form asp-controller="Membership" asp-action="StartCheckout" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold">
+                            <i class="fab fa-paypal me-2"></i>Continue to PayPal
+                        </button>
+                    </form>
 
                     <div class="text-center mt-3">
                         <a asp-controller="Membership" asp-action="Join" class="selected-tier__change">
@@ -50,62 +59,3 @@
         </div>
     </div>
 </div>
-
-@* Hidden form used to post the approved subscription to the server for verification/activation. *@
-<form id="confirm-form" asp-controller="Membership" asp-action="ConfirmSubscription" method="post" class="d-none">
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="subscriptionId" id="confirm-subscription-id" />
-    <input type="hidden" name="plan" value="@plan" />
-</form>
-
-@section Scripts {
-    <script src="https://www.paypal.com/sdk/js?client-id=@clientId&components=buttons&intent=subscription&vault=true"
-            data-sdk-integration-source="integrationbuilder_sc"></script>
-    <script>
-        (function () {
-            const planId = '@planId';
-            const errorBox = document.getElementById('payment-error');
-
-            function showError(message) {
-                errorBox.textContent = message || 'Something went wrong processing your payment. Please try again.';
-                errorBox.classList.remove('d-none');
-                errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-
-            function completeSubscription(subscriptionId) {
-                document.getElementById('confirm-subscription-id').value = subscriptionId;
-                document.getElementById('confirm-form').submit();
-            }
-
-            if (typeof paypal === 'undefined') {
-                showError('Unable to load the payment provider. Please refresh and try again.');
-                return;
-            }
-
-            if (!planId) {
-                showError('This plan is not available right now. Please try again later.');
-                return;
-            }
-
-            // Use PayPal Buttons only (no hosted card fields)
-            paypal.Buttons({
-                style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
-                createSubscription: function (data, actions) {
-                    return actions.subscription.create({ plan_id: planId });
-                },
-                onApprove: function (data) {
-                    completeSubscription(data.subscriptionID);
-                },
-                onCancel: function () {
-                    showError('Checkout was cancelled before payment was completed.');
-                },
-                onError: function (err) {
-                    console.error(err);
-                    var detail = (err && (err.message || err.toString())) || '';
-                    showError('There was a problem starting the PayPal checkout.' + (detail ? ' (' + detail + ')' : ''));
-                }
-            }).render('#paypal-button-container');
-
-        })();
-    </script>
-}

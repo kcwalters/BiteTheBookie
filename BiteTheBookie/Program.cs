@@ -42,16 +42,6 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// Server-side session used to hold pending registration details while the user
-// completes PayPal checkout (the account is only created after payment is approved).
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
-
 // Authorization policies for Free vs Paid access
 builder.Services.AddAuthorization(options =>
 {
@@ -138,6 +128,15 @@ builder.Services.AddRazorPages();
 // Caching
 builder.Services.AddMemoryCache();
 
+// Session (required by MembershipController.Register which stashes PendingRegistration in HttpContext.Session)
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // Serilog: write logs to console and to SQL Server (Logs table). Uses DefaultConnection.
 var sqlConnectionString = connectionString;
 var sinkOptions = new MSSqlServerSinkOptions { TableName = "Logs", AutoCreateSqlTable = true };
@@ -168,7 +167,7 @@ using (var scope = app.Services.CreateScope())
 
     // Ensure the subscription/access roles exist so AddToRoleAsync never fails.
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var roleName in new[] { "Pro", "AllAccess", "Admin" })
+    foreach (var roleName in new[] { "Free", "Pro", "AllAccess", "Admin" })
     {
         if (!await roleManager.RoleExistsAsync(roleName))
             await roleManager.CreateAsync(new IdentityRole(roleName));
@@ -191,7 +190,7 @@ var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 };
-forwardedHeadersOptions.KnownNetworks.Clear();
+
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
@@ -212,8 +211,9 @@ app.UseRouting();
 
 app.UseSession();
 
-app.UseAuthentication();
+ 
 app.UseAuthorization();
+
 
 app.MapControllerRoute(
     name: "default",

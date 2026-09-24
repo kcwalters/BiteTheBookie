@@ -137,7 +137,7 @@
                                     }
                                 </td>
                                 <td class="text-end">
-                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.League }' />
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.League, IsFinal = game.IsFinal }' />
                                 </td>
                             </tr>
                         }

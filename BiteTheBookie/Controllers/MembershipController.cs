@@ -51,6 +51,13 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("Join");
             }
 
+            if (_signInManager.IsSignedIn(User))
+            {
+                // Existing members don't re-register; route them to the subscribe/upgrade flow
+                // so their current account is reused.
+                return RedirectToAction("Subscribe", new { plan = selectedPlan });
+            }
+
             var model = new RegisterViewModel
             {
                 SelectedPlan = selectedPlan
@@ -68,6 +75,12 @@ namespace BiteTheBookie.Controllers
             if (!ModelState.IsValid)
             {
                 return View(model);
+            }
+
+            if (_signInManager.IsSignedIn(User))
+            {
+                // Existing members reuse their account instead of registering a new one.
+                return RedirectToAction("Subscribe", new { plan = model.SelectedPlan?.ToLowerInvariant() });
             }
 
             var selectedPlan = model.SelectedPlan?.ToLowerInvariant();
@@ -114,30 +127,35 @@ namespace BiteTheBookie.Controllers
             HttpContext.Session.SetString(PendingRegistration.SessionKey,
                 System.Text.Json.JsonSerializer.Serialize(pending));
 
+            SetCheckoutContext(new CheckoutContext
+            {
+                Plan = selectedPlan,
+                Mode = CheckoutMode.NewAccount
+            });
+
             _logger.LogInformation("Captured pending registration for {Email} (plan {Plan}); awaiting PayPal payment.", model.Email, selectedPlan);
 
-            return RedirectToAction("Payment", new { plan = selectedPlan });
+            return RedirectToAction("Payment");
         }
 
         /// <summary>
-        /// <summary>
-        /// On-site payment page: renders the PayPal subscribe button so a prospective member
-        /// can pay before an account exists. The plan comes from the pending registration held
-        /// in session; the account is only created after PayPal approves the payment.
+        /// Lightweight confirmation page shown before we send the user to PayPal. It reads the
+        /// in-progress checkout from session and presents a "Proceed to PayPal" button that posts
+        /// to <see cref="StartCheckout"/>. Works for new sign-ups, existing members subscribing,
+        /// and Pro-to-AllAccess upgrades.
         /// </summary>
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> Payment(string plan)
+        public async Task<IActionResult> Payment()
         {
-            var pending = GetPendingRegistration();
-            if (pending == null)
+            var context = GetCheckoutContext();
+            if (context == null)
             {
-                TempData["PaymentError"] = "Your session expired. Please start your registration again.";
+                TempData["PaymentError"] = "Your session expired. Please start again.";
                 return RedirectToAction("Join");
             }
 
-            // The plan is authoritative from the pending registration, not the query string.
-            var selectedPlan = pending.Plan;
+            var selectedPlan = context.Plan;
             var isPaidPlan = selectedPlan == "pro" || selectedPlan == "allaccess";
             if (!isPaidPlan)
             {
@@ -159,11 +177,8 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("Join");
             }
 
-            // Verify the plan id actually exists (and is ACTIVE) in the PayPal account tied to the
-            // configured credentials. Without this, a plan id that belongs to a different account or
-            // environment surfaces later as a cryptic "subscriptions#RESOURCE_NOT_FOUND" error in the
-            // browser when the PayPal button is clicked. Catching it here gives the user a clear message
-            // and logs an actionable server-side error for the operator.
+            // Verify the plan id exists (and is ACTIVE) in the PayPal account tied to the configured
+            // credentials, so we can show a clear message instead of failing later at PayPal.
             if (!await _payPalService.IsPlanActiveAsync(planId))
             {
                 _logger.LogError(
@@ -175,10 +190,9 @@ namespace BiteTheBookie.Controllers
             }
 
             ViewBag.Plan = selectedPlan;
-            ViewBag.PlanId = planId;
-            ViewBag.ClientId = _payPalService.ClientId;
             ViewBag.PlanName = selectedPlan == "allaccess" ? "All Access" : "Pro";
             ViewBag.PlanPrice = selectedPlan == "allaccess" ? "$19.99" : "$9.99";
+            ViewBag.IsUpgrade = context.Mode == CheckoutMode.Upgrade;
 
             return View();
         }
@@ -293,75 +307,212 @@ namespace BiteTheBookie.Controllers
         }
 
         /// <summary>
-        /// Validate the PayPal subscription and, once payment is confirmed, create the account
-        /// from the pending registration held in session, assign the paid role, and sign the
-        /// new member in. No account exists before this point.
+        /// Lets a signed-in member with no active paid subscription start a new subscription using
+        /// their existing account (no re-registration). Payment happens on PayPal; the tier/role is
+        /// applied only after PayPal approves.
+        /// </summary>
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Subscribe(string? plan)
+        {
+            var selectedPlan = plan?.ToLowerInvariant();
+            if (selectedPlan != "pro" && selectedPlan != "allaccess")
+            {
+                return RedirectToAction("Join");
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Join");
+
+            // Members with an active paid subscription upgrade or manage instead of subscribing again.
+            if (user.IsPro && !user.SubscriptionCancelled)
+            {
+                if (user.SubscriptionTier == SubscriptionTier.Pro && selectedPlan == "allaccess")
+                {
+                    return RedirectToAction("Upgrade");
+                }
+
+                TempData["PaymentError"] = "You already have an active subscription. You can manage it from My Account.";
+                return RedirectToAction("MyAccount");
+            }
+
+            // Clear any stale pending-registration from a previous anonymous attempt.
+            HttpContext.Session.Remove(PendingRegistration.SessionKey);
+            SetCheckoutContext(new CheckoutContext { Plan = selectedPlan, Mode = CheckoutMode.ExistingAccount });
+            return RedirectToAction("Payment");
+        }
+
+        /// <summary>
+        /// Creates (or revises, for an upgrade) the PayPal subscription server-side and redirects the
+        /// browser to PayPal's approval page so the user can pay on PayPal's site. PayPal then
+        /// redirects back to <see cref="CheckoutReturn"/>.
         /// </summary>
         [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfirmSubscription(string subscriptionId, string plan)
+        public async Task<IActionResult> StartCheckout()
         {
-            var pending = GetPendingRegistration();
-            if (pending == null)
+            var context = GetCheckoutContext();
+            if (context == null)
             {
-                _logger.LogWarning("ConfirmSubscription called with no pending registration in session (subscription {SubscriptionId}).", subscriptionId);
-                TempData["PaymentError"] = "Your session expired before we could finish. Please register again. If you were charged, please contact support.";
+                TempData["PaymentError"] = "Your checkout session expired. Please start again.";
                 return RedirectToAction("Join");
             }
 
-            var selectedPlan = pending.Plan;
-
-            if (string.IsNullOrWhiteSpace(subscriptionId))
+            if (!_payPalService.IsConfigured)
             {
-                _logger.LogWarning("ConfirmSubscription called without a subscription id for {Email} (plan {Plan}).", pending.Email, selectedPlan);
-                TempData["PaymentError"] = "We didn't receive your payment confirmation from PayPal. If you were charged, please contact support.";
-                return RedirectToAction("Payment");
+                _logger.LogWarning("PayPal is not configured; cannot start checkout for plan {Plan}.", context.Plan);
+                TempData["PaymentError"] = "Online payments are not currently available. Please try again later.";
+                return RedirectToAction("Join");
             }
 
-            var tier = selectedPlan switch
+            var planId = _payPalService.GetPlanId(context.Plan);
+            if (string.IsNullOrWhiteSpace(planId))
+            {
+                _logger.LogWarning("No PayPal plan id configured for plan {Plan}.", context.Plan);
+                TempData["PaymentError"] = "This plan is not available right now. Please try again later.";
+                return RedirectToAction("Join");
+            }
+
+            var returnUrl = Url.Action("CheckoutReturn", "Membership", null, Request.Scheme)!;
+            var cancelUrl = Url.Action("CheckoutCancel", "Membership", null, Request.Scheme)!;
+
+            try
+            {
+                PayPalSubscriptionResult result;
+                if (context.Mode == CheckoutMode.Upgrade)
+                {
+                    if (string.IsNullOrWhiteSpace(context.SubscriptionId))
+                    {
+                        _logger.LogWarning("Upgrade checkout started without an existing subscription id.");
+                        TempData["PaymentError"] = "We couldn't find your subscription to upgrade. Please contact support.";
+                        return RedirectToAction("MyAccount");
+                    }
+
+                    result = await _payPalService.ReviseSubscriptionAsync(context.SubscriptionId, planId, returnUrl, cancelUrl);
+                }
+                else
+                {
+                    result = await _payPalService.CreateSubscriptionAsync(planId, returnUrl, cancelUrl);
+                }
+
+                context.SubscriptionId = result.SubscriptionId;
+                SetCheckoutContext(context);
+
+                // When PayPal doesn't require buyer approval (some revisions), it applies the change
+                // immediately and returns no approve link; provision right away in that case.
+                if (string.IsNullOrWhiteSpace(result.ApproveUrl))
+                {
+                    return await CheckoutReturn(result.SubscriptionId);
+                }
+
+                return Redirect(result.ApproveUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start PayPal checkout for plan {Plan} (mode {Mode}).", context.Plan, context.Mode);
+                TempData["PaymentError"] = "We couldn't start your PayPal checkout. Please try again or contact support.";
+                return RedirectToAction("Payment");
+            }
+        }
+
+        /// <summary>
+        /// PayPal redirects the user back here after they approve payment. We verify the subscription
+        /// is active, then create the account + role (new users) or apply the tier/role to the
+        /// existing account (existing members / upgrades), and sign them in.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> CheckoutReturn(string? subscription_id)
+        {
+            var context = GetCheckoutContext();
+            if (context == null)
+            {
+                TempData["PaymentError"] = "Your checkout session expired before we could finish. If you were charged, please contact support.";
+                return RedirectToAction("Join");
+            }
+
+            // New subscriptions come back with subscription_id on the query string; a revise keeps the
+            // id we already stored.
+            var subscriptionId = !string.IsNullOrWhiteSpace(subscription_id) ? subscription_id : context.SubscriptionId;
+            if (string.IsNullOrWhiteSpace(subscriptionId))
+            {
+                _logger.LogWarning("CheckoutReturn had no subscription id (mode {Mode}).", context.Mode);
+                TempData["PaymentError"] = "We didn't receive your payment confirmation from PayPal. If you were charged, please contact support.";
+                return RedirectToAction("Join");
+            }
+
+            var tier = context.Plan switch
             {
                 "pro" => SubscriptionTier.Pro,
                 "allaccess" => SubscriptionTier.AllAccess,
                 _ => SubscriptionTier.Free
             };
-
             if (tier == SubscriptionTier.Free)
             {
-                _logger.LogWarning("ConfirmSubscription received an invalid paid plan '{Plan}' for {Email}.", selectedPlan, pending.Email);
+                _logger.LogWarning("CheckoutReturn received an invalid paid plan '{Plan}'.", context.Plan);
                 TempData["PaymentError"] = "That plan isn't valid for a paid subscription. Please try again.";
                 return RedirectToAction("Join");
             }
 
-            // Verify the subscription is real and active before creating any account.
+            // Verify the subscription is genuinely active/approved before provisioning anything.
             try
             {
-                var isValid = await _payPalService.VerifySubscription(subscriptionId);
-                if (!isValid)
+                if (!await _payPalService.VerifySubscription(subscriptionId))
                 {
-                    _logger.LogWarning("PayPal subscription {SubscriptionId} for {Email} did not verify as active.", subscriptionId, pending.Email);
+                    _logger.LogWarning("PayPal subscription {SubscriptionId} did not verify as active (mode {Mode}).", subscriptionId, context.Mode);
                     TempData["PaymentError"] = "We couldn't confirm your subscription with PayPal yet. If you were charged, it may take a moment to activate — please refresh or contact support.";
                     return RedirectToAction("Payment");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to verify PayPal subscription with ID {SubscriptionId}.", subscriptionId);
+                _logger.LogError(ex, "Failed to verify PayPal subscription {SubscriptionId}.", subscriptionId);
                 TempData["PaymentError"] = "Something went wrong confirming your subscription. If you were charged, please contact support.";
                 return RedirectToAction("Payment");
+            }
+
+            return context.Mode == CheckoutMode.NewAccount
+                ? await CompleteNewAccountAsync(subscriptionId, tier)
+                : await CompleteExistingAccountAsync(subscriptionId, tier);
+        }
+
+        /// <summary>
+        /// Handles the PayPal "cancel" redirect: the user backed out before paying.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet]
+        public IActionResult CheckoutCancel()
+        {
+            TempData["PaymentError"] = "Checkout was cancelled before payment was completed.";
+            return RedirectToAction("Payment");
+        }
+
+        /// <summary>
+        /// Creates a brand-new account + role from the pending registration held in session, then
+        /// signs the new member in. No account exists before this point.
+        /// </summary>
+        private async Task<IActionResult> CompleteNewAccountAsync(string subscriptionId, SubscriptionTier tier)
+        {
+            var pending = GetPendingRegistration();
+            if (pending == null)
+            {
+                _logger.LogWarning("CompleteNewAccount called with no pending registration (subscription {SubscriptionId}).", subscriptionId);
+                TempData["PaymentError"] = "Your session expired before we could finish. Please register again. If you were charged, please contact support.";
+                return RedirectToAction("Join");
             }
 
             // Guard against a duplicate account (e.g. double submit or an account created meanwhile).
             var existing = await _userManager.FindByEmailAsync(pending.Email);
             if (existing != null)
             {
-                _logger.LogWarning("Account already exists for {Email} at ConfirmSubscription; not creating a duplicate.", pending.Email);
-                HttpContext.Session.Remove(PendingRegistration.SessionKey);
+                _logger.LogWarning("Account already exists for {Email} at checkout return; not creating a duplicate.", pending.Email);
+                ClearCheckoutSession();
                 TempData["PaymentError"] = "An account with this email already exists. Please log in.";
                 return RedirectToAction("Login", "Account");
             }
 
-            // Payment confirmed — NOW create the account.
+            // Payment confirmed — NOW create the account (AspNetUsers) and role (AspNetUserRoles).
             var user = new ApplicationUser
             {
                 UserName = pending.Email,
@@ -397,13 +548,77 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            // Registration complete — clear the pending data and sign the new member in.
-            HttpContext.Session.Remove(PendingRegistration.SessionKey);
+            ClearCheckoutSession();
             await _signInManager.SignInAsync(user, isPersistent: false);
 
             _logger.LogInformation("Account created and subscription activated for {Email}, tier: {Tier}.", user.Email, tier);
             TempData["PaymentMessage"] = $"Your {(tier == SubscriptionTier.AllAccess ? "All Access" : "Pro")} membership is now active. Welcome aboard!";
             return RedirectToAction("MyAccount");
+        }
+
+        /// <summary>
+        /// Applies the paid tier/role to the currently signed-in account (a Free member subscribing or
+        /// a Pro member upgrading). The existing account is reused — nothing new is inserted into
+        /// AspNetUsers.
+        /// </summary>
+        private async Task<IActionResult> CompleteExistingAccountAsync(string subscriptionId, SubscriptionTier tier)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                _logger.LogWarning("CompleteExistingAccount called but no user is signed in (subscription {SubscriptionId}).", subscriptionId);
+                TempData["PaymentError"] = "Please log in to finish activating your subscription. If you were charged, please contact support.";
+                return RedirectToAction("Login", "Account");
+            }
+
+            user.PayPalSubscriptionId = subscriptionId;
+            user.SubscriptionCancelled = false;
+
+            var applied = await ApplyTierAsync(user, tier);
+            if (!applied)
+            {
+                _logger.LogError("Failed to apply tier {Tier} for {Email} after PayPal subscription {SubscriptionId} verified.", tier, user.Email, subscriptionId);
+                TempData["PaymentError"] = "Your payment went through but we couldn't activate your plan. Please contact support and we'll fix it right away.";
+                return RedirectToAction("MyAccount");
+            }
+
+            ClearCheckoutSession();
+            await _signInManager.RefreshSignInAsync(user);
+
+            _logger.LogInformation("Applied tier {Tier} to existing account {Email} (subscription {SubscriptionId}).", tier, user.Email, subscriptionId);
+            TempData["PaymentMessage"] = $"Your {(tier == SubscriptionTier.AllAccess ? "All Access" : "Pro")} membership is now active.";
+            return RedirectToAction("MyAccount");
+        }
+
+        /// <summary>
+        /// Reads the in-progress checkout context from session; null when absent/invalid.
+        /// </summary>
+        private CheckoutContext? GetCheckoutContext()
+        {
+            var json = HttpContext.Session.GetString(CheckoutContext.SessionKey);
+            if (string.IsNullOrEmpty(json))
+            {
+                return null;
+            }
+
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<CheckoutContext>(json);
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return null;
+            }
+        }
+
+        private void SetCheckoutContext(CheckoutContext context)
+            => HttpContext.Session.SetString(CheckoutContext.SessionKey,
+                System.Text.Json.JsonSerializer.Serialize(context));
+
+        private void ClearCheckoutSession()
+        {
+            HttpContext.Session.Remove(CheckoutContext.SessionKey);
+            HttpContext.Session.Remove(PendingRegistration.SessionKey);
         }
 
         /// <summary>
@@ -433,7 +648,7 @@ namespace BiteTheBookie.Controllers
 
             if (!_payPalService.IsConfigured)
             {
-                _logger.LogWarning("PayPal is not configured; cannot render upgrade page.");
+                _logger.LogWarning("PayPal is not configured; cannot start upgrade.");
                 TempData["PaymentError"] = "Online payments are not currently available. Please try again later.";
                 return RedirectToAction("MyAccount");
             }
@@ -446,55 +661,16 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("MyAccount");
             }
 
-            ViewBag.ClientId = _payPalService.ClientId;
-            ViewBag.PlanId = allAccessPlanId;
-            ViewBag.SubscriptionId = user.PayPalSubscriptionId;
-
-            return View();
-        }
-
-        /// <summary>
-        /// Applies the AllAccess tier after PayPal confirms the subscription revision. The
-        /// subscription id stays the same; only the plan/amount changes.
-        /// </summary>
-        [Authorize]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ConfirmUpgrade(string subscriptionId)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            if (string.IsNullOrWhiteSpace(subscriptionId)) return BadRequest("Missing subscription ID.");
-
-            // Only an existing Pro member may complete an upgrade.
-            if (user.SubscriptionTier != SubscriptionTier.Pro)
+            // Revise the existing subscription (same id) to All Access; the actual PayPal approval
+            // and redirect happen from the Payment page via StartCheckout.
+            SetCheckoutContext(new CheckoutContext
             {
-                return BadRequest("Only Pro members can upgrade to AllAccess.");
-            }
+                Plan = "allaccess",
+                Mode = CheckoutMode.Upgrade,
+                SubscriptionId = user.PayPalSubscriptionId
+            });
 
-            try
-            {
-                var isValid = await _payPalService.VerifySubscription(subscriptionId);
-                if (!isValid) return StatusCode(403, "Failed to verify the revised subscription.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to verify revised PayPal subscription {SubscriptionId}.", subscriptionId);
-                return StatusCode(500, "Error verifying subscription.");
-            }
-
-            user.PayPalSubscriptionId = subscriptionId;
-            user.SubscriptionCancelled = false;
-
-            var applied = await ApplyTierAsync(user, SubscriptionTier.AllAccess);
-            if (!applied)
-            {
-                return StatusCode(500, "Failed to apply the upgrade. Please contact support.");
-            }
-
-            await _signInManager.RefreshSignInAsync(user);
-            _logger.LogInformation("Upgraded {Email} from Pro to AllAccess.", user.Email);
-            return RedirectToAction("MyAccount");
+            return RedirectToAction("Payment");
         }
 
         /// <summary>
@@ -607,11 +783,12 @@ namespace BiteTheBookie.Controllers
             // Ensure the persisted SubscriptionTier is in sync with the role we are about to grant.
             // Always persist here so related fields set by the caller (e.g. PayPalSubscriptionId,
             // SubscriptionCancelled) are saved even when the tier itself is unchanged.
-            if (user.SubscriptionTier != tier)
-            {
-                user.SubscriptionTier = tier;
-                user.SubscriptionExpiry = tier == SubscriptionTier.Free ? null : DateTime.UtcNow.AddMonths(1);
-            }
+            user.SubscriptionTier = tier;
+            // Always (re)set the expiry window for paid tiers. This must run even when the tier value
+            // is unchanged (e.g. a brand-new account whose tier was set at construction, or a renewal),
+            // otherwise SubscriptionExpiry stays null and IsPro/AllAccessUser evaluate to false even
+            // though the paid role/claim were granted.
+            user.SubscriptionExpiry = tier == SubscriptionTier.Free ? null : DateTime.UtcNow.AddMonths(1);
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
             {

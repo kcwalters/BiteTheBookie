@@ -170,7 +170,7 @@
                                                 }
                                                 else
                                                 {
-                                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "MLB" }' />
+                                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "MLB", IsFinal = game.IsFinal }' />
                                                 }
                                                 }
                                             </div>
@@ -270,7 +270,7 @@
 
                                             <!-- Action Button Column -->
                                             <div class="col-auto">
-                                                <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "MLB" }' />
+                                                <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "MLB", IsFinal = game.IsFinal }' />
                                             </div>
                                         </div>
                                     </div>

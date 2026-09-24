@@ -126,7 +126,7 @@
                 </td>
                 <td class="status">@game.Status</td>
                 <td class="text-center">
-                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeam, AwayTeam = game.AwayTeam, League = "MLB" }' />
+                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeam, AwayTeam = game.AwayTeam, League = "MLB", IsFinal = game.Status.Equals("Final", StringComparison.OrdinalIgnoreCase) }' />
                 </td>
             </tr>
         }

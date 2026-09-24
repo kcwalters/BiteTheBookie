@@ -92,7 +92,7 @@
                                     <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                                 </div>
                                 <div class="nfl-game-card__actions">
-                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL" }' />
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL", IsFinal = game.IsFinal }' />
                                 </div>
                             </div>
                         }

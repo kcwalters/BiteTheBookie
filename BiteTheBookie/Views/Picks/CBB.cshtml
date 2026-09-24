@@ -113,7 +113,7 @@
                                     }
                                 </td>
                                 <td>
-                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "CBB" }' />
+                                    <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "CBB", IsFinal = game.Status.Equals("Final", StringComparison.OrdinalIgnoreCase) }' />
                                 </td>
                             </tr>
                         }

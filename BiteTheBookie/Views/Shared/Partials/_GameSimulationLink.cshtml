@@ -14,7 +14,11 @@
     }
 }
 
-@if (isPaid)
+@if (Model.IsFinal)
+{
+    // Game is over; a simulation is not applicable, so render nothing.
+}
+else if (isPaid)
 {
     <a class="btn btn-sm btn-primary"
        asp-controller="GameSimulation" asp-action="Start"

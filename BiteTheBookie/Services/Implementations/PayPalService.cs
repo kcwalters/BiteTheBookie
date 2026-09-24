@@ -417,5 +417,153 @@ namespace BiteTheBookie.Services.Implementations
             _logger.LogError("PayPal subscription cancel failed: {Status} {Body}", response.StatusCode, body);
             return false;
         }
+
+        /// <summary>
+        /// Creates a PayPal billing subscription server-side and returns the subscription id
+        /// together with the PayPal "approve" URL the browser must be redirected to so the user
+        /// can pay on PayPal's site. After approval PayPal redirects back to <paramref name="returnUrl"/>
+        /// (appending subscription_id/token), and to <paramref name="cancelUrl"/> if the user cancels.
+        /// </summary>
+        public async Task<PayPalSubscriptionResult> CreateSubscriptionAsync(string planId, string returnUrl, string cancelUrl)
+        {
+            if (string.IsNullOrWhiteSpace(planId))
+            {
+                throw new ArgumentException("A PayPal plan id is required.", nameof(planId));
+            }
+
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException("PayPal is not configured.");
+            }
+
+            var accessToken = await GetAccessTokenAsync();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/v1/billing/subscriptions");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var payload = new
+            {
+                plan_id = planId,
+                application_context = new
+                {
+                    user_action = "SUBSCRIBE_NOW",
+                    shipping_preference = "NO_SHIPPING",
+                    return_url = returnUrl,
+                    cancel_url = cancelUrl
+                }
+            };
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("PayPal subscription create failed: {Status} {Body}", response.StatusCode, body);
+                throw new InvalidOperationException($"Unable to create PayPal subscription ({(int)response.StatusCode}). {ExtractErrorDetail(body)}");
+            }
+
+            using var doc = JsonDocument.Parse(body);
+            var subscriptionId = doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetString() : null;
+            var approveUrl = ExtractApproveLink(doc.RootElement);
+
+            if (string.IsNullOrWhiteSpace(subscriptionId) || string.IsNullOrWhiteSpace(approveUrl))
+            {
+                _logger.LogError("PayPal subscription create succeeded but response was missing id/approve link: {Body}", body);
+                throw new InvalidOperationException("PayPal did not return the details needed to continue checkout.");
+            }
+
+            return new PayPalSubscriptionResult(subscriptionId!, approveUrl!);
+        }
+
+        /// <summary>
+        /// Revises an existing PayPal subscription to a new billing plan (e.g. Pro -> All Access),
+        /// keeping the same subscription id. When PayPal requires buyer approval for the change it
+        /// returns an "approve" URL to redirect to; otherwise the change applies immediately and
+        /// <see cref="PayPalSubscriptionResult.ApproveUrl"/> will be null.
+        /// </summary>
+        public async Task<PayPalSubscriptionResult> ReviseSubscriptionAsync(string subscriptionId, string newPlanId, string returnUrl, string cancelUrl)
+        {
+            if (string.IsNullOrWhiteSpace(subscriptionId))
+            {
+                throw new ArgumentException("A PayPal subscription id is required.", nameof(subscriptionId));
+            }
+
+            if (string.IsNullOrWhiteSpace(newPlanId))
+            {
+                throw new ArgumentException("A PayPal plan id is required.", nameof(newPlanId));
+            }
+
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException("PayPal is not configured.");
+            }
+
+            var accessToken = await GetAccessTokenAsync();
+
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/v1/billing/subscriptions/{subscriptionId}/revise");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var payload = new
+            {
+                plan_id = newPlanId,
+                application_context = new
+                {
+                    user_action = "SUBSCRIBE_NOW",
+                    shipping_preference = "NO_SHIPPING",
+                    return_url = returnUrl,
+                    cancel_url = cancelUrl
+                }
+            };
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("PayPal subscription revise failed: {Status} {Body}", response.StatusCode, body);
+                throw new InvalidOperationException($"Unable to change the PayPal subscription ({(int)response.StatusCode}). {ExtractErrorDetail(body)}");
+            }
+
+            // Some revise responses have no body (approval not required); guard against that.
+            string? approveUrl = null;
+            if (!string.IsNullOrWhiteSpace(body))
+            {
+                using var doc = JsonDocument.Parse(body);
+                approveUrl = ExtractApproveLink(doc.RootElement);
+            }
+
+            return new PayPalSubscriptionResult(subscriptionId, approveUrl);
+        }
+
+        /// <summary>
+        /// Finds the HATEOAS link with rel "approve" in a PayPal subscription response.
+        /// </summary>
+        private static string? ExtractApproveLink(JsonElement root)
+        {
+            if (!root.TryGetProperty("links", out var links) || links.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            foreach (var link in links.EnumerateArray())
+            {
+                var rel = link.TryGetProperty("rel", out var relEl) ? relEl.GetString() : null;
+                if (string.Equals(rel, "approve", StringComparison.OrdinalIgnoreCase)
+                    && link.TryGetProperty("href", out var hrefEl))
+                {
+                    return hrefEl.GetString();
+                }
+            }
+
+            return null;
+        }
     }
+
+    /// <summary>
+    /// Result of creating or revising a PayPal subscription. <see cref="ApproveUrl"/> is the URL
+    /// the browser must be redirected to for buyer approval; it is null when no approval is required.
+    /// </summary>
+    public record PayPalSubscriptionResult(string SubscriptionId, string? ApproveUrl);
 }
