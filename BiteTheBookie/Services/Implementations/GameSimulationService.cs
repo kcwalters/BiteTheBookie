@@ -175,24 +175,31 @@ namespace BiteTheBookie.Services.Implementations
                 .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
 
 
-            // -- Fetch rosters from OpenAI, with ESPN fallback
-            _logger.LogInformation("Fetching NBA rosters from OpenAI for {AwayTeam} and {HomeTeam}", awayTeam, homeTeam);
+            // -- Fetch rosters from ESPN (authoritative live source), with OpenAI fallback.
+            // ESPN is the primary source because it reflects the CURRENT roster; OpenAI is prone
+            // to returning stale training-data players and is only used if ESPN is unavailable.
+            _logger.LogInformation("Fetching NBA rosters from ESPN for {AwayTeam} and {HomeTeam}", awayTeam, homeTeam);
 
-            var rosterTasks = await Task.WhenAll(
-                FetchOpenAIRosterAsync(awayTeam, awayRoster?.TeamCode ?? awayTeam, cancellationToken),
-                FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken));
-            awayRoster = rosterTasks[0];
-            homeRoster = rosterTasks[1];
+            var espnRosterTasks = await Task.WhenAll(
+                _espnClient.GetTeamRosterAsync(awayRoster?.TeamCode ?? awayTeam, cancellationToken),
+                _espnClient.GetTeamRosterAsync(homeRoster?.TeamCode ?? homeTeam, cancellationToken));
+            var espnAwayRoster = espnRosterTasks[0];
+            var espnHomeRoster = espnRosterTasks[1];
+
+            if (espnAwayRoster != null && espnAwayRoster.Players.Count > 0)
+                awayRoster = espnAwayRoster;
+            if (espnHomeRoster != null && espnHomeRoster.Players.Count > 0)
+                homeRoster = espnHomeRoster;
 
             if (awayRoster == null || awayRoster.Players.Count == 0)
             {
-                _logger.LogWarning("OpenAI returned no roster for {Team} -- falling back to ESPN", awayTeam);
-                awayRoster = await _espnClient.GetTeamRosterAsync(awayRoster?.TeamCode ?? awayTeam, cancellationToken);
+                _logger.LogWarning("ESPN returned no roster for {Team} -- falling back to OpenAI", awayTeam);
+                awayRoster = await FetchOpenAIRosterAsync(awayTeam, awayRoster?.TeamCode ?? awayTeam, cancellationToken);
             }
             if (homeRoster == null || homeRoster.Players.Count == 0)
             {
-                _logger.LogWarning("OpenAI returned no roster for {Team} -- falling back to ESPN", homeTeam);
-                homeRoster = await _espnClient.GetTeamRosterAsync(homeRoster?.TeamCode ?? homeTeam, cancellationToken);
+                _logger.LogWarning("ESPN returned no roster for {Team} -- falling back to OpenAI", homeTeam);
+                homeRoster = await FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken);
             }
             {
                 _logger.LogWarning("EXCLUDING {Count} injured players: {Players}",
@@ -718,6 +725,9 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
                 var response       = await _chatClient!.CompleteChatAsync(messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
                 var simulationText = StripCodeFences(response.Value.Content[0].Text);
 
+                simulationText = EnforceLiveRoster(
+                    simulationText, simulationId, awayRosterPlayers, homeRosterPlayers, awayTeam, homeTeam);
+
                 _logger.LogInformation("MLB simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
                     simulationId, awayTeam, homeTeam);
 
@@ -923,13 +933,39 @@ FINAL CHECK: Review every player name in your response. Remove any name not in t
                 var season = "2025 college football season";
 
                 // -- Fetch live rosters from ESPN (CFB)
+                // Resolve the ESPN team code from the static map first, then fall back to a
+                // dynamic lookup against the ESPN teams list so ALL schools (including
+                // Group-of-5/FCS teams like South Alabama) resolve to a live roster.
                 var awayCfbCode = GetCfbEspnCode(awayTeam);
+                if (string.IsNullOrEmpty(awayCfbCode))
+                    awayCfbCode = await _espnClient.ResolveCfbTeamCodeAsync(awayTeam, cancellationToken);
                 var homeCfbCode = GetCfbEspnCode(homeTeam);
+                if (string.IsNullOrEmpty(homeCfbCode))
+                    homeCfbCode = await _espnClient.ResolveCfbTeamCodeAsync(homeTeam, cancellationToken);
+
                 var cfbRosters = await Task.WhenAll(
                     string.IsNullOrEmpty(awayCfbCode) ? Task.FromResult(new List<string>()) : _espnClient.GetCfbRosterAsync(awayCfbCode, cancellationToken),
                     string.IsNullOrEmpty(homeCfbCode) ? Task.FromResult(new List<string>()) : _espnClient.GetCfbRosterAsync(homeCfbCode, cancellationToken));
                 var awayCfbRoster = cfbRosters[0];
                 var homeCfbRoster = cfbRosters[1];
+
+                // Guard: never generate a simulation from stale/hallucinated rosters. If the live
+                // roster is missing for either team, refuse rather than inventing years-old players.
+                if (awayCfbRoster.Count == 0 || homeCfbRoster.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "CFB simulation aborted for {AwayTeam} @ {HomeTeam} \u2014 live roster unavailable (away={AwayCount}, home={HomeCount}).",
+                        awayTeam, homeTeam, awayCfbRoster.Count, homeCfbRoster.Count);
+
+                    return $@"<section class=""alert alert-warning"">
+  <h2>Simulation Unavailable</h2>
+  <p>The current roster could not be retrieved for
+    <strong>{awayTeam}</strong> and/or <strong>{homeTeam}</strong> at this time.</p>
+  <p>To protect accuracy, this simulation will not run with unverified player data.
+    Please try again in a few minutes.</p>
+</section>";
+                }
+
                 var cfbRosterSection = BuildRosterSection(awayTeam, awayCfbRoster, homeTeam, homeCfbRoster, today);
 
                 var prompt = $@"Generate a FRESH, UNIQUE college football (NCAA FBS) game simulation: {awayTeam} (away) at {homeTeam} (home).
@@ -981,6 +1017,9 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
                 var response = await _chatClient!.CompleteChatAsync(
                     messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
                 var simulationText = StripCodeFences(response.Value.Content[0].Text);
+
+                simulationText = EnforceLiveRoster(
+                    simulationText, simulationId, awayCfbRoster, homeCfbRoster, awayTeam, homeTeam);
 
                 _logger.LogInformation("CFB simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
                     simulationId, awayTeam, homeTeam);
@@ -1068,12 +1107,33 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
 
                 // -- Fetch live rosters from ESPN (NFL)
                 var awayNflCode = GetNflEspnCode(awayTeam);
+                if (string.IsNullOrEmpty(awayNflCode))
+                    awayNflCode = await _espnClient.ResolveNflTeamCodeAsync(awayTeam, cancellationToken);
                 var homeNflCode = GetNflEspnCode(homeTeam);
+                if (string.IsNullOrEmpty(homeNflCode))
+                    homeNflCode = await _espnClient.ResolveNflTeamCodeAsync(homeTeam, cancellationToken);
+
                 var nflRosters = await Task.WhenAll(
                     string.IsNullOrEmpty(awayNflCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNflRosterAsync(awayNflCode, cancellationToken),
                     string.IsNullOrEmpty(homeNflCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNflRosterAsync(homeNflCode, cancellationToken));
                 var awayNflRoster = nflRosters[0];
                 var homeNflRoster = nflRosters[1];
+
+                if (awayNflRoster.Count == 0 || homeNflRoster.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "NFL simulation aborted for {AwayTeam} @ {HomeTeam} \u2014 live roster unavailable (away={AwayCount}, home={HomeCount}).",
+                        awayTeam, homeTeam, awayNflRoster.Count, homeNflRoster.Count);
+
+                    return $@"<section class=""alert alert-warning"">
+  <h2>Simulation Unavailable</h2>
+  <p>The current roster could not be retrieved for
+    <strong>{awayTeam}</strong> and/or <strong>{homeTeam}</strong> at this time.</p>
+  <p>To protect accuracy, this simulation will not run with unverified player data.
+    Please try again in a few minutes.</p>
+</section>";
+                }
+
                 var nflRosterSection = BuildRosterSection(awayTeam, awayNflRoster, homeTeam, homeNflRoster, today);
                 var prompt = $@"Generate a FRESH, UNIQUE NFL (professional football) game simulation: {awayTeam} (away) at {homeTeam} (home).
 
@@ -1126,6 +1186,9 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic N
                     messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
                 var simulationText = StripCodeFences(response.Value.Content[0].Text);
 
+                simulationText = EnforceLiveRoster(
+                    simulationText, simulationId, awayNflRoster, homeNflRoster, awayTeam, homeTeam);
+
                 _logger.LogInformation("NFL simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
                     simulationId, awayTeam, homeTeam);
 
@@ -1156,12 +1219,33 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic N
 
                 // -- Fetch live rosters from ESPN (NHL)
                 var awayNhlCode = GetNhlEspnCode(awayTeam);
+                if (string.IsNullOrEmpty(awayNhlCode))
+                    awayNhlCode = await _espnClient.ResolveNhlTeamCodeAsync(awayTeam, cancellationToken);
                 var homeNhlCode = GetNhlEspnCode(homeTeam);
+                if (string.IsNullOrEmpty(homeNhlCode))
+                    homeNhlCode = await _espnClient.ResolveNhlTeamCodeAsync(homeTeam, cancellationToken);
+
                 var nhlRosters = await Task.WhenAll(
                     string.IsNullOrEmpty(awayNhlCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNhlRosterAsync(awayNhlCode, cancellationToken),
                     string.IsNullOrEmpty(homeNhlCode) ? Task.FromResult(new List<string>()) : _espnClient.GetNhlRosterAsync(homeNhlCode, cancellationToken));
                 var awayNhlRoster = nhlRosters[0];
                 var homeNhlRoster = nhlRosters[1];
+
+                if (awayNhlRoster.Count == 0 || homeNhlRoster.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "NHL simulation aborted for {AwayTeam} @ {HomeTeam} \u2014 live roster unavailable (away={AwayCount}, home={HomeCount}).",
+                        awayTeam, homeTeam, awayNhlRoster.Count, homeNhlRoster.Count);
+
+                    return $@"<section class=""alert alert-warning"">
+  <h2>Simulation Unavailable</h2>
+  <p>The current roster could not be retrieved for
+    <strong>{awayTeam}</strong> and/or <strong>{homeTeam}</strong> at this time.</p>
+  <p>To protect accuracy, this simulation will not run with unverified player data.
+    Please try again in a few minutes.</p>
+</section>";
+                }
+
                 var nhlRosterSection = BuildRosterSection(awayTeam, awayNhlRoster, homeTeam, homeNhlRoster, today);
                 var season = "2025-26 NHL season";
 
@@ -1214,6 +1298,9 @@ FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL
                 var response = await _chatClient!.CompleteChatAsync(
                     messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
                 var simulationText = StripCodeFences(response.Value.Content[0].Text);
+
+                simulationText = EnforceLiveRoster(
+                    simulationText, simulationId, awayNhlRoster, homeNhlRoster, awayTeam, homeTeam);
 
                 _logger.LogInformation("NHL simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
                     simulationId, awayTeam, homeTeam);
@@ -1387,7 +1474,65 @@ private static string StripCodeFences(string text)
             return html;
         }
 
-        // ── Mock simulations ──────────────────────────────────────────────────
+        /// <summary>
+        /// Post-generation guardrail for the flat-roster sports (CFB/NFL/NHL). Scans the generated
+        /// simulation HTML for &lt;strong&gt;-wrapped player names and replaces any name that is NOT
+        /// on the live away/home roster with an actual current player. This prevents players who no
+        /// longer play for the team (e.g. graduated/transferred) from appearing in a simulation.
+        /// </summary>
+        private string EnforceLiveRoster(
+            string html,
+            string simulationId,
+            IReadOnlyCollection<string> awayRoster,
+            IReadOnlyCollection<string> homeRoster,
+            string awayTeam,
+            string homeTeam)
+        {
+            var validPlayers = new HashSet<string>(
+                awayRoster.Concat(homeRoster),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Nothing to validate against — leave the text untouched.
+            if (validPlayers.Count == 0)
+                return html;
+
+            var invalidPlayers = FindInvalidPlayerNames(html, validPlayers, homeTeam, awayTeam);
+            if (invalidPlayers.Count == 0)
+                return html;
+
+            _logger.LogWarning(
+                "Simulation #{SimulationId} contains {Count} non-roster player(s) — correcting: {Players}",
+                simulationId, invalidPlayers.Count, string.Join(", ", invalidPlayers));
+
+            var pool = awayRoster.Concat(homeRoster)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var idx = 0;
+            var madeChanges = false;
+
+            foreach (var invalid in invalidPlayers)
+            {
+                if (idx >= pool.Count) break;
+
+                var find = $"<strong>{invalid}</strong>";
+                var replace = $"<strong>{pool[idx % pool.Count]}</strong>";
+
+                if (html.Contains(find, StringComparison.OrdinalIgnoreCase))
+                {
+                    html = html.Replace(find, replace, StringComparison.OrdinalIgnoreCase);
+                    madeChanges = true;
+                    idx++;
+                }
+            }
+
+            if (madeChanges)
+                html += "\n<p><em>Note: One or more player names were corrected to match the current team roster.</em></p>";
+
+            return html;
+        }
+
+        // 
 
         private static string GetMlbMockSimulation(string homeTeam, string awayTeam,
             string? homeProbablePitcher = null, string? awayProbablePitcher = null)

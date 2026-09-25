@@ -311,6 +311,142 @@ namespace BiteTheBookie.Services.Implementations
         public Task<List<string>> GetCfbRosterAsync(string teamCode, CancellationToken cancellationToken = default)
             => GetRosterNamesAsync("football/college-football", teamCode, cancellationToken);
 
+        // Cache of ESPN team-code alias maps, keyed by ESPN sport/league path (e.g.
+        // "football/college-football"). Each inner map is keyed by a normalized team name.
+        // Populated once per process lifetime; team sets are effectively static within a season.
+        private static readonly Dictionary<string, Dictionary<string, string>> _teamCodeCaches = new();
+        private static readonly SemaphoreSlim _teamCodeLock = new(1, 1);
+
+        /// <summary>
+        /// Resolves any college-football team name (e.g. "South Alabama", "Kentucky") to its ESPN
+        /// team id by querying the ESPN teams list. Results are cached for the process lifetime.
+        /// Returns an empty string if no match is found.
+        /// </summary>
+        public Task<string> ResolveCfbTeamCodeAsync(string teamName, CancellationToken cancellationToken = default)
+            => ResolveTeamCodeAsync("football/college-football", teamName, cancellationToken);
+
+        /// <summary>Resolves an NFL team name to its ESPN team id via the ESPN teams list.</summary>
+        public Task<string> ResolveNflTeamCodeAsync(string teamName, CancellationToken cancellationToken = default)
+            => ResolveTeamCodeAsync("football/nfl", teamName, cancellationToken);
+
+        /// <summary>Resolves an NHL team name to its ESPN team id via the ESPN teams list.</summary>
+        public Task<string> ResolveNhlTeamCodeAsync(string teamName, CancellationToken cancellationToken = default)
+            => ResolveTeamCodeAsync("hockey/nhl", teamName, cancellationToken);
+
+        private async Task<string> ResolveTeamCodeAsync(string sportPath, string teamName, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(teamName))
+                return string.Empty;
+
+            var map = await GetTeamCodeMapAsync(sportPath, cancellationToken);
+            var key = NormalizeTeamName(teamName);
+
+            if (map.TryGetValue(key, out var code))
+                return code;
+
+            // Loose fallback: match when a stored key contains the query or vice versa
+            // (handles minor naming differences like "Miami (OH)" vs "Miami OH").
+            foreach (var kvp in map)
+            {
+                if (kvp.Key.Contains(key, StringComparison.Ordinal) ||
+                    key.Contains(kvp.Key, StringComparison.Ordinal))
+                    return kvp.Value;
+            }
+
+            _logger.LogWarning("Could not resolve ESPN {Sport} team code for {Team}", sportPath, teamName);
+            return string.Empty;
+        }
+
+        private async Task<Dictionary<string, string>> GetTeamCodeMapAsync(string sportPath, CancellationToken cancellationToken)
+        {
+            if (_teamCodeCaches.TryGetValue(sportPath, out var cached))
+                return cached;
+
+            await _teamCodeLock.WaitAsync(cancellationToken);
+            try
+            {
+                if (_teamCodeCaches.TryGetValue(sportPath, out cached))
+                    return cached;
+
+                var map = new Dictionary<string, string>(StringComparer.Ordinal);
+                try
+                {
+                    var response = await _httpClient.GetAsync(
+                        $"apis/site/v2/sports/{sportPath}/teams?limit=1000",
+                        cancellationToken);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                        using var doc = JsonDocument.Parse(content);
+
+                        if (doc.RootElement.TryGetProperty("sports", out var sports))
+                        {
+                            foreach (var sport in sports.EnumerateArray())
+                            {
+                                if (!sport.TryGetProperty("leagues", out var leagues)) continue;
+                                foreach (var league in leagues.EnumerateArray())
+                                {
+                                    if (!league.TryGetProperty("teams", out var teams)) continue;
+                                    foreach (var teamWrapper in teams.EnumerateArray())
+                                    {
+                                        if (!teamWrapper.TryGetProperty("team", out var team)) continue;
+
+                                        var id = GetString(team, "id");
+                                        if (string.IsNullOrWhiteSpace(id)) continue;
+
+                                        AddTeamAlias(map, GetString(team, "displayName"), id);
+                                        AddTeamAlias(map, GetString(team, "shortDisplayName"), id);
+                                        AddTeamAlias(map, GetString(team, "location"), id);
+                                        AddTeamAlias(map, GetString(team, "name"), id);
+                                        AddTeamAlias(map, GetString(team, "nickname"), id);
+                                        AddTeamAlias(map, GetString(team, "abbreviation"), id);
+                                        AddTeamAlias(map, GetString(team, "slug"), id);
+                                    }
+                                }
+                            }
+                        }
+
+                        _logger.LogInformation("Loaded {Count} ESPN {Sport} team aliases", map.Count, sportPath);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("ESPN {Sport} teams list returned {Status}", sportPath, response.StatusCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to load ESPN {Sport} teams list", sportPath);
+                }
+
+                _teamCodeCaches[sportPath] = map;
+                return map;
+            }
+            finally
+            {
+                _teamCodeLock.Release();
+            }
+        }
+
+        private static void AddTeamAlias(Dictionary<string, string> map, string name, string id)
+        {
+            var key = NormalizeTeamName(name);
+            if (!string.IsNullOrEmpty(key) && !map.ContainsKey(key))
+                map[key] = id;
+        }
+
+        private static string NormalizeTeamName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return string.Empty;
+            var sb = new System.Text.StringBuilder(name.Length);
+            foreach (var ch in name.ToLowerInvariant())
+            {
+                if (char.IsLetterOrDigit(ch))
+                    sb.Append(ch);
+            }
+            return sb.ToString();
+        }
+
         /// <summary>Fetches the current NHL roster for a team by ESPN team code (e.g. "pit", "bos").</summary>
         public Task<List<string>> GetNhlRosterAsync(string teamCode, CancellationToken cancellationToken = default)
             => GetRosterNamesAsync("hockey/nhl", teamCode, cancellationToken);
