@@ -58,6 +58,15 @@ builder.Services.AddAuthorization(options =>
 // MVC
 builder.Services.AddControllersWithViews();
 
+// Behind Azure's TLS-terminating proxy the app only listens on HTTP, so the
+// HTTPS redirection middleware cannot auto-discover an HTTPS port and logs
+// "Failed to determine the https port for redirect". Pin it to 443 so any
+// redirect that does fire targets the correct public https port.
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443;
+});
+
 // Azure OpenAI ChatClient — register once for all services
 var aoaiEndpoint = builder.Configuration["AzureOpenAI:Endpoint"];
 var aoaiApiKey = builder.Configuration["AzureOpenAI:ApiKey"];
@@ -188,9 +197,18 @@ using (var scope = app.Services.CreateScope())
 // which sends logged-in users back to the login screen repeatedly.
 var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    // Allow an unlimited number of forwarding hops. Azure's reverse proxy is not
+    // at a fixed/known address, so we cannot enumerate it as a KnownProxy.
+    ForwardLimit = null
 };
 
+// By default the middleware only trusts loopback proxies. Clearing both lists
+// makes it accept the X-Forwarded-* headers from Azure's front-end proxy so
+// Request.Scheme is correctly reported as https. Without this the headers are
+// ignored, HTTPS redirection can't determine the port, and outbound return
+// URLs (e.g. the PayPal redirect) are built with http instead of https.
+forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
