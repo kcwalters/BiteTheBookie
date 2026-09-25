@@ -137,13 +137,35 @@ builder.Services.AddRazorPages();
 // Caching
 builder.Services.AddMemoryCache();
 
-// Session (required by MembershipController.Register which stashes PendingRegistration in HttpContext.Session)
-builder.Services.AddDistributedMemoryCache();
+// Session (required by MembershipController.Register which stashes PendingRegistration in HttpContext.Session).
+// In Azure Container Apps the app can run multiple replicas and containers are recycled between requests.
+// An in-memory session store (AddDistributedMemoryCache) lives in a single process, so a follow-up
+// request served by another instance (or after a restart) can't see the session and the checkout flow
+// reports "Your session expired". Back the session with SQL Server so it is shared across all instances.
+// In Development (single instance) fall back to in-memory to avoid needing the cache table locally.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+else
+{
+    builder.Services.AddDistributedSqlServerCache(options =>
+    {
+        options.ConnectionString = connectionString;
+        options.SchemaName = "dbo";
+        options.TableName = "SessionCache";
+    });
+}
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    // Behind the TLS-terminating proxy the public request is HTTPS; require the session
+    // cookie to be sent over secure connections and allow it to survive the PayPal redirect round-trip.
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // Serilog: write logs to console and to SQL Server (Logs table). Uses DefaultConnection.
@@ -173,6 +195,27 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
+
+    // Ensure the distributed session cache table exists (used by AddDistributedSqlServerCache in
+    // non-Development environments). The SQL cache provider does not create this table itself, so we
+    // create it idempotently here with the exact schema/index it expects.
+    if (!app.Environment.IsDevelopment())
+    {
+        const string createSessionCacheTable = @"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'SessionCache' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    CREATE TABLE [dbo].[SessionCache] (
+        [Id] nvarchar(449) NOT NULL,
+        [Value] varbinary(max) NOT NULL,
+        [ExpiresAtTime] datetimeoffset NOT NULL,
+        [SlidingExpirationInSeconds] bigint NULL,
+        [AbsoluteExpiration] datetimeoffset NULL,
+        CONSTRAINT [PK_SessionCache] PRIMARY KEY ([Id])
+    );
+    CREATE NONCLUSTERED INDEX [Index_ExpiresAtTime] ON [dbo].[SessionCache] ([ExpiresAtTime]);
+END";
+        db.Database.ExecuteSqlRaw(createSessionCacheTable);
+    }
 
     // Ensure the subscription/access roles exist so AddToRoleAsync never fails.
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
