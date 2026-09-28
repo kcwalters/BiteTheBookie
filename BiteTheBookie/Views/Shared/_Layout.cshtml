@@ -62,8 +62,15 @@
         }
 
         .sim-processing-spinner {
-            width: 3rem;
-            height: 3rem;
+            font-size: 3rem;
+            line-height: 1;
+            animation: sim-hourglass-flip 1.2s ease-in-out infinite;
+        }
+
+        @@keyframes sim-hourglass-flip {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+            100% { transform: rotate(180deg); }
         }
 
         .sim-processing-box .sim-processing-title {
@@ -265,6 +272,11 @@
                                     <i class="fab fa-youtube me-1"></i>Videos
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-warning fw-bold" asp-controller="GameSimulation" asp-action="Admin">
+                                    <i class="fas fa-robot me-1"></i>Simulations
+                                </a>
+                            </li>
                         }
                     </ul>
                 </div>
@@ -358,11 +370,9 @@
 
     <div id="simProcessingOverlay" class="sim-processing-overlay" aria-hidden="true" role="alert" aria-live="assertive">
         <div class="sim-processing-box">
-            <div class="spinner-border text-primary sim-processing-spinner" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <h5 class="sim-processing-title mt-3 mb-1">Running Game Simulation</h5>
-            <p class="sim-processing-text mb-0">Our AI is crunching the numbers &mdash; this can take a few moments. Please wait&hellip;</p>
+            <i class="fas fa-hourglass-half text-primary sim-processing-spinner" aria-hidden="true"></i>
+            <h5 class="sim-processing-title mt-3 mb-1">Loading Game Simulation</h5>
+            <p class="sim-processing-text mb-0">Looking up the saved simulation &mdash; just a moment&hellip;</p>
         </div>
     </div>
 

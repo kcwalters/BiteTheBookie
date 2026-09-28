@@ -49,6 +49,107 @@ namespace BiteTheBookie.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Admin(
+            string? league = null,
+            string? search = null,
+            DateTime? fromDate = null,
+            DateTime? toDate = null,
+            string timeframe = "all",
+            string sortBy = "gamedate",
+            string sortDir = "desc")
+        {
+            var query = _db.GameSimulations.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(league))
+            {
+                query = query.Where(g => g.League == league);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(g =>
+                    g.HomeTeamName.Contains(term)
+                    || g.AwayTeamName.Contains(term)
+                    || g.GameId.Contains(term));
+            }
+
+            if (fromDate.HasValue)
+            {
+                var from = fromDate.Value.Date;
+                query = query.Where(g => g.GameDate >= from);
+            }
+
+            if (toDate.HasValue)
+            {
+                var to = toDate.Value.Date.AddDays(1);
+                query = query.Where(g => g.GameDate < to);
+            }
+
+            var today = DateTime.UtcNow.Date;
+            if (string.Equals(timeframe, "past", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(g => g.GameDate < today);
+            }
+            else if (string.Equals(timeframe, "future", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(g => g.GameDate >= today);
+            }
+
+            var ascending = string.Equals(sortDir, "asc", StringComparison.OrdinalIgnoreCase);
+            query = (sortBy?.ToLowerInvariant()) switch
+            {
+                "league" => ascending ? query.OrderBy(g => g.League) : query.OrderByDescending(g => g.League),
+                "home" => ascending ? query.OrderBy(g => g.HomeTeamName) : query.OrderByDescending(g => g.HomeTeamName),
+                "away" => ascending ? query.OrderBy(g => g.AwayTeamName) : query.OrderByDescending(g => g.AwayTeamName),
+                "generatedat" => ascending ? query.OrderBy(g => g.GeneratedAt) : query.OrderByDescending(g => g.GeneratedAt),
+                _ => ascending ? query.OrderBy(g => g.GameDate) : query.OrderByDescending(g => g.GameDate),
+            };
+
+            var simulations = await query.ToListAsync();
+
+            var leagues = await _db.GameSimulations
+                .AsNoTracking()
+                .Select(g => g.League)
+                .Distinct()
+                .OrderBy(l => l)
+                .ToListAsync();
+
+            var model = new AdminGameSimulationsViewModel
+            {
+                Simulations = simulations,
+                Leagues = leagues,
+                League = league,
+                Search = search,
+                FromDate = fromDate,
+                ToDate = toDate,
+                Timeframe = string.IsNullOrWhiteSpace(timeframe) ? "all" : timeframe,
+                SortBy = string.IsNullOrWhiteSpace(sortBy) ? "gamedate" : sortBy,
+                SortDir = ascending ? "asc" : "desc",
+                TotalCount = simulations.Count
+            };
+
+            return View(model);
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Details(int id)
+        {
+            var simulation = await _db.GameSimulations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.Id == id);
+
+            if (simulation == null)
+            {
+                return NotFound();
+            }
+
+            return View(simulation);
+        }
+
         private async Task<GameSimulationViewModel> BuildSimulationModelAsync(
             string homeTeam, string awayTeam, string league, bool regenerate = false)
         {

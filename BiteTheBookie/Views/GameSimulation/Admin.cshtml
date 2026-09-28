@@ -1,0 +1,189 @@
+@model BiteTheBookie.ViewModels.AdminGameSimulationsViewModel
+
+@{
+    ViewData["Title"] = "Admin - Game Simulations";
+
+    string NextDir(string column) =>
+        (string.Equals(Model.SortBy, column, StringComparison.OrdinalIgnoreCase) && Model.SortDir == "asc")
+            ? "desc" : "asc";
+
+    string SortIcon(string column)
+    {
+        if (!string.Equals(Model.SortBy, column, StringComparison.OrdinalIgnoreCase))
+        {
+            return "fas fa-sort text-muted";
+        }
+        return Model.SortDir == "asc" ? "fas fa-sort-up" : "fas fa-sort-down";
+    }
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-robot me-2 text-primary"></i>Game Simulations
+            </h1>
+            <span class="badge bg-secondary fs-6">@Model.TotalCount total</span>
+        </div>
+    </div>
+
+    <div class="content-card mb-4">
+        <form asp-action="Admin" method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">League</label>
+                <select name="league" class="form-select">
+                    <option value="">All leagues</option>
+                    @foreach (var lg in Model.Leagues)
+                    {
+                        @if (string.Equals(lg, Model.League, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@lg" selected>@lg</option>
+                        }
+                        else
+                        {
+                            <option value="@lg">@lg</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Search team or game</label>
+                <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Team or game id" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">Timeframe</label>
+                <select name="timeframe" class="form-select">
+                    <option value="all" selected="@(Model.Timeframe == "all")">All</option>
+                    <option value="past" selected="@(Model.Timeframe == "past")">Past</option>
+                    <option value="future" selected="@(Model.Timeframe == "future")">Future</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">From date</label>
+                <input type="date" name="fromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">To date</label>
+                <input type="date" name="toDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" />
+            </div>
+
+            <input type="hidden" name="sortBy" value="@Model.SortBy" />
+            <input type="hidden" name="sortDir" value="@Model.SortDir" />
+
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter me-1"></i>Apply
+                </button>
+                <a asp-action="Admin" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <div class="content-card">
+        @if (Model.Simulations.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>
+                                <a asp-action="Admin" asp-route-league="@Model.League" asp-route-search="@Model.Search"
+                                   asp-route-timeframe="@Model.Timeframe" asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-sortBy="league" asp-route-sortDir="@NextDir("league")"
+                                   class="text-decoration-none text-reset">
+                                    League <i class="@SortIcon("league")"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-action="Admin" asp-route-league="@Model.League" asp-route-search="@Model.Search"
+                                   asp-route-timeframe="@Model.Timeframe" asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-sortBy="away" asp-route-sortDir="@NextDir("away")"
+                                   class="text-decoration-none text-reset">
+                                    Matchup <i class="@SortIcon("away")"></i>
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-action="Admin" asp-route-league="@Model.League" asp-route-search="@Model.Search"
+                                   asp-route-timeframe="@Model.Timeframe" asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-sortBy="gamedate" asp-route-sortDir="@NextDir("gamedate")"
+                                   class="text-decoration-none text-reset">
+                                    Game Date <i class="@SortIcon("gamedate")"></i>
+                                </a>
+                            </th>
+                            <th class="text-center">Status</th>
+                            <th>
+                                <a asp-action="Admin" asp-route-league="@Model.League" asp-route-search="@Model.Search"
+                                   asp-route-timeframe="@Model.Timeframe" asp-route-fromDate="@(Model.FromDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-toDate="@(Model.ToDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-sortBy="generatedat" asp-route-sortDir="@NextDir("generatedat")"
+                                   class="text-decoration-none text-reset">
+                                    Generated <i class="@SortIcon("generatedat")"></i>
+                                </a>
+                            </th>
+                            <th>Game Id</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var today = DateTime.UtcNow.Date;
+                        }
+                        @foreach (var sim in Model.Simulations)
+                        {
+                            <tr class="sim-row" style="cursor: pointer;"
+                                onclick="window.location.href='@Url.Action("Details", "GameSimulation", new { id = sim.Id })';">
+                                <td><span class="badge bg-primary">@sim.League</span></td>
+                                <td>
+                                    <span class="fw-semibold">@sim.AwayTeamName</span>
+                                    <span class="text-muted">@@</span>
+                                    <span class="fw-semibold">@sim.HomeTeamName</span>
+                                </td>
+                                <td>@sim.GameDate.ToString("MMM d, yyyy")</td>
+                                <td class="text-center">
+                                    @if (sim.GameDate.Date < today)
+                                    {
+                                        <span class="badge bg-secondary">Past</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Upcoming</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@sim.GeneratedAt.ToString("MMM d, yyyy h:mm tt") UTC</td>
+                                <td class="text-muted small">@sim.GameId</td>
+                                <td class="text-end">
+                                    <a asp-action="Details" asp-route-id="@sim.Id"
+                                       class="btn btn-sm btn-outline-primary"
+                                       onclick="event.stopPropagation();">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No game simulations match the current filters.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+</style>
