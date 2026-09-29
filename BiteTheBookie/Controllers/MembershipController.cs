@@ -191,7 +191,7 @@ namespace BiteTheBookie.Controllers
 
             ViewBag.Plan = selectedPlan;
             ViewBag.PlanName = selectedPlan == "allaccess" ? "All Access" : "Pro";
-            ViewBag.PlanPrice = selectedPlan == "allaccess" ? "$19.99" : "$9.99";
+            ViewBag.PlanPrice = selectedPlan == "allaccess" ? "$9.99" : "$4.99";
             ViewBag.IsUpgrade = context.Mode == CheckoutMode.Upgrade;
 
             return View();

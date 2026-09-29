@@ -16,8 +16,8 @@
 param(
 	[string]$ClientId = "YOUR-SANDBOX-CLIENT-ID",
 	[string]$ClientSecret = "YOUR-SANDBOX-CLIENT-SECRET",
-	[string]$ProProce = "9.99",
-	[string]$AllAccessPrice = "19.99",
+	[string]$ProProce = "4.99",
+	[string]$AllAccessPrice = "9.99",
 	[string]$Currency = "USD"
 )
 

@@ -24,8 +24,8 @@ param(
 	[ValidateSet("sandbox", "live")]
 	[string] $Environment = "sandbox",
 	[string] $CurrencyCode = "USD",
-	[decimal] $ProPrice = 9.99,
-	[decimal] $AllAccessPrice = 19.99
+	[decimal] $ProPrice = 4.99,
+	[decimal] $AllAccessPrice = 9.99
 )
 
 $ErrorActionPreference = "Stop"
