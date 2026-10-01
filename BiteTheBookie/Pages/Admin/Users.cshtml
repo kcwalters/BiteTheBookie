@@ -1,0 +1,106 @@
+@page
+@model UsersModel
+@using BiteTheBookie.Models
+
+@{
+    ViewData["Title"] = "User Management";
+
+    string TierBadge(SubscriptionTier tier) => tier switch
+    {
+        SubscriptionTier.AllAccess => "bg-warning text-dark",
+        SubscriptionTier.Pro => "bg-success",
+        SubscriptionTier.Admin => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <h1 class="h2 mb-0"><i class="fas fa-users me-2"></i>User Management</h1>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="content-card text-center">
+                <div class="section-header">Total Users</div>
+                <div class="display-6">@Model.TotalUsers</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-card text-center">
+                <div class="section-header">Active Paid</div>
+                <div class="display-6">@Model.PaidUsers</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-card text-center">
+                <div class="section-header">Cancelled</div>
+                <div class="display-6">@Model.CancelledUsers</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="section-header mb-3">Members</div>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Roles</th>
+                        <th>Tier</th>
+                        <th>Status</th>
+                        <th>Expires</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Users)
+                    {
+                        <tr>
+                            <td>@(string.IsNullOrWhiteSpace(row.FullName) ? "—" : row.FullName)</td>
+                            <td>@row.User.Email</td>
+                            <td>
+                                @if (row.Roles.Count == 0)
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                                else
+                                {
+                                    foreach (var role in row.Roles)
+                                    {
+                                        <span class="badge bg-info text-dark me-1">@role</span>
+                                    }
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @TierBadge(row.User.SubscriptionTier)">@row.User.SubscriptionTier</span>
+                            </td>
+                            <td>
+                                @if (row.User.SubscriptionCancelled)
+                                {
+                                    <span class="badge bg-secondary">Cancelled</span>
+                                }
+                                else if (row.IsPro)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-dark">Free</span>
+                                }
+                            </td>
+                            <td>
+                                @(row.User.SubscriptionExpiry.HasValue
+                                    ? row.User.SubscriptionExpiry.Value.ToString("MMM d, yyyy")
+                                    : "—")
+                            </td>
+                            <td>@row.User.CreatedAt.ToString("MMM d, yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

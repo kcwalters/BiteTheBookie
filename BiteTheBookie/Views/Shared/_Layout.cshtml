@@ -34,6 +34,23 @@
         })();
     </script>
 
+    <script>
+        // Harden navigator.permissions.query so third-party scripts (e.g. the PayPal/
+        // reCAPTCHA bot-detection code) that call a detached reference to it do not
+        // throw "Failed to execute 'query' on 'Permissions': Illegal invocation".
+        (function () {
+            try {
+                var perms = navigator.permissions;
+                if (perms && typeof perms.query === 'function') {
+                    var original = perms.query;
+                    perms.query = function () {
+                        return original.apply(perms, arguments);
+                    };
+                }
+            } catch (e) { }
+        })();
+    </script>
+
     <style>
         .sim-processing-overlay {
             position: fixed;
@@ -261,6 +278,11 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-warning fw-bold" asp-page="/Admin/ManageRoles">Admin</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-warning fw-bold" asp-page="/Admin/Users">
+                                    <i class="fas fa-users me-1"></i>Users
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-warning fw-bold" asp-controller="ExpertPicks" asp-action="Manage">

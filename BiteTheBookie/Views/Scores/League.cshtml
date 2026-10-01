@@ -52,18 +52,63 @@
         <div class="alert alert-warning">@Model.ErrorMessage</div>
     }
 
+    @{
+        // Build one unified scoreboard from every source list, de-duplicated by GameId.
+        var combinedGames = new List<NBAGameMatchup>();
+        combinedGames.AddRange(Model.Games);
+        combinedGames.AddRange(Model.TodayGames);
+        combinedGames.AddRange(Model.NextGameDayGames);
+        combinedGames.AddRange(Model.LastDayGames);
+
+        var uniqueGames = combinedGames
+            .GroupBy(g => !string.IsNullOrWhiteSpace(g.GameId)
+                ? g.GameId
+                : $"{g.AwayTeamName}@{g.HomeTeamName}:{g.GameTime.Ticks}")
+            .Select(grp => grp.First())
+            .ToList();
+
+        // Next games at the top (live, then soonest upcoming), past games below (most recent first).
+        var orderedGames = uniqueGames.Where(g => g.IsLive).OrderBy(g => g.GameTime)
+            .Concat(uniqueGames.Where(g => g.IsScheduled).OrderBy(g => g.GameTime))
+            .Concat(uniqueGames.Where(g => g.IsFinal).OrderByDescending(g => g.GameTime))
+            .ToList();
+    }
+
     <div class="nfl-games">
         <div class="nfl-games__title">
             <span>@league Scoreboard</span>
             <small class="text-muted">@Model.SelectedDateDisplay</small>
         </div>
 
-        @if (Model.Games.Any())
+        @if (orderedGames.Any())
         {
-            <div class="nfl-games__grid">
-                @foreach (var game in Model.Games)
+            <div class="scoreboard-controls">
+                <div class="scoreboard-controls__group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="sbSearch" class="form-control form-control-sm" placeholder="Filter by team..." autocomplete="off" />
+                </div>
+                <select id="sbStatus" class="form-select form-select-sm">
+                    <option value="all">All games</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="live">Live</option>
+                    <option value="final">Final / Past</option>
+                </select>
+                <select id="sbSort" class="form-select form-select-sm">
+                    <option value="default">Next games first</option>
+                    <option value="time-asc">Date: earliest first</option>
+                    <option value="time-desc">Date: latest first</option>
+                    <option value="away-az">Away team A–Z</option>
+                    <option value="home-az">Home team A–Z</option>
+                </select>
+            </div>
+
+            <div class="nfl-games__grid" id="scoreboardGrid">
+                @foreach (var game in orderedGames)
                 {
-                    <div class="nfl-game-card">
+                    var statusKey = game.IsLive ? "live" : (game.IsFinal ? "final" : "upcoming");
+                    <div class="nfl-game-card" data-status="@statusKey" data-time="@game.GameTime.Ticks"
+                         data-teams="@($"{game.AwayTeamName} {game.HomeTeamName}".ToLowerInvariant())"
+                         data-away="@game.AwayTeamName.ToLowerInvariant()" data-home="@game.HomeTeamName.ToLowerInvariant()">
                         <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
                             @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
                         </div>
@@ -88,10 +133,32 @@
                             <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
                         </div>
                         <div class="mt-2 text-end">
-                            <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = Model.LeagueCode, IsFinal = game.IsFinal }' />
+                            @if (hasGameSimulationAccess)
+                            {
+                                <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
+                                   asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
+                                    Simulate Game
+                                </a>
+                            }
+                            else if (SignInManager.IsSignedIn(User))
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
+                                    $ Game Simulation
+                                </a>
+                            }
+                            else
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
+                                    $ Game Simulation
+                                </a>
+                            }
                         </div>
                     </div>
                 }
+            </div>
+            <div class="nfl-games__empty" id="scoreboardNoResults" style="display:none;">
+                <img src="@Model.LeagueLogo" alt="@league" />
+                <p class="mb-0 text-muted">No games match your filters.</p>
             </div>
         }
         else
@@ -102,171 +169,6 @@
             </div>
         }
     </div>
-
-    <section>
-        <h3>Last Day's Games</h3>
-        <div class="nfl-games__grid">
-            @foreach (var game in Model.LastDayGames)
-            {
-                <div class="nfl-game-card">
-                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
-                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
-                    </div>
-                    <div class="nfl-game-card__row">
-                        <div class="nfl-game-card__team">
-                            @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
-                            {
-                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
-                            }
-                            <span>@game.AwayTeamName</span>
-                        </div>
-                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
-                    </div>
-                    <div class="nfl-game-card__row">
-                        <div class="nfl-game-card__team">
-                            @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
-                            {
-                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
-                            }
-                            <span>@game.HomeTeamName</span>
-                        </div>
-                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
-                    </div>
-                    <div class="mt-2 text-end">
-                        @if (hasGameSimulationAccess)
-                        {
-                            <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                               asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
-                                Simulate Game
-                            </a>
-                        }
-                        else if (SignInManager.IsSignedIn(User))
-                        {
-                            <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                $ Game Simulation
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
-                                $ Game Simulation
-                            </a>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    </section>
-
-    <section>
-        <h3>Today's Games</h3>
-        <div class="nfl-games__grid">
-            @foreach (var game in Model.TodayGames)
-            {
-                <div class="nfl-game-card">
-                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
-                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
-                    </div>
-                    <div class="nfl-game-card__row">
-                        <div class="nfl-game-card__team">
-                            @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
-                            {
-                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
-                            }
-                            <span>@game.AwayTeamName</span>
-                        </div>
-                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
-                    </div>
-                    <div class="nfl-game-card__row">
-                        <div class="nfl-game-card__team">
-                            @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
-                            {
-                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
-                            }
-                            <span>@game.HomeTeamName</span>
-                        </div>
-                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
-                    </div>
-                    <div class="mt-2 text-end">
-                        @if (hasGameSimulationAccess)
-                        {
-                            <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                               asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
-                                Simulate Game
-                            </a>
-                        }
-                        else if (SignInManager.IsSignedIn(User))
-                        {
-                            <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                $ Game Simulation
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
-                                $ Game Simulation
-                            </a>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    </section>
-
-    <section>
-        <h3>Next Game Day's Games</h3>
-        <div class="nfl-games__grid">
-            @foreach (var game in Model.NextGameDayGames)
-            {
-                <div class="nfl-game-card">
-                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
-                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? (game.IsFinal ? "Final" : game.GameTimeDisplay) : game.StatusDetail)
-                    </div>
-                    <div class="nfl-game-card__row">
-                        <div class="nfl-game-card__team">
-                            @if (!string.IsNullOrWhiteSpace(game.AwayTeamLogo))
-                            {
-                                <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
-                            }
-                            <span>@game.AwayTeamName</span>
-                        </div>
-                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
-                    </div>
-                    <div class="nfl-game-card__row">
-                        <div class="nfl-game-card__team">
-                            @if (!string.IsNullOrWhiteSpace(game.HomeTeamLogo))
-                            {
-                                <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
-                            }
-                            <span>@game.HomeTeamName</span>
-                        </div>
-                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
-                    </div>
-                    <div class="mt-2 text-end">
-                        @if (hasGameSimulationAccess)
-                        {
-                            <a class="btn btn-sm btn-primary" asp-controller="GameSimulation" asp-action="Start"
-                               asp-route-homeTeam="@game.HomeTeamName" asp-route-awayTeam="@game.AwayTeamName" asp-route-league="@Model.LeagueCode">
-                                Simulate Game
-                            </a>
-                        }
-                        else if (SignInManager.IsSignedIn(User))
-                        {
-                            <a class="btn btn-sm btn-outline-primary" asp-controller="Membership" asp-action="Join">
-                                $ Game Simulation
-                            </a>
-                        }
-                        else
-                        {
-                            <a class="btn btn-sm btn-outline-primary" asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)">
-                                $ Game Simulation
-                            </a>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    </section>
 </div>
 
 @section Styles {
@@ -318,5 +220,100 @@
         .nfl-game-card__score { font-weight: 800; color: #111; font-size: 1.05rem; }
         .nfl-games__empty { text-align: center; padding: 36px 16px; }
         .nfl-games__empty img { width: 54px; height: 54px; opacity: .4; margin-bottom: 10px; }
+
+        /* Scoreboard filter/sort controls */
+        .scoreboard-controls {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+            padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+        }
+        .scoreboard-controls__group { display: flex; align-items: center; gap: 8px; flex: 1 1 220px; min-width: 200px; }
+        .scoreboard-controls__group i { color: #6b7280; }
+        .scoreboard-controls select { width: auto; min-width: 160px; }
     </style>
+}
+
+@section Scripts {
+    <script>
+        (function () {
+            var grid = document.getElementById('scoreboardGrid');
+            if (!grid) return;
+
+            var search = document.getElementById('sbSearch');
+            var statusFilter = document.getElementById('sbStatus');
+            var sortSelect = document.getElementById('sbSort');
+            var noResults = document.getElementById('scoreboardNoResults');
+            var cards = Array.prototype.slice.call(grid.querySelectorAll('.nfl-game-card'));
+
+            // Preserve the server's default "next games first" order.
+            cards.forEach(function (card, i) { card.dataset.defaultOrder = i; });
+
+            // Restore any previously selected filter/sort from the URL.
+            var params = new URLSearchParams(window.location.search);
+            if (params.has('q')) { search.value = params.get('q'); }
+            if (params.has('status') && statusFilter.querySelector('option[value="' + params.get('status') + '"]')) {
+                statusFilter.value = params.get('status');
+            }
+            if (params.has('sort') && sortSelect.querySelector('option[value="' + params.get('sort') + '"]')) {
+                sortSelect.value = params.get('sort');
+            }
+
+            function updateUrl() {
+                var p = new URLSearchParams(window.location.search);
+                var term = (search.value || '').trim();
+                if (term) { p.set('q', term); } else { p.delete('q'); }
+                if (statusFilter.value && statusFilter.value !== 'all') { p.set('status', statusFilter.value); } else { p.delete('status'); }
+                if (sortSelect.value && sortSelect.value !== 'default') { p.set('sort', sortSelect.value); } else { p.delete('sort'); }
+
+                var query = p.toString();
+                var newUrl = window.location.pathname + (query ? '?' + query : '') + window.location.hash;
+                window.history.replaceState(null, '', newUrl);
+            }
+
+            function applyFilters() {
+                var term = (search.value || '').trim().toLowerCase();
+                var status = statusFilter.value;
+                var visible = 0;
+
+                cards.forEach(function (card) {
+                    var matchesTerm = !term || (card.dataset.teams || '').indexOf(term) !== -1;
+                    var matchesStatus = status === 'all' || card.dataset.status === status;
+                    var show = matchesTerm && matchesStatus;
+                    card.style.display = show ? '' : 'none';
+                    if (show) { visible++; }
+                });
+
+                if (noResults) { noResults.style.display = visible === 0 ? '' : 'none'; }
+            }
+
+            function applySort() {
+                var mode = sortSelect.value;
+                var sorted = cards.slice();
+
+                sorted.sort(function (a, b) {
+                    switch (mode) {
+                        case 'time-asc':
+                            return Number(a.dataset.time) - Number(b.dataset.time);
+                        case 'time-desc':
+                            return Number(b.dataset.time) - Number(a.dataset.time);
+                        case 'away-az':
+                            return (a.dataset.away || '').localeCompare(b.dataset.away || '');
+                        case 'home-az':
+                            return (a.dataset.home || '').localeCompare(b.dataset.home || '');
+                        default:
+                            return Number(a.dataset.defaultOrder) - Number(b.dataset.defaultOrder);
+                    }
+                });
+
+                sorted.forEach(function (card) { grid.appendChild(card); });
+            }
+
+            search.addEventListener('input', function () { applyFilters(); updateUrl(); });
+            statusFilter.addEventListener('change', function () { applyFilters(); updateUrl(); });
+            sortSelect.addEventListener('change', function () { applySort(); updateUrl(); });
+
+            // Apply restored state on load.
+            applyFilters();
+            applySort();
+        })();
+    </script>
 }
