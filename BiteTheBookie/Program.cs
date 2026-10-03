@@ -265,7 +265,15 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Skip HTTPS redirection in Development. The container launch profile runs as Development
+// over plain HTTP on port 8080 with no published HTTPS port, so redirecting to https:443
+// would make the page fail to load locally. In production, Azure's ingress sets
+// X-Forwarded-Proto=https (honored above) so the redirect never fires anyway.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 
 app.UseRouting();

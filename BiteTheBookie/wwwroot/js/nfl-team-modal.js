@@ -773,11 +773,6 @@
       oddsLink: { url: '/Odds/NHL', label: 'View NHL Odds' }
     });
   });
-
-  navigator.permissions.query({ name: "geolocation" })
-  // or, if storing:
-  const query = navigator.permissions.query.bind(navigator.permissions);
-  query({ name: "geolocation" });
 })();
  
 

@@ -135,7 +135,8 @@ namespace BiteTheBookie.Controllers
 
             _logger.LogInformation("Captured pending registration for {Email} (plan {Plan}); awaiting PayPal payment.", model.Email, selectedPlan);
 
-            return RedirectToAction("Payment");
+            // Take the user straight to PayPal instead of showing an intermediate confirmation page.
+            return await BeginCheckoutAsync();
         }
 
         /// <summary>
@@ -339,7 +340,8 @@ namespace BiteTheBookie.Controllers
             // Clear any stale pending-registration from a previous anonymous attempt.
             HttpContext.Session.Remove(PendingRegistration.SessionKey);
             SetCheckoutContext(new CheckoutContext { Plan = selectedPlan, Mode = CheckoutMode.ExistingAccount });
-            return RedirectToAction("Payment");
+            // Take the user straight to PayPal instead of showing an intermediate confirmation page.
+            return await BeginCheckoutAsync();
         }
 
         /// <summary>
@@ -351,6 +353,19 @@ namespace BiteTheBookie.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> StartCheckout()
+        {
+            return await BeginCheckoutAsync();
+        }
+
+        /// <summary>
+        /// Core checkout logic shared by the sign-up (<see cref="Register"/>), existing-member
+        /// (<see cref="Subscribe"/>) and upgrade (<see cref="Upgrade"/>) flows as well as the
+        /// <see cref="StartCheckout"/> POST. Creates (or revises) the PayPal subscription server-side
+        /// and redirects the browser straight to PayPal's approval page, so the user is taken directly
+        /// to PayPal without an intermediate confirmation step. PayPal then redirects back to
+        /// <see cref="CheckoutReturn"/>.
+        /// </summary>
+        private async Task<IActionResult> BeginCheckoutAsync()
         {
             var context = GetCheckoutContext();
             if (context == null)
@@ -661,8 +676,8 @@ namespace BiteTheBookie.Controllers
                 return RedirectToAction("MyAccount");
             }
 
-            // Revise the existing subscription (same id) to All Access; the actual PayPal approval
-            // and redirect happen from the Payment page via StartCheckout.
+            // Revise the existing subscription (same id) to All Access; take the user straight to
+            // PayPal for approval instead of showing an intermediate confirmation page.
             SetCheckoutContext(new CheckoutContext
             {
                 Plan = "allaccess",
@@ -670,7 +685,7 @@ namespace BiteTheBookie.Controllers
                 SubscriptionId = user.PayPalSubscriptionId
             });
 
-            return RedirectToAction("Payment");
+            return await BeginCheckoutAsync();
         }
 
         /// <summary>

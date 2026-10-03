@@ -38,15 +38,36 @@
         // Harden navigator.permissions.query so third-party scripts (e.g. the PayPal/
         // reCAPTCHA bot-detection code) that call a detached reference to it do not
         // throw "Failed to execute 'query' on 'Permissions': Illegal invocation".
+        // We patch BOTH the prototype and the instance, and the wrapper self-heals when
+        // invoked with a wrong/missing `this` by falling back to navigator.permissions.
         (function () {
             try {
                 var perms = navigator.permissions;
-                if (perms && typeof perms.query === 'function') {
-                    var original = perms.query;
-                    perms.query = function () {
-                        return original.apply(perms, arguments);
-                    };
+                if (!perms || typeof perms.query !== 'function') { return; }
+
+                var proto = (typeof Permissions !== 'undefined' && Permissions.prototype
+                    && typeof Permissions.prototype.query === 'function')
+                    ? Permissions.prototype
+                    : perms;
+
+                var original = proto.query;
+
+                function safeQuery() {
+                    // Use the real Permissions instance as `this` whenever the caller
+                    // invoked a detached reference (this === undefined/window/the wrapper).
+                    var ctx = (this instanceof Object && this !== window && typeof this.query === 'function')
+                        ? this
+                        : navigator.permissions;
+                    try {
+                        return original.apply(ctx, arguments);
+                    } catch (err) {
+                        return original.apply(navigator.permissions, arguments);
+                    }
                 }
+
+                try { proto.query = safeQuery; } catch (e) { }
+                // Also override the instance in case it shadows the prototype method.
+                try { perms.query = safeQuery; } catch (e) { }
             } catch (e) { }
         })();
     </script>

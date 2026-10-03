@@ -22,12 +22,45 @@ namespace BiteTheBookie.ViewModels
                 .OrderBy(g => g.GameTime)
                 .GroupBy(g => g.GameTime.ToLocalTime().Date);
 
-        /// <summary>Every regular-season game grouped by NFL week number, ordered by week then start time.</summary>
-        public IEnumerable<IGrouping<int, NBAGameMatchup>> GamesByWeek =>
-            UpcomingGames
-                .OrderBy(g => g.Week)
-                .ThenBy(g => g.GameTime)
-                .GroupBy(g => g.Week);
+        /// <summary>
+        /// Regular-season games grouped by NFL week, ordered for the landing-page scoreboard:
+        /// the upcoming (next) NFL week is shown first, then the last official NFL week (the most
+        /// recent week that has been played / is in progress), then every remaining week in
+        /// descending week-number order. Games within each week are ordered by start time.
+        /// </summary>
+        public IEnumerable<IGrouping<int, NBAGameMatchup>> GamesByWeek
+        {
+            get
+            {
+                var weekGroups = UpcomingGames
+                    .OrderBy(g => g.GameTime)
+                    .GroupBy(g => g.Week)
+                    .ToList();
+
+                if (weekGroups.Count == 0)
+                {
+                    return weekGroups;
+                }
+
+                // Last official NFL week: the most recent week that has already started (final or live).
+                // If nothing has started yet, fall back to the earliest scheduled week.
+                var startedWeeks = UpcomingGames
+                    .Where(g => g.IsFinal || g.IsLive)
+                    .Select(g => g.Week)
+                    .ToList();
+
+                int lastWeek = startedWeeks.Count > 0
+                    ? startedWeeks.Max()
+                    : weekGroups.Min(w => w.Key);
+                int thisWeek = lastWeek + 1;
+
+                // Priority 0: this (upcoming) week, 1: last official week, 2: everything else
+                // (earlier/other weeks) in descending week order.
+                return weekGroups
+                    .OrderBy(w => w.Key == thisWeek ? 0 : (w.Key == lastWeek ? 1 : 2))
+                    .ThenByDescending(w => w.Key);
+            }
+        }
 
         public IReadOnlyList<NewsItemViewModel> Headlines { get; set; } = new List<NewsItemViewModel>();
 

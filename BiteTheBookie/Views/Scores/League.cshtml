@@ -67,9 +67,10 @@
             .Select(grp => grp.First())
             .ToList();
 
-        // Next games at the top (live, then soonest upcoming), past games below (most recent first).
-        var orderedGames = uniqueGames.Where(g => g.IsLive).OrderBy(g => g.GameTime)
-            .Concat(uniqueGames.Where(g => g.IsScheduled).OrderBy(g => g.GameTime))
+        // Next games at the top (live, then upcoming), past games below. Every group is ordered
+        // in descending order (most recent/latest first) so current and upcoming games lead.
+        var orderedGames = uniqueGames.Where(g => g.IsLive).OrderByDescending(g => g.GameTime)
+            .Concat(uniqueGames.Where(g => g.IsScheduled).OrderByDescending(g => g.GameTime))
             .Concat(uniqueGames.Where(g => g.IsFinal).OrderByDescending(g => g.GameTime))
             .ToList();
     }
