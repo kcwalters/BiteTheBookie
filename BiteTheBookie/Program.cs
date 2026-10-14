@@ -126,7 +126,8 @@ builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
 builder.Services.AddHttpClient<INBAScheduleService, NBAScheduleService>();
 
 // Date-aware schedule for ALL sports (ESPN scoreboard by date)
-builder.Services.AddHttpClient<ILeagueScheduleService, EspnScheduleService>();
+builder.Services.AddHttpClient<ILeagueScheduleService, EspnScheduleService>()
+    .AddEspnResilience();
 
 // ESPN API Client
 builder.Services.AddHttpClient<EspnApiClient>();

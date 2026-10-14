@@ -49,8 +49,10 @@ namespace BiteTheBookie.Services.Implementations
             {
                 // Fetch today's games, falling forward to the next scheduled day when the
                 // league is off today (off-day or out of season) so the ticker stays populated.
+                // groups=50 restricts to the full Division I slate (ESPN otherwise returns only
+                // a small featured subset).
                 var events = await EspnScoreboardFetcher.GetEarliestDayEventsAsync(
-                    _httpClient, _scoreboardUrl, cancellationToken);
+                    _httpClient, _scoreboardUrl, cancellationToken, "groups=50&limit=300");
 
                 if (events.Count == 0)
                 {

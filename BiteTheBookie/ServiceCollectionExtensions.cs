@@ -1,6 +1,9 @@
 using BiteTheBookie.Services.Implementations;
 using BiteTheBookie.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
+using Polly;
 
 namespace BiteTheBookie
 {
@@ -29,7 +32,7 @@ namespace BiteTheBookie
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NflApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NflApiBaseUrl);
-            });
+            }).AddEspnResilience();
             services.AddScoped<INFLScoresService, NFLScoresService>();
 
             services.AddHttpClient<NBAScoresService>((sp, client) =>
@@ -37,7 +40,7 @@ namespace BiteTheBookie
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NbaApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NbaApiBaseUrl);
-            });
+            }).AddEspnResilience();
             services.AddScoped<INBAScoresService, NBAScoresService>();
 
             services.AddHttpClient<NHLScoresService>((sp, client) =>
@@ -45,7 +48,7 @@ namespace BiteTheBookie
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NhlApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NhlApiBaseUrl);
-            });
+            }).AddEspnResilience();
             services.AddScoped<INHLScoresService, NHLScoresService>();
 
             services.AddHttpClient<NCAAScoresService>((sp, client) =>
@@ -53,7 +56,7 @@ namespace BiteTheBookie
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NcaaMensBasketballApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NcaaMensBasketballApiBaseUrl);
-            });
+            }).AddEspnResilience();
             services.AddScoped<INCAAScoresService, NCAAScoresService>();
 
             services.AddHttpClient<CFBScoresService>((sp, client) =>
@@ -61,10 +64,42 @@ namespace BiteTheBookie
                 var opts = sp.GetRequiredService<IOptions<SportsTickerOptions>>().Value;
                 if (!string.IsNullOrWhiteSpace(opts.NcaaFootballApiBaseUrl))
                     client.BaseAddress = new Uri(opts.NcaaFootballApiBaseUrl);
-            });
+            }).AddEspnResilience();
             services.AddScoped<ICFBScoresService, CFBScoresService>();
 
             return services;
+        }
+
+        /// <summary>
+        /// Applies a shared resilience pipeline to an ESPN-backed HttpClient: short per-attempt
+        /// timeout, retry with exponential backoff + jitter on transient failures (including
+        /// HTTP 429/5xx), and a circuit breaker so a sustained ESPN outage or block stops
+        /// hammering the host and fails fast instead.
+        /// </summary>
+        public static IHttpClientBuilder AddEspnResilience(this IHttpClientBuilder builder)
+        {
+            builder.AddResilienceHandler("espn", pipeline =>
+            {
+                pipeline.AddRetry(new HttpRetryStrategyOptions
+                {
+                    MaxRetryAttempts = 3,
+                    BackoffType = DelayBackoffType.Exponential,
+                    UseJitter = true,
+                    Delay = TimeSpan.FromMilliseconds(300)
+                });
+
+                pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+                {
+                    SamplingDuration = TimeSpan.FromSeconds(30),
+                    FailureRatio = 0.5,
+                    MinimumThroughput = 10,
+                    BreakDuration = TimeSpan.FromSeconds(15)
+                });
+
+                pipeline.AddTimeout(TimeSpan.FromSeconds(10));
+            });
+
+            return builder;
         }
 
         /// <summary>
@@ -84,7 +119,7 @@ namespace BiteTheBookie
             services.AddHttpClient<INflFantasyDataService, NflFantasyDataService>(client =>
             {
                 client.BaseAddress = new Uri("https://site.web.api.espn.com/");
-            });
+            }).AddEspnResilience();
 
             return services;
         }

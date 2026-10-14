@@ -20,13 +20,13 @@ namespace BiteTheBookie.ViewModels
         public IEnumerable<IGrouping<DateTime, NBAGameMatchup>> UpcomingGamesByDay =>
             UpcomingGames
                 .OrderBy(g => g.GameTime)
-                .GroupBy(g => g.GameTime.ToLocalTime().Date);
+                .GroupBy(g => g.GameDate);
 
         /// <summary>
         /// Regular-season games grouped by NFL week, ordered for the landing-page scoreboard:
-        /// the upcoming (next) NFL week is shown first, then the last official NFL week (the most
-        /// recent week that has been played / is in progress), then every remaining week in
-        /// descending week-number order. Games within each week are ordered by start time.
+        /// the current NFL week is shown first, followed by future weeks in ascending order,
+        /// then past weeks in descending order (e.g. 4, 5, 3, 2, 1). Games within each week are
+        /// ordered by start time.
         /// </summary>
         public IEnumerable<IGrouping<int, NBAGameMatchup>> GamesByWeek
         {
@@ -42,23 +42,22 @@ namespace BiteTheBookie.ViewModels
                     return weekGroups;
                 }
 
-                // Last official NFL week: the most recent week that has already started (final or live).
-                // If nothing has started yet, fall back to the earliest scheduled week.
-                var startedWeeks = UpcomingGames
-                    .Where(g => g.IsFinal || g.IsLive)
+                // Current NFL week: the earliest week that still has a game yet to finish
+                // (scheduled or live). Once every game has gone final (end of season), fall
+                // back to the most recent week.
+                var unfinishedWeeks = UpcomingGames
+                    .Where(g => !g.IsFinal)
                     .Select(g => g.Week)
                     .ToList();
 
-                int lastWeek = startedWeeks.Count > 0
-                    ? startedWeeks.Max()
-                    : weekGroups.Min(w => w.Key);
-                int thisWeek = lastWeek + 1;
+                int currentWeek = unfinishedWeeks.Count > 0
+                    ? unfinishedWeeks.Min()
+                    : weekGroups.Max(w => w.Key);
 
-                // Priority 0: this (upcoming) week, 1: last official week, 2: everything else
-                // (earlier/other weeks) in descending week order.
+                // Priority 0: current week, 1: future weeks (ascending), 2: past weeks (descending).
                 return weekGroups
-                    .OrderBy(w => w.Key == thisWeek ? 0 : (w.Key == lastWeek ? 1 : 2))
-                    .ThenByDescending(w => w.Key);
+                    .OrderBy(w => w.Key == currentWeek ? 0 : (w.Key > currentWeek ? 1 : 2))
+                    .ThenBy(w => w.Key > currentWeek ? w.Key : -w.Key);
             }
         }
 

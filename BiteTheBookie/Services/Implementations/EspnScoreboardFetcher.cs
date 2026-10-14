@@ -19,20 +19,21 @@ namespace BiteTheBookie.Services.Implementations
         /// underlying <see cref="JsonDocument"/> is disposed.
         /// </summary>
         public static async Task<List<JsonElement>> GetEarliestDayEventsAsync(
-            HttpClient http, string scoreboardUrl, CancellationToken cancellationToken)
+            HttpClient http, string scoreboardUrl, CancellationToken cancellationToken, string? extraQuery = null)
         {
             var today = DateTime.UtcNow.Date;
+            var suffix = string.IsNullOrWhiteSpace(extraQuery) ? string.Empty : $"&{extraQuery}";
 
             // 1) Try today first (cheap, most common case for in-season leagues).
             var todays = await FetchEventsAsync(
-                http, $"{scoreboardUrl}?dates={today:yyyyMMdd}", cancellationToken);
+                http, $"{scoreboardUrl}?dates={today:yyyyMMdd}{suffix}", cancellationToken);
             if (todays.Count > 0)
             {
                 return todays.Select(e => e.Element).ToList();
             }
 
             // 2) Off-day / offseason: widen to a date range and keep the earliest game day.
-            var rangeUrl = $"{scoreboardUrl}?dates={today:yyyyMMdd}-{today.AddDays(LookAheadDays):yyyyMMdd}&limit=100";
+            var rangeUrl = $"{scoreboardUrl}?dates={today:yyyyMMdd}-{today.AddDays(LookAheadDays):yyyyMMdd}&limit=100{suffix}";
             var range = await FetchEventsAsync(http, rangeUrl, cancellationToken);
             if (range.Count == 0)
             {

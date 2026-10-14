@@ -1,0 +1,23 @@
+@{
+    // Label for the day/week grouping dropdown, set by the host view via ViewData.
+    var groupLabel = (ViewData["GroupLabel"] as string) ?? "Days";
+}
+<div class="game-filters d-flex flex-wrap align-items-center gap-2 mb-3" data-game-filters>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Filter by status">
+        <button type="button" class="btn btn-outline-secondary active" data-filter-status="all">All</button>
+        <button type="button" class="btn btn-outline-secondary" data-filter-status="live">Live</button>
+        <button type="button" class="btn btn-outline-secondary" data-filter-status="final">Final</button>
+        <button type="button" class="btn btn-outline-secondary" data-filter-status="scheduled">Scheduled</button>
+    </div>
+
+    <select class="form-select form-select-sm w-auto" data-filter-group aria-label="Filter by @groupLabel">
+        <option value="all">All @groupLabel</option>
+    </select>
+
+    <select class="form-select form-select-sm w-auto" data-filter-team aria-label="Filter by team">
+        <option value="all">All Teams</option>
+    </select>
+
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-filter-reset>Reset</button>
+    <span class="text-muted small ms-auto" data-filter-count></span>
+</div>

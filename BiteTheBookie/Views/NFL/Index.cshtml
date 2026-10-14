@@ -54,8 +54,8 @@
                 </a>
             }
 
-            <!-- Full season schedule grouped by NFL week -->
-            <div class="nfl-games mt-4">
+            <!-- Full season schedule grouped by NFL week with client-side filtering -->
+            <div class="nfl-games mt-4" data-filterable-games>
                 <div class="nfl-games__title">
                     <span>Full Schedule</span>
                     <small class="text-muted">By week</small>
@@ -63,37 +63,49 @@
 
                 @if (Model.UpcomingGames.Any())
                 {
-                    @foreach (var weekGroup in Model.GamesByWeek)
-                    {
-                        <h6 class="mt-3 mb-2 fw-bold">Week @weekGroup.Key</h6>
-                        <div class="nfl-games__grid">
-                            @foreach (var game in weekGroup)
-                            {
-                                <div class="nfl-game-card">
-                                    <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
-                                        @(string.IsNullOrWhiteSpace(game.StatusDetail) ? game.GameTimeDisplay : game.StatusDetail)
-                                    </div>
-                                    <div class="nfl-game-card__row">
-                                        <div class="nfl-game-card__team">
-                                            <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
-                                            <span>@game.AwayTeamName</span>
+                    ViewData["GroupLabel"] = "Weeks";
+                    <partial name="Partials/_GameFilters" />
+
+                    <div data-games-root>
+                        @foreach (var weekGroup in Model.GamesByWeek)
+                        {
+                            var weekLabel = $"Week {weekGroup.Key}";
+                            <div class="nfl-games__group" data-group="@weekLabel">
+                                <h6 class="mt-3 mb-2 fw-bold">@weekLabel</h6>
+                                <div class="nfl-games__grid">
+                                    @foreach (var game in weekGroup)
+                                    {
+                                        var status = game.IsLive ? "live" : game.IsFinal ? "final" : "scheduled";
+                                        <div class="nfl-game-card" data-game-card
+                                             data-status="@status"
+                                             data-card-group="@weekLabel"
+                                             data-teams="@($"{game.AwayTeamName}|{game.HomeTeamName}")">
+                                            <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
+                                                @(string.IsNullOrWhiteSpace(game.StatusDetail) ? game.GameTimeDisplay : game.StatusDetail)
+                                            </div>
+                                            <div class="nfl-game-card__row">
+                                                <div class="nfl-game-card__team">
+                                                    <img src="@game.AwayTeamLogo" alt="@game.AwayTeamName" />
+                                                    <span>@game.AwayTeamName</span>
+                                                </div>
+                                                <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
+                                            </div>
+                                            <div class="nfl-game-card__row">
+                                                <div class="nfl-game-card__team">
+                                                    <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
+                                                    <span>@game.HomeTeamName</span>
+                                                </div>
+                                                <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
+                                            </div>
+                                            <div class="mt-2 text-end">
+                                                <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL", IsFinal = game.IsFinal }' />
+                                            </div>
                                         </div>
-                                        <span class="nfl-game-card__score">@(game.AwayScore?.ToString() ?? "")</span>
-                                    </div>
-                                    <div class="nfl-game-card__row">
-                                        <div class="nfl-game-card__team">
-                                            <img src="@game.HomeTeamLogo" alt="@game.HomeTeamName" />
-                                            <span>@game.HomeTeamName</span>
-                                        </div>
-                                        <span class="nfl-game-card__score">@(game.HomeScore?.ToString() ?? "")</span>
-                                    </div>
-                                    <div class="mt-2 text-end">
-                                        <partial name="Partials/_GameSimulationLink" model='new BiteTheBookie.ViewModels.GameSimulationLinkViewModel { HomeTeam = game.HomeTeamName, AwayTeam = game.AwayTeamName, League = "NFL", IsFinal = game.IsFinal }' />
-                                    </div>
+                                    }
                                 </div>
-                            }
-                        </div>
-                    }
+                            </div>
+                        }
+                    </div>
                 }
                 else
                 {

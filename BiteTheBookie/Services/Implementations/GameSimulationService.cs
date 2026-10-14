@@ -107,7 +107,55 @@ namespace BiteTheBookie.Services.Implementations
             };
         }
 
+        private const string AiDisclaimerBanner =
+            "<div class=\"alert alert-info ai-sim-disclaimer\" role=\"alert\" style=\"font-weight:600;\">AI Generated - Results not guaranteed</div>";
+
         public async Task<string> GenerateGameSimulationAsync(
+            string homeTeam,
+            string awayTeam,
+            string league,
+            NBATeamRoster? homeRoster = null,
+            NBATeamRoster? awayRoster = null,
+            List<PlayerInjuryReport>? injuries = null,
+            DateTime? gameTime = null,
+            CancellationToken cancellationToken = default,
+            string? homeProbablePitcher = null,
+            string? awayProbablePitcher = null)
+        {
+            const int maxAttempts = 3;
+            var result = string.Empty;
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                result = await GenerateGameSimulationCoreAsync(
+                    homeTeam, awayTeam, league, homeRoster, awayRoster,
+                    injuries, gameTime, cancellationToken, homeProbablePitcher, awayProbablePitcher);
+
+                // Never retry informational / unavailable responses — only real simulations.
+                if (result.Contains("Simulation Unavailable", StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                if (!IsTieGame(result))
+                    break;
+
+                _logger.LogWarning(
+                    "Simulation for {AwayTeam} @ {HomeTeam} ({League}) ended in a TIE on attempt {Attempt}/{Max} — regenerating to force a winner.",
+                    awayTeam, homeTeam, league, attempt, maxAttempts);
+            }
+
+            return PrependDisclaimer(result);
+        }
+
+        private static string PrependDisclaimer(string html)
+        {
+            if (string.IsNullOrEmpty(html))
+                return html;
+            if (html.Contains("AI Generated - Results not guaranteed", StringComparison.OrdinalIgnoreCase))
+                return html;
+            return AiDisclaimerBanner + html;
+        }
+
+        private async Task<string> GenerateGameSimulationCoreAsync(
             string homeTeam,
             string awayTeam,
             string league,
@@ -345,6 +393,7 @@ Include these sections in order:
 7. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
 FINAL CHECK BEFORE RESPONDING:
+The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie.
 Review every player name in your response. If ANY name does not appear in the AUTHORITATIVE ROSTER above, remove it before responding.";
 
                 var messages = new List<ChatMessage>
@@ -705,7 +754,7 @@ Include these sections:
 7. <h2>Pitching Summary</h2> — all pitchers used; scheduled starter must be first for each team
 8. <h2>Betting Analysis</h2> — run line, over/under, moneyline
 
-FINAL CHECK: Review every player name in your response. Remove any name not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) The two final team run totals MUST be different — the game must end with a clear winner; play extra innings until one team wins. NEVER output a tie. (2) Review every player name in your response. Remove any name not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -998,7 +1047,7 @@ Include these sections in order:
 5. <h2>Team Statistics</h2> — HTML table: Total Yards, Passing, Rushing, Turnovers, Time of Possession, 3rd-Down %
 6. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic college football. (3) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic college football. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1166,7 +1215,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score. (3) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1279,7 +1328,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — puck line, over/under (total goals), moneyline impact
 
-FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL score. (3) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, use overtime or a shootout until one team wins. NEVER output a tie. (4) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1368,7 +1417,83 @@ FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-private static string StripCodeFences(string text)
+private static readonly Regex TableRegex = new(
+            "<table[^>]*>(.*?)</table>",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex RowRegex = new(
+            "<tr[^>]*>(.*?)</tr>",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex CellRegex = new(
+            "<t[dh][^>]*>(.*?)</t[dh]>",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex TagStripRegex = new(
+            "<[^>]+>", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Best-effort detection of a tie in the generated simulation. Only the "Final Score"
+        /// section is inspected so unrelated tables (e.g. per-pitcher R columns) can't trigger a
+        /// false positive. Looks for the line-score "Final" column (football/hockey) or the MLB
+        /// "R" (runs) column and returns true only when both team totals are present and equal.
+        /// </summary>
+        private static bool IsTieGame(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+                return false;
+
+            var scoreIdx = html.IndexOf("Final Score", StringComparison.OrdinalIgnoreCase);
+            if (scoreIdx < 0)
+                return false;
+
+            // Limit inspection to the Final Score section (up to the next <h2>).
+            var section = html.Substring(scoreIdx);
+            var nextH2 = section.IndexOf("<h2", 1, StringComparison.OrdinalIgnoreCase);
+            if (nextH2 > 0)
+                section = section.Substring(0, nextH2);
+
+            foreach (Match tableMatch in TableRegex.Matches(section))
+            {
+                var rows = RowRegex.Matches(tableMatch.Groups[1].Value);
+                if (rows.Count < 2)
+                    continue;
+
+                var headerCells = CellRegex.Matches(rows[0].Groups[1].Value)
+                    .Select(m => StripTags(m.Groups[1].Value).Trim())
+                    .ToList();
+                if (headerCells.Count == 0)
+                    continue;
+
+                var finalIdx = headerCells.FindIndex(h => h.Equals("Final", StringComparison.OrdinalIgnoreCase));
+                if (finalIdx < 0)
+                    finalIdx = headerCells.FindIndex(h => h.Equals("R", StringComparison.OrdinalIgnoreCase));
+                if (finalIdx < 0)
+                    continue;
+
+                var finals = new List<int>();
+                for (var r = 1; r < rows.Count; r++)
+                {
+                    var cells = CellRegex.Matches(rows[r].Groups[1].Value)
+                        .Select(m => StripTags(m.Groups[1].Value).Trim())
+                        .ToList();
+                    if (cells.Count <= finalIdx)
+                        continue;
+                    if (int.TryParse(cells[finalIdx], out var score))
+                        finals.Add(score);
+                }
+
+                if (finals.Count >= 2 && finals[0] == finals[1])
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string StripTags(string value) =>
+            TagStripRegex.Replace(value, string.Empty);
+
+        private static string StripCodeFences(string text)
         {
             text = text.Trim();
             if (text.StartsWith("```"))

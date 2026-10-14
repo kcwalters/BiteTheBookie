@@ -39,7 +39,26 @@ namespace BiteTheBookie.ViewModels
         public IEnumerable<IGrouping<DateTime, NBAGameMatchup>> UpcomingGamesByDay =>
             UpcomingGames
                 .OrderBy(g => g.GameTime)
-                .GroupBy(g => g.GameTime.ToLocalTime().Date);
+                .GroupBy(g => g.GameDate);
+
+        /// <summary>
+        /// Games grouped by their start day (league/US Eastern time), ordered for the landing-page
+        /// scoreboard: today first, then upcoming days in ascending order, then past days in
+        /// descending order. Games within each day are ordered by start time.
+        /// </summary>
+        public IEnumerable<IGrouping<DateTime, NBAGameMatchup>> GamesByDay
+        {
+            get
+            {
+                var today = NBAGameMatchup.LeagueToday;
+                return UpcomingGames
+                    .OrderBy(g => g.GameTime)
+                    .GroupBy(g => g.GameDate)
+                    // Priority 0: today, 1: future days (ascending), 2: past days (descending).
+                    .OrderBy(grp => grp.Key == today ? 0 : (grp.Key > today ? 1 : 2))
+                    .ThenBy(grp => grp.Key >= today ? grp.Key.Ticks : -grp.Key.Ticks);
+            }
+        }
 
         public IReadOnlyList<NewsItemViewModel> Headlines { get; set; } = new List<NewsItemViewModel>();
 

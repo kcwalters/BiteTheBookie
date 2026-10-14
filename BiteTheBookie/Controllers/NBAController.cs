@@ -124,19 +124,20 @@ namespace BiteTheBookie.Controllers
             return View("LeagueHome", model);
         }
 
-        // Fetches upcoming (non-final) games for the current week from the live ESPN
-        // schedule feed: today through the next six days.
+        // Fetches games around the current week from the live ESPN schedule feed:
+        // the past seven days through the next six days, including finished games so the
+        // landing page can show today first, upcoming days next, and recent results last.
         private async Task<List<NBAGameMatchup>> GetUpcomingGamesAsync(string league, CancellationToken cancellationToken)
         {
-            var upcoming = new List<NBAGameMatchup>();
-            var today = DateTime.Today;
-            for (var i = 0; i < 7; i++)
+            var games = new List<NBAGameMatchup>();
+            var today = NBAGameMatchup.LeagueToday;
+            for (var i = -7; i < 7; i++)
             {
                 var dayGames = await _scheduleService.GetGamesForDateAsync(league, today.AddDays(i), cancellationToken);
-                upcoming.AddRange(dayGames.Where(g => !g.IsFinal));
+                games.AddRange(dayGames);
             }
 
-            return upcoming;
+            return games;
         }
 
         public IActionResult AllTeams()
