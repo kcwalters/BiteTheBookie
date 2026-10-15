@@ -500,7 +500,8 @@ $.validator.addMethod( "creditcard", function( value, element ) {
 
 	// Basing min and max length on
 	// https://dev.ean.com/general-info/valid-card-types/
-	if ( value.length < 13 || value.length > 19 ) {
+	if (value.length < 
+		|| value.length > 19) {
 		return false;
 	}
 
