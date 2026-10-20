@@ -1,0 +1,84 @@
+@model BiteTheBookie.ViewModels.ContentBlockViewModel
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:none"></div>
+
+<input type="hidden" asp-for="Id" />
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label"></label>
+    <input asp-for="Name" class="form-control" placeholder="e.g. NFL Week 1 Hero Banner" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="PageKey" class="form-label"></label>
+        <input asp-for="PageKey" class="form-control" list="page-key-options" placeholder="e.g. Home, NFL, Odds, or * for all pages" />
+        <datalist id="page-key-options">
+            <option value="*"></option>
+            <option value="Home"></option>
+            <option value="NFL"></option>
+            <option value="NBA"></option>
+            <option value="NHL"></option>
+            <option value="MLB"></option>
+            <option value="CollegeFootball"></option>
+            <option value="CollegeBasketball"></option>
+            <option value="Odds"></option>
+            <option value="Picks"></option>
+            <option value="News"></option>
+        </datalist>
+        <div class="form-text">Which page this block appears on. Use <code>*</code> for every page.</div>
+        <span asp-validation-for="PageKey" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="RegionKey" class="form-label"></label>
+        <input asp-for="RegionKey" class="form-control" list="region-key-options" placeholder="e.g. top, hero, sidebar, bottom" />
+        <datalist id="region-key-options">
+            <option value="top"></option>
+            <option value="hero"></option>
+            <option value="jumbo"></option>
+            <option value="sidebar"></option>
+            <option value="bottom"></option>
+        </datalist>
+        <div class="form-text">The region of the page to render the HTML in.</div>
+        <span asp-validation-for="RegionKey" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Sport" class="form-label"></label>
+        <input asp-for="Sport" class="form-control" placeholder="Leave blank for any sport" />
+        <div class="form-text">Optionally target a sport/league.</div>
+        <span asp-validation-for="Sport" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="Team" class="form-label"></label>
+        <input asp-for="Team" class="form-control" placeholder="Leave blank for any team" />
+        <div class="form-text">Optionally target a specific team.</div>
+        <span asp-validation-for="Team" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="HtmlContent" class="form-label"></label>
+    <textarea asp-for="HtmlContent" class="form-control font-monospace" rows="12"
+              placeholder="&lt;div class=&quot;jumbotron&quot;&gt;...&lt;/div&gt;"></textarea>
+    <div class="form-text">Raw HTML rendered into the region. Only trusted admins should author this.</div>
+    <span asp-validation-for="HtmlContent" class="text-danger"></span>
+</div>
+
+<div class="row align-items-center">
+    <div class="col-md-6 mb-3">
+        <label asp-for="SortOrder" class="form-label"></label>
+        <input asp-for="SortOrder" class="form-control" type="number" />
+        <div class="form-text">Lower numbers render first within a region.</div>
+        <span asp-validation-for="SortOrder" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="form-check mt-4">
+            <input asp-for="IsPublished" class="form-check-input" />
+            <label asp-for="IsPublished" class="form-check-label"></label>
+        </div>
+    </div>
+</div>

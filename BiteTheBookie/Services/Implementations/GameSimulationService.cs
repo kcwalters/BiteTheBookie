@@ -249,11 +249,12 @@ namespace BiteTheBookie.Services.Implementations
                 _logger.LogWarning("ESPN returned no roster for {Team} -- falling back to OpenAI", homeTeam);
                 homeRoster = await FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken);
             }
+            if (injuries != null && injuredPlayersNba.Count > 0)
             {
                 _logger.LogWarning("EXCLUDING {Count} injured players: {Players}",
                     injuredPlayersNba.Count, string.Join(", ", injuredPlayersNba));
 
-                foreach (var inj in injuries!.Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase)))
+                foreach (var inj in injuries.Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase)))
                     _logger.LogWarning("  {Player} ({Team}) - OUT: {Description}",
                         inj.PlayerName, inj.TeamCode, inj.InjuryDescription);
             }

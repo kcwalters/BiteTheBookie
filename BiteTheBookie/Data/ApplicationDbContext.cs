@@ -18,6 +18,7 @@ namespace BiteTheBookie.Data
         public DbSet<ExpertPost> ExpertPosts { get; set; }
         public DbSet<GameSimulation> GameSimulations { get; set; }
         public DbSet<SiteVideo> SiteVideos { get; set; }
+        public DbSet<ContentBlock> ContentBlocks { get; set; }
         public DbSet<FantasyContest> FantasyContests { get; set; }
         public DbSet<FantasyPlayer> FantasyPlayers { get; set; }
         public DbSet<FantasyEntry> FantasyEntries { get; set; }
@@ -58,6 +59,16 @@ namespace BiteTheBookie.Data
                 entity.HasIndex(e => e.IsPublished);
                 entity.HasIndex(e => e.IsFeatured);
                 entity.HasIndex(e => e.SortOrder);
+                entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            builder.Entity<ContentBlock>(entity =>
+            {
+                entity.HasIndex(e => new { e.PageKey, e.RegionKey });
+                entity.HasIndex(e => e.IsPublished);
+                entity.HasIndex(e => e.SortOrder);
+                entity.Property(e => e.HtmlContent).HasColumnType("nvarchar(max)");
                 entity.Property(e => e.CreatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
             });

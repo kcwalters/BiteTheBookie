@@ -19,6 +19,7 @@
 }
 
 <div class="container py-3 home-page">
+    @await Component.InvokeAsync("ContentRegion", new { page = "Home", region = "top" })
     <div class="row g-3">
 
         <!-- ============ LEFT SIDEBAR ============ -->

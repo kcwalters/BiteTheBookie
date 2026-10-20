@@ -1,0 +1,35 @@
+@model BiteTheBookie.ViewModels.ContentBlockViewModel
+
+@{
+    ViewData["Title"] = "Admin - Add Content Block";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-code me-2 text-primary"></i>Add Content Block
+            </h1>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <partial name="_ContentBlockForm" model="Model" />
+            <div class="d-flex justify-content-end gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Save Block
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,11 @@
+@model List<BiteTheBookie.Models.ContentBlock>
+
+@if (Model != null && Model.Count > 0)
+{
+    foreach (var block in Model)
+    {
+        <div class="content-block" data-content-block-id="@block.Id">
+            @Html.Raw(block.HtmlContent)
+        </div>
+    }
+}
