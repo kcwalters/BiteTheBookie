@@ -1,5 +1,6 @@
 using Azure;
 using Azure.AI.OpenAI;
+using Azure.Identity;
 using BiteTheBookie;
 using BiteTheBookie.Data;
 using BiteTheBookie.Models;
@@ -15,7 +16,20 @@ using Serilog;
 using Serilog.Sinks.MSSqlServer;
 using Serilog.Events;
 var builder = WebApplication.CreateBuilder(args); 
- 
+
+// In production, load secrets from Azure Key Vault using the app's Managed Identity.
+// Set "KeyVault:Uri" (or env var KeyVault__Uri) to the vault URI, e.g.
+// https://bitethebookie-kv.vault.azure.net/
+// Key Vault secret names map to config keys using "--" for nesting, e.g.
+// "ConnectionStrings--DefaultConnection", "AzureOpenAI--ApiKey", "PayPal--ClientSecret".
+var keyVaultUri = builder.Configuration["KeyVault:Uri"];
+if (builder.Environment.IsProduction() && !string.IsNullOrWhiteSpace(keyVaultUri))
+{
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUri),
+        new DefaultAzureCredential());
+}
+
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
