@@ -297,3 +297,39 @@ tbody tr:nth-child(even) {
     background-color: var(--accent-2) !important;
     color: var(--bg) !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Light mode overrides: this stylesheet's defaults are a dark palette. In the
+   default (light) theme remap the palette variables to light values so cards,
+   tables, panels and content-cards are NOT dark blue and text stays readable.
+   The cash/dark theme (html.theme-cash) keeps the original dark palette.
+   ──────────────────────────────────────────────────────────────────────── */
+html:not(.theme-cash) {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --text: #212529;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --row-alt: #f6f8fa;
+}
+
+html:not(.theme-cash) body {
+    background: #ffffff;
+    color: #212529;
+}
+
+/* The table header hardcodes a dark navy; make it light in light mode. */
+html:not(.theme-cash) thead th {
+    background: #f1f3f5;
+    color: #212529;
+}
+
+/* Soften the heavy dark card shadow for light mode. */
+html:not(.theme-cash) .card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* content-card uses !important on its dark background, so override explicitly. */
+html:not(.theme-cash) .content-card {
+    background: #ffffff !important;
+}

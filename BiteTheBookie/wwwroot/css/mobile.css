@@ -171,6 +171,43 @@ body {
         color: #fff !important;
         background: rgba(255, 255, 255, 0.15) !important;
     }
+
+    /* League quick-link dropdowns (.league-dropdown-menu) are absolutely
+       positioned with right:0 + a 240px multi-column layout, so on phones they
+       get anchored off-screen / clipped and only half shows. Render them
+       inline (static), full-width and single-column inside the collapsed menu. */
+    .league-nav .league-dropdown {
+        position: static !important;
+    }
+
+    .league-nav .league-dropdown-menu {
+        position: static !important;
+        display: none;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        max-height: 60vh;
+        overflow-y: auto;
+        margin: 4px 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Keep it open while the item is hovered/focused (touch = focus-within). */
+    .league-nav .league-dropdown:hover > .league-dropdown-menu,
+    .league-nav .league-dropdown:focus-within > .league-dropdown-menu {
+        display: block;
+    }
+
+    /* Stack the division/conference columns into one readable column. */
+    .league-nav .league-dropdown-columns {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .league-nav .league-dropdown-column {
+        min-width: 0 !important;
+        width: 100%;
+    }
 }
 
 /* ------------------------- Content spacing ------------------------------ */

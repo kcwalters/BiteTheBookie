@@ -573,3 +573,51 @@ a                          { color: var(--btb-primary); }
     overflow: hidden;
 }
 .video-strip__item:hover .video-strip__title { color: var(--btb-primary); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Light mode: strip section-wrapper background colors site-wide so content
+   sits on the page's white background with readable dark text. These rules
+   only apply to the default (light) theme — the cash/dark theme keeps its
+   own backgrounds via html.theme-cash rules.
+   ──────────────────────────────────────────────────────────────────────── */
+html:not(.theme-cash) .header-section,
+html:not(.theme-cash) .hero-section,
+html:not(.theme-cash) .section-header,
+html:not(.theme-cash) .latest-news-section,
+html:not(.theme-cash) .feature-section,
+html:not(.theme-cash) .recent-game-section,
+html:not(.theme-cash) .tournaments-section,
+html:not(.theme-cash) .content-wrapper > section,
+html:not(.theme-cash) section.section {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+/* Ensure text inside these sections uses the readable dark body color
+   (some template sections previously assumed a dark background). */
+html:not(.theme-cash) .latest-news-section,
+html:not(.theme-cash) .feature-section,
+html:not(.theme-cash) .recent-game-section,
+html:not(.theme-cash) .tournaments-section {
+    color: var(--btb-body);
+}
+
+html:not(.theme-cash) .latest-news-section h1,
+html:not(.theme-cash) .latest-news-section h2,
+html:not(.theme-cash) .latest-news-section h3,
+html:not(.theme-cash) .latest-news-section h4,
+html:not(.theme-cash) .feature-section h1,
+html:not(.theme-cash) .feature-section h2,
+html:not(.theme-cash) .feature-section h3,
+html:not(.theme-cash) .feature-section h4,
+html:not(.theme-cash) .recent-game-section h1,
+html:not(.theme-cash) .recent-game-section h2,
+html:not(.theme-cash) .recent-game-section h3,
+html:not(.theme-cash) .recent-game-section h4,
+html:not(.theme-cash) .tournaments-section h1,
+html:not(.theme-cash) .tournaments-section h2,
+html:not(.theme-cash) .tournaments-section h3,
+html:not(.theme-cash) .tournaments-section h4 {
+    color: var(--btb-body);
+}
