@@ -1,0 +1,200 @@
+/* --------------------------------------------------------------------------
+   Mobile responsiveness enhancements (phones ~390-430px first).
+   Loaded last in _Layout.cshtml so these rules win by source order.
+   Header + nav collapse into the Bootstrap hamburger, oversized logo is
+   tamed, the top-links bar becomes a horizontal scroll strip, and general
+   page content is guarded against horizontal overflow.
+---------------------------------------------------------------------------*/
+
+/* Global guard: never let a stray wide element cause horizontal scrolling. */
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Make wide tables scroll inside their container instead of blowing out the
+   viewport. Applies the Bootstrap "responsive table" behaviour everywhere. */
+@media (max-width: 767.98px) {
+    .table-responsive-auto,
+    .content-wrapper table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ------------------------- Header / top bar ----------------------------- */
+@media (max-width: 767.98px) {
+    /* Top utility bar: keep the external links on one swipeable row instead of
+       wrapping into a tall cluttered block. */
+    .top-header .top-links {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 12px !important;
+    }
+
+    .top-header .top-links::-webkit-scrollbar {
+        display: none;
+    }
+
+    .top-header .top-links a {
+        white-space: nowrap;
+        margin-right: 0;
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    /* Hide the secondary external links on very small phones to reduce clutter;
+       keep only the brand link which stays first in the row. */
+    .top-header .top-links a:not(.top-brand) {
+        display: none;
+    }
+
+    .top-header .top-brand {
+        font-size: 14px;
+    }
+}
+
+/* ------------------------- Brand logo ----------------------------------- */
+@media (max-width: 991.98px) {
+    /* The desktop logo is forced to 300px wide / 150px tall inline + in
+       style.css. Shrink it so the hamburger stays reachable on phones. */
+    .main-nav .brand-logo,
+    #siteLogo {
+        height: 56px !important;
+        width: auto !important;
+        max-width: 60vw;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .main-nav .brand-logo,
+    #siteLogo {
+        height: 44px !important;
+    }
+}
+
+/* ------------------------- Navbar toggler ------------------------------- */
+/* The toggler sits on the blue bar, so give it a visible light border and a
+   white burger icon (Bootstrap's default icon is dark/invisible here). */
+.main-nav .navbar-toggler {
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 6px 10px;
+}
+
+.main-nav .navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.35);
+}
+
+.main-nav .navbar-toggler .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(255,255,255,0.9)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+}
+
+/* ------------------------- Collapsed menu ------------------------------- */
+@media (max-width: 991.98px) {
+    /* Give the collapsed menu some breathing room and a subtle divider. */
+    .main-nav .navbar-collapse {
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        margin-top: 6px;
+    }
+
+    /* Stack nav items full-width with comfortable tap targets. */
+    .primary-nav,
+    .league-nav {
+        flex-direction: column;
+        align-items: stretch !important;
+        width: 100%;
+        margin-left: 0 !important;
+        padding-left: 0 !important;
+        border-left: 0 !important;
+    }
+
+    .primary-nav .nav-link,
+    .league-nav .nav-link {
+        padding: 12px 8px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Force all collapsed menu text to stay white/readable regardless of the
+       active theme (light or cash). */
+    .main-nav .navbar-collapse .nav-link,
+    .main-nav .navbar-collapse .nav-link i,
+    .main-nav .navbar-collapse .league-link span {
+        color: #fff !important;
+    }
+
+    /* League quick-links: show as a wrapped row of chips rather than a tall
+       single column so leagues stay quick to reach. */
+    .league-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding-top: 6px;
+    }
+
+    .league-nav .nav-item {
+        flex: 1 0 30%;
+    }
+
+    .league-nav .league-link {
+        justify-content: center;
+    }
+
+    /* Dropdown menus render inline (static) when collapsed so they don't float
+       off-screen on a phone. Use a solid dark panel so the white item text is
+       always readable in BOTH light and cash themes. */
+    .main-nav .dropdown-menu {
+        position: static !important;
+        float: none;
+        width: 100%;
+        border: 0 !important;
+        box-shadow: none !important;
+        background: rgba(0, 0, 0, 0.18) !important;
+        border-radius: 8px;
+        padding: 6px 0 6px 12px !important;
+        margin: 4px 0 !important;
+    }
+
+    .main-nav .dropdown-menu .dropdown-item,
+    .main-nav .dropdown-menu .dropdown-item i {
+        color: #fff !important;
+    }
+
+    .main-nav .dropdown-menu .dropdown-item:hover,
+    .main-nav .dropdown-menu .dropdown-item:focus {
+        color: #fff !important;
+        background: rgba(255, 255, 255, 0.15) !important;
+    }
+}
+
+/* ------------------------- Content spacing ------------------------------ */
+@media (max-width: 575.98px) {
+    .content-wrapper {
+        padding: 16px 0;
+    }
+
+    /* Keep images from forcing overflow. */
+    .content-wrapper img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Reduce oversized headings from style.css (h1 is 70px) on phones. */
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.6rem;
+    }
+
+    h3 {
+        font-size: 1.35rem;
+    }
+}
