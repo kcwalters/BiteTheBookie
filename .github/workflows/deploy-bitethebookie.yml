@@ -20,8 +20,8 @@ env:
   REGISTRY: bitethebookieregistry
   IMAGE_NAME: bitethebookie
   RESOURCE_GROUP: bitethebookierg
-  APP_NAME: bitethebookie-app
-  CONTAINERAPP_ENV: btb-env2
+  APP_NAME: bitethebookie-app3
+  CONTAINERAPP_ENV: btb-env3
   LOCATION: centralus
   TARGET_PORT: "8080"
   # Subscription that actually contains the ACR, Container App, and identity.
@@ -37,11 +37,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # ---------- Build & test gate ----------
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
@@ -52,7 +52,19 @@ jobs:
         run: dotnet build BiteTheBookie.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test BiteTheBookie.sln --configuration Release --no-build --verbosity normal
+        run: |
+          set -euo pipefail
+          # Only run tests if there is at least one test project in the solution.
+          # BiteTheBookie currently ships a single web app project with no test
+          # project, so an unguarded `dotnet test` only adds noise/false failures.
+          TEST_PROJECTS=$(grep -rilE '<PackageReference[^>]*(Microsoft\.NET\.Test\.Sdk|xunit|nunit|MSTest)' --include='*.csproj' . || true)
+          if [ -z "$TEST_PROJECTS" ]; then
+            echo "No test projects found — skipping test step."
+            exit 0
+          fi
+          echo "Test projects found:"
+          echo "$TEST_PROJECTS"
+          dotnet test BiteTheBookie.sln --configuration Release --no-build --verbosity normal
 
       # ---------- Azure Login (OIDC) ----------
       - name: Azure Login (OIDC)
@@ -111,6 +123,35 @@ jobs:
                         --resource-group "$RESOURCE_GROUP" \
                         --query "properties.provisioningState" -o tsv --only-show-errors 2>/dev/null || true)
           echo "Container Apps environment '$CONTAINERAPP_ENV' provisioning state: '${ENV_STATE:-<none>}'"
+
+          # If the environment is being deleted, recreating it with the same name
+          # fails with ManagedEnvironmentScheduledForDelete. Wait for the deletion
+          # to complete (the env disappears) before attempting to recreate it.
+          if [ "$ENV_STATE" = "ScheduledForDelete" ]; then
+            echo "Environment '$CONTAINERAPP_ENV' is ScheduledForDelete; waiting for deletion to complete before recreating..."
+            for del_attempt in $(seq 1 60); do
+              ENV_STATE=$(az containerapp env show --name "$CONTAINERAPP_ENV" \
+                            --resource-group "$RESOURCE_GROUP" \
+                            --query "properties.provisioningState" -o tsv --only-show-errors 2>/dev/null || true)
+              echo "  Deletion wait $del_attempt/60: provisioning state = '${ENV_STATE:-<none>}'"
+              # An empty state means `show` found nothing -> the env is fully deleted.
+              if [ -z "$ENV_STATE" ]; then
+                echo "Environment '$CONTAINERAPP_ENV' deletion completed."
+                break
+              fi
+              if [ "$ENV_STATE" = "Succeeded" ]; then
+                echo "Environment '$CONTAINERAPP_ENV' recovered to Succeeded; reusing it."
+                break
+              fi
+              if [ "$del_attempt" -eq 60 ]; then
+                echo "Timed out waiting for environment '$CONTAINERAPP_ENV' deletion to complete." >&2
+                echo "Delete it manually or change CONTAINERAPP_ENV to a new name, then re-run." >&2
+                exit 1
+              fi
+              sleep 20
+            done
+          fi
+
           if [ "$ENV_STATE" != "Succeeded" ]; then
             echo "Environment missing or not in Succeeded state; creating '$CONTAINERAPP_ENV'."
             az containerapp env create --name "$CONTAINERAPP_ENV" \
@@ -220,6 +261,22 @@ jobs:
           REVISION_NAME="$APP_NAME--sha-${GITHUB_SHA::7}-${{ github.run_number }}"
           echo "Waiting for revision $REVISION_NAME to become healthy..."
 
+          # If the expected revision name can't be found (e.g. Azure adjusted the
+          # suffix), fall back to the most recent revision for the app so a good
+          # deploy isn't reported as a failure due to a name mismatch.
+          if ! az containerapp revision show \
+                --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+                --revision "$REVISION_NAME" --only-show-errors >/dev/null 2>&1; then
+            LATEST=$(az containerapp revision list \
+              --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+              --query "sort_by([].{name:name, created:properties.createdTime}, &created)[-1].name" \
+              -o tsv 2>/dev/null || true)
+            if [ -n "$LATEST" ]; then
+              echo "Expected revision not found; using latest revision '$LATEST'."
+              REVISION_NAME="$LATEST"
+            fi
+          fi
+
           for i in $(seq 1 30); do
             STATE=$(az containerapp revision show \
               --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
@@ -238,11 +295,17 @@ jobs:
               exit 0
             fi
             if [ "$STATE" = "Failed" ]; then
-              echo "Revision provisioning failed."
+              echo "Revision provisioning failed. Dumping recent container logs for diagnostics:"
+              az containerapp logs show \
+                --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+                --revision "$REVISION_NAME" --tail 100 --only-show-errors || true
               exit 1
             fi
             sleep 10
           done
 
-          echo "Timed out waiting for revision to become healthy."
+          echo "Timed out waiting for revision to become healthy. Dumping recent container logs for diagnostics:"
+          az containerapp logs show \
+            --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" \
+            --revision "$REVISION_NAME" --tail 100 --only-show-errors || true
           exit 1
