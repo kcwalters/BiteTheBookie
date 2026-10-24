@@ -209,7 +209,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
+
+    // Only auto-apply EF Core migrations outside Production. In Production the
+    // database schema is managed out-of-band (e.g. via a dedicated migration
+    // step/DBA), so running Migrate() here can conflict with an existing schema
+    // (SQL error 2714: object already exists). Gate it to non-Production only.
+    if (!app.Environment.IsProduction())
+    {
+        db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
+    }
 
     // Ensure the distributed session cache table exists (used by AddDistributedSqlServerCache in
     // non-Development environments). The SQL cache provider does not create this table itself, so we
