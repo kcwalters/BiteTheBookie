@@ -21,7 +21,7 @@ env:
   IMAGE_NAME: bitethebookie
   RESOURCE_GROUP: bitethebookierg
   APP_NAME: bitethebookie-app
-  CONTAINERAPP_ENV: btb-env
+  CONTAINERAPP_ENV: btb-env2
   LOCATION: centralus
   TARGET_PORT: "8080"
   # Subscription that actually contains the ACR, Container App, and identity.
@@ -104,12 +104,42 @@ jobs:
             az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --only-show-errors
           fi
 
-          # Ensure Container Apps environment exists.
-          if ! az containerapp env show --name "$CONTAINERAPP_ENV" \
-                --resource-group "$RESOURCE_GROUP" --only-show-errors >/dev/null 2>&1; then
+          # Ensure Container Apps environment exists AND is healthy.
+          # A show that returns an environment in a non-"Succeeded" provisioning
+          # state (e.g. ScheduledForDelete/Failed) must be treated as unusable.
+          ENV_STATE=$(az containerapp env show --name "$CONTAINERAPP_ENV" \
+                        --resource-group "$RESOURCE_GROUP" \
+                        --query "properties.provisioningState" -o tsv --only-show-errors 2>/dev/null || true)
+          echo "Container Apps environment '$CONTAINERAPP_ENV' provisioning state: '${ENV_STATE:-<none>}'"
+          if [ "$ENV_STATE" != "Succeeded" ]; then
+            echo "Environment missing or not in Succeeded state; creating '$CONTAINERAPP_ENV'."
             az containerapp env create --name "$CONTAINERAPP_ENV" \
               --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --only-show-errors
           fi
+
+          # Wait until the environment finishes provisioning before creating the app.
+          # Creating an app against a still-provisioning environment fails with
+          # ManagedEnvironmentNotProvisioned, so poll until it reaches Succeeded.
+          echo "Waiting for environment '$CONTAINERAPP_ENV' to reach 'Succeeded' provisioning state..."
+          for attempt in $(seq 1 30); do
+            ENV_STATE=$(az containerapp env show --name "$CONTAINERAPP_ENV" \
+                          --resource-group "$RESOURCE_GROUP" \
+                          --query "properties.provisioningState" -o tsv --only-show-errors 2>/dev/null || true)
+            echo "  Attempt $attempt/30: provisioning state = '${ENV_STATE:-<none>}'"
+            if [ "$ENV_STATE" = "Succeeded" ]; then
+              echo "Environment '$CONTAINERAPP_ENV' is provisioned."
+              break
+            fi
+            if [ "$ENV_STATE" = "Failed" ] || [ "$ENV_STATE" = "Canceled" ]; then
+              echo "Environment '$CONTAINERAPP_ENV' is in a terminal failed state ('$ENV_STATE'); aborting."
+              exit 1
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "Timed out waiting for environment '$CONTAINERAPP_ENV' to provision."
+              exit 1
+            fi
+            sleep 20
+          done
 
           APP_COUNT=$(az containerapp list --resource-group "$RESOURCE_GROUP" \
             --query "length([?name=='$APP_NAME'])" -o tsv 2>/dev/null || echo "0")
