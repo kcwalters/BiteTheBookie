@@ -395,6 +395,7 @@ Include these sections in order:
 
 FINAL CHECK BEFORE RESPONDING:
 The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie.
+SCORE RECONCILIATION (MANDATORY): For EACH team, the four quarter values in the Quarter-by-Quarter Breakdown (plus any overtime) MUST add up EXACTLY to that team's number in the Final Score. Also, the PTS column in Key Performers plus the implied bench points MUST total each team's Final Score — do not let the listed player points exceed the team total. Recompute and correct any mismatch before responding.
 Review every player name in your response. If ANY name does not appear in the AUTHORITATIVE ROSTER above, remove it before responding.";
 
                 var messages = new List<ChatMessage>
@@ -755,7 +756,7 @@ Include these sections:
 7. <h2>Pitching Summary</h2> — all pitchers used; scheduled starter must be first for each team
 8. <h2>Betting Analysis</h2> — run line, over/under, moneyline
 
-FINAL CHECK: (1) The two final team run totals MUST be different — the game must end with a clear winner; play extra innings until one team wins. NEVER output a tie. (2) Review every player name in your response. Remove any name not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) The two final team run totals MUST be different — the game must end with a clear winner; play extra innings until one team wins. NEVER output a tie. (2) SCORE RECONCILIATION (MANDATORY): For EACH team, the per-inning runs in the line-score table MUST add up EXACTLY to that team's R (runs) total in the Final Score, and the pitchers' combined runs allowed MUST match the opponent's run total. Recompute and fix any mismatch before responding. (3) Review every player name in your response. Remove any name not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1048,7 +1049,7 @@ Include these sections in order:
 5. <h2>Team Statistics</h2> — HTML table: Total Yards, Passing, Rushing, Turnovers, Time of Possession, 3rd-Down %
 6. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic college football. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic college football. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) SCORE RECONCILIATION (MANDATORY): For EACH team, the Q1-Q4 (plus any OT) values in the quarter-by-quarter line score MUST add up EXACTLY to that team's Final Score, and the points implied by the Scoring Summary plays MUST match that same total. Recompute and fix any mismatch before responding. (5) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1216,7 +1217,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) SCORE RECONCILIATION (MANDATORY): For EACH team, the Q1-Q4 (plus any OT) values in the quarter-by-quarter line score MUST add up EXACTLY to that team's Final Score, and the points implied by the Scoring Summary plays MUST match that same total. Recompute and fix any mismatch before responding. (5) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1329,7 +1330,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — puck line, over/under (total goals), moneyline impact
 
-FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, use overtime or a shootout until one team wins. NEVER output a tie. (4) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a HOCKEY stat. (2) Final score is a realistic NHL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, use overtime or a shootout until one team wins. NEVER output a tie. (4) SCORE RECONCILIATION (MANDATORY): For EACH team, the per-period goals (P1-P3 plus any OT/SO) in the line score MUST add up EXACTLY to that team's Final Score, and the goals listed in the Scoring Summary MUST match that same total. Recompute and fix any mismatch before responding. (5) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
