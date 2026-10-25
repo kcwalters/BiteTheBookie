@@ -219,6 +219,25 @@ using (var scope = app.Services.CreateScope())
         db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
     }
 
+    // In Production, migrations are gated off (schema managed out-of-band), but the
+    // Data Protection key ring MUST have its backing table or every request fails
+    // (SQL error 208: Invalid object name 'DataProtectionKeys'). Create it
+    // idempotently so the app is self-healing regardless of migration state.
+    if (!app.Environment.IsDevelopment())
+    {
+        const string createDataProtectionKeysTable = @"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'DataProtectionKeys' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    CREATE TABLE [dbo].[DataProtectionKeys] (
+        [Id] int IDENTITY(1,1) NOT NULL,
+        [FriendlyName] nvarchar(max) NULL,
+        [Xml] nvarchar(max) NULL,
+        CONSTRAINT [PK_DataProtectionKeys] PRIMARY KEY ([Id])
+    );
+END";
+        db.Database.ExecuteSqlRaw(createDataProtectionKeysTable);
+    }
+
     // Ensure the distributed session cache table exists (used by AddDistributedSqlServerCache in
     // non-Development environments). The SQL cache provider does not create this table itself, so we
     // create it idempotently here with the exact schema/index it expects.
