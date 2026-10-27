@@ -525,14 +525,198 @@ namespace BiteTheBookie.Services.Implementations
 
                 return details;
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to fetch ESPN team details for {Path}/{Team}", sportLeaguePath, teamIdOrCode);
-                return null;
+                    catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch ESPN team details for {Path}/{Team}", sportLeaguePath, teamIdOrCode);
+                    return null;
+                }
             }
-        }
 
-        private static void ParseVenue(JsonElement venue, EspnTeamDetails details)
+            // Per-season cache of NFL scoring stats keyed by team id AND lowercase abbreviation.
+            // Standings are league-wide and effectively static within a day, so one fetch serves
+            // every team lookup for that season.
+            private static readonly Dictionary<int, Dictionary<string, NflTeamScoringStats>> _nflScoringCache = new();
+            private static readonly SemaphoreSlim _nflScoringLock = new(1, 1);
+
+            /// <summary>
+            /// Returns current-season scoring averages (points for/against per game) and the
+            /// win-loss record for a single NFL team, derived from the ESPN standings endpoint.
+            /// <paramref name="teamIdOrCode"/> may be the ESPN numeric id or abbreviation (e.g. "phi").
+            /// Returns null if standings are unavailable or the team cannot be matched so callers
+            /// can degrade gracefully to guidance-only prompts.
+            /// </summary>
+            public async Task<NflTeamScoringStats?> GetNflTeamScoringStatsAsync(string teamIdOrCode, int season, CancellationToken cancellationToken = default)
+            {
+                if (string.IsNullOrWhiteSpace(teamIdOrCode))
+                    return null;
+
+                var table = await GetNflScoringTableAsync(season, cancellationToken);
+                if (table == null || table.Count == 0)
+                    return null;
+
+                return table.TryGetValue(teamIdOrCode.Trim().ToLowerInvariant(), out var stats) ? stats : null;
+            }
+
+            private async Task<Dictionary<string, NflTeamScoringStats>?> GetNflScoringTableAsync(int season, CancellationToken cancellationToken)
+            {
+                lock (_nflScoringCache)
+                {
+                    if (_nflScoringCache.TryGetValue(season, out var cached))
+                        return cached;
+                }
+
+                await _nflScoringLock.WaitAsync(cancellationToken);
+                try
+                {
+                    lock (_nflScoringCache)
+                    {
+                        if (_nflScoringCache.TryGetValue(season, out var cached))
+                            return cached;
+                    }
+
+                    var table = await FetchNflScoringTableAsync(season, cancellationToken);
+                    if (table != null)
+                    {
+                        lock (_nflScoringCache)
+                        {
+                            _nflScoringCache[season] = table;
+                        }
+                    }
+                    return table;
+                }
+                finally
+                {
+                    _nflScoringLock.Release();
+                }
+            }
+
+            private async Task<Dictionary<string, NflTeamScoringStats>?> FetchNflScoringTableAsync(int season, CancellationToken cancellationToken)
+            {
+                try
+                {
+                    var url = $"apis/v2/sports/football/nfl/standings?level=3&season={season}";
+                    var response = await _httpClient.GetAsync(url, cancellationToken);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning("ESPN NFL standings returned {Status} for season {Season}", response.StatusCode, season);
+                        return null;
+                    }
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                    var table = new Dictionary<string, NflTeamScoringStats>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var entries in EnumerateStandingsEntryArrays(doc.RootElement))
+                    {
+                        foreach (var entry in entries.EnumerateArray())
+                        {
+                            var stats = ParseStandingsEntry(entry);
+                            if (stats == null) continue;
+
+                            if (!string.IsNullOrWhiteSpace(stats.TeamId))
+                                table[stats.TeamId.ToLowerInvariant()] = stats;
+                            if (!string.IsNullOrWhiteSpace(stats.Abbreviation))
+                                table[stats.Abbreviation.ToLowerInvariant()] = stats;
+                        }
+                    }
+
+                    _logger.LogInformation("ESPN NFL standings parsed {Count} team entries for season {Season}", table.Count, season);
+                    return table.Count > 0 ? table : null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch ESPN NFL standings for season {Season}", season);
+                    return null;
+                }
+            }
+
+            // The standings payload nests entries either under children[].standings.entries
+            // (conference/division groupings) or a top-level standings.entries. Yield whichever exist.
+            private static IEnumerable<JsonElement> EnumerateStandingsEntryArrays(JsonElement root)
+            {
+                if (root.TryGetProperty("children", out var children) && children.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var child in children.EnumerateArray())
+                    {
+                        if (child.TryGetProperty("standings", out var childStandings) &&
+                            childStandings.TryGetProperty("entries", out var childEntries) &&
+                            childEntries.ValueKind == JsonValueKind.Array)
+                        {
+                            yield return childEntries;
+                        }
+                    }
+                }
+
+                if (root.TryGetProperty("standings", out var standings) &&
+                    standings.TryGetProperty("entries", out var entries) &&
+                    entries.ValueKind == JsonValueKind.Array)
+                {
+                    yield return entries;
+                }
+            }
+
+            private static NflTeamScoringStats? ParseStandingsEntry(JsonElement entry)
+            {
+                if (!entry.TryGetProperty("team", out var team) || team.ValueKind != JsonValueKind.Object)
+                    return null;
+
+                var result = new NflTeamScoringStats
+                {
+                    TeamId = GetString(team, "id"),
+                    Abbreviation = GetString(team, "abbreviation"),
+                    DisplayName = GetString(team, "displayName")
+                };
+
+                if (!entry.TryGetProperty("stats", out var stats) || stats.ValueKind != JsonValueKind.Array)
+                    return result;
+
+                double pointsFor = 0, pointsAgainst = 0, avgFor = 0, avgAgainst = 0;
+                int gamesPlayed = 0, wins = 0, losses = 0, ties = 0;
+
+                foreach (var stat in stats.EnumerateArray())
+                {
+                    var name = GetString(stat, "name");
+                    if (string.IsNullOrEmpty(name))
+                        name = GetString(stat, "type");
+
+                    var value = stat.TryGetProperty("value", out var v) && v.ValueKind == JsonValueKind.Number
+                        ? v.GetDouble()
+                        : 0;
+
+                    switch (name.ToLowerInvariant())
+                    {
+                        case "pointsfor": pointsFor = value; break;
+                        case "pointsagainst": pointsAgainst = value; break;
+                        case "avgpointsfor": avgFor = value; break;
+                        case "avgpointsagainst": avgAgainst = value; break;
+                        case "gamesplayed": gamesPlayed = (int)value; break;
+                        case "wins": wins = (int)value; break;
+                        case "losses": losses = (int)value; break;
+                        case "ties": ties = (int)value; break;
+                        case "overall":
+                        case "total":
+                            var summary = GetString(stat, "summary");
+                            if (!string.IsNullOrWhiteSpace(summary))
+                                result.RecordSummary = summary;
+                            break;
+                    }
+                }
+
+                if (gamesPlayed <= 0)
+                    gamesPlayed = wins + losses + ties;
+
+                result.GamesPlayed = gamesPlayed;
+                result.PointsPerGame = avgFor > 0 ? avgFor : (gamesPlayed > 0 ? pointsFor / gamesPlayed : 0);
+                result.PointsAllowedPerGame = avgAgainst > 0 ? avgAgainst : (gamesPlayed > 0 ? pointsAgainst / gamesPlayed : 0);
+
+                if (string.IsNullOrWhiteSpace(result.RecordSummary) && gamesPlayed > 0)
+                    result.RecordSummary = ties > 0 ? $"{wins}-{losses}-{ties}" : $"{wins}-{losses}";
+
+                return result;
+            }
+
+            private static void ParseVenue(JsonElement venue, EspnTeamDetails details)
         {
             if (venue.ValueKind != JsonValueKind.Object) return;
 

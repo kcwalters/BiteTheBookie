@@ -1143,6 +1143,13 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
 
         // ── NFL (professional football) ────────────────────────────────────────
 
+        /// <summary>
+        /// Derives the NFL season year (the year the season kicked off) from a date.
+        /// The NFL season runs Sept-Feb, so January/February belong to the prior year's season.
+        /// </summary>
+        private static int GetCurrentNflSeasonYear(DateTime nowUtc)
+            => nowUtc.Month <= 2 ? nowUtc.Year - 1 : nowUtc.Year;
+
         private async Task<string> GenerateFootballSimulationAsync(
             string homeTeam, string awayTeam, string simulationId,
             string timestamp, DateTime? gameTime, CancellationToken cancellationToken, bool isNfl)
@@ -1152,8 +1159,10 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
                 _logger.LogInformation(
                     "Calling Azure OpenAI for NFL: {AwayTeam} @ {HomeTeam}", awayTeam, homeTeam);
 
-                var today  = DateTime.UtcNow.ToString("yyyy-MM-dd");
-                var season = "2025 NFL season";
+                var nowUtc = DateTime.UtcNow;
+                var today  = nowUtc.ToString("yyyy-MM-dd");
+                var seasonYear = GetCurrentNflSeasonYear(nowUtc);
+                var season = $"{seasonYear} NFL season";
 
 
                 // -- Fetch live rosters from ESPN (NFL)
@@ -1186,6 +1195,18 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
                 }
 
                 var nflRosterSection = BuildRosterSection(awayTeam, awayNflRoster, homeTeam, homeNflRoster, today);
+
+                // -- Fetch current-season scoring averages so the AI anchors the final score to
+                //    real production instead of inventing inflated totals. Degrade gracefully to
+                //    guidance-only when ESPN standings are unavailable.
+                var scoringStats = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayNflCode) ? Task.FromResult<NflTeamScoringStats?>(null) : _espnClient.GetNflTeamScoringStatsAsync(awayNflCode, seasonYear, cancellationToken),
+                    string.IsNullOrEmpty(homeNflCode) ? Task.FromResult<NflTeamScoringStats?>(null) : _espnClient.GetNflTeamScoringStatsAsync(homeNflCode, seasonYear, cancellationToken));
+                var awayStats = scoringStats[0];
+                var homeStats = scoringStats[1];
+
+                var scoringSection = BuildNflScoringSection(awayTeam, awayStats, homeTeam, homeStats, seasonYear);
+
                 var prompt = $@"Generate a FRESH, UNIQUE NFL (professional football) game simulation: {awayTeam} (away) at {homeTeam} (home).
 
 SIMULATION ID : {simulationId}
@@ -1199,9 +1220,13 @@ OUTPUT FORMAT — NON-NEGOTIABLE:
 - Do NOT put anything outside the HTML (no preamble, no code fences).
 
 {nflRosterSection}
-SIMULATION REQUIREMENTS:
+{scoringSection}SIMULATION REQUIREMENTS:
 - This is FOOTBALL, not basketball. Scores MUST be realistic NFL totals
   (typically 13-31 points per team; blowouts can reach the 40s).
+- ANCHOR each team's final score to its {seasonYear} season scoring averages shown above:
+  a team's final score should land near its own points-per-game and its opponent's
+  points-allowed-per-game. Do NOT inflate scores beyond what those averages support;
+  only deviate for a clearly explained reason (weather, injuries, turnovers, blowout).
 - THE GAME MUST HAVE A WINNER. No ties — use overtime if the score is level after regulation.
 - Reflect each team's realistic scheme, strengths, and home-field environment
   (name the home stadium and how the crowd/venue affected play).
@@ -1217,7 +1242,7 @@ Include these sections in order:
 6. <h2>Win Probability</h2> — each team's win probability and the most likely winner
 7. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
 
-FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) SCORE RECONCILIATION (MANDATORY): For EACH team, the Q1-Q4 (plus any OT) values in the quarter-by-quarter line score MUST add up EXACTLY to that team's Final Score, and the points implied by the Scoring Summary plays MUST match that same total. Recompute and fix any mismatch before responding. (5) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
+FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic NFL score consistent with the season scoring averages above. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) SCORE RECONCILIATION (MANDATORY): For EACH team, the Q1-Q4 (plus any OT) values in the quarter-by-quarter line score MUST add up EXACTLY to that team's Final Score, and the points implied by the Scoring Summary plays MUST match that same total. Recompute and fix any mismatch before responding. (5) Review every player name - remove any not in the AUTHORITATIVE ROSTERS above.";
 
                 var messages = new List<ChatMessage>
                 {
@@ -1227,7 +1252,7 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic N
                         $"(1) Output raw HTML only — zero Markdown. " +
                         $"(2) This is FOOTBALL — use only football stats (yards, TDs, tackles, sacks, INTs). " +
                         $"Never use basketball stats (points, rebounds, assists) and never produce basketball-style scores. " +
-                        $"(3) Final scores must be realistic NFL totals and the game must have a winner. " +
+                        $"(3) Final scores must be realistic NFL totals anchored to each team's current-season scoring averages — do NOT inflate scores; the game must have a winner. " +
                         $"(4) Wrap every player name in <strong> tags wherever it appears. " +
                         $"(5) Each simulation must be entirely unique. This is #{simulationId}."),
                     new UserChatMessage(prompt)
@@ -1882,6 +1907,35 @@ private static readonly Regex TableRegex = new(
                    $"Use ONLY players listed below. Do NOT include any player not on this list.\n\n" +
                    $"{awayTeam} ROSTER:\n{awayBlock}\n\n" +
                    $"{homeTeam} ROSTER:\n{homeBlock}\n\n";
+        }
+
+        // Builds the current-season scoring section injected into the NFL prompt so the AI can
+        // anchor the final score to real production. Returns guidance-only text when ESPN stats
+        // are unavailable, so the simulation still runs (just without hard numbers).
+        private static string BuildNflScoringSection(
+            string awayTeam, NflTeamScoringStats? awayStats,
+            string homeTeam, NflTeamScoringStats? homeStats,
+            int seasonYear)
+        {
+            var haveAway = awayStats?.HasData == true;
+            var haveHome = homeStats?.HasData == true;
+
+            if (!haveAway && !haveHome)
+            {
+                return $"SCORING CONTEXT: Live {seasonYear} team scoring averages were unavailable. " +
+                       $"Base the final score on typical NFL production for {awayTeam} and {homeTeam} " +
+                       $"(most teams average roughly 17-27 points per game). Do NOT inflate the score.\n\n";
+            }
+
+            string Line(string team, NflTeamScoringStats? s) =>
+                s?.HasData == true
+                    ? $"  • {team}: {s.PointsPerGame:F1} pts/game scored, {s.PointsAllowedPerGame:F1} pts/game allowed" +
+                      (string.IsNullOrWhiteSpace(s.RecordSummary) ? "" : $" (record {s.RecordSummary}, {s.GamesPlayed} GP)")
+                    : $"  • {team}: season scoring average unavailable — use typical NFL production (~17-27 pts/game)";
+
+            return $"{seasonYear} SEASON SCORING AVERAGES (anchor the final score to these):\n" +
+                   $"{Line(awayTeam, awayStats)}\n" +
+                   $"{Line(homeTeam, homeStats)}\n\n";
         }
 
         // ── ESPN team-code mappings ───────────────────────────────────────────
