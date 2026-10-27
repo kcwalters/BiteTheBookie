@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using System.Text;
 using OpenAI.Chat;
 using Serilog;
 using Serilog.Sinks.MSSqlServer;
@@ -216,6 +219,36 @@ using (var scope = app.Services.CreateScope())
     // (SQL error 2714: object already exists). Gate it to non-Production only.
     if (!app.Environment.IsProduction())
     {
+        // Guard against an existing database that predates migration tracking:
+        // the schema (e.g. AspNetRoles) may already be present while
+        // __EFMigrationsHistory has no rows. In that case Migrate() would try to
+        // re-create existing objects and fail with SQL error 2714
+        // ("There is already an object named 'AspNetRoles'"). If we detect this,
+        // baseline the history so EF treats the current schema as already applied.
+        if (!db.Database.GetAppliedMigrations().Any())
+        {
+            var aspNetRolesExists = db.Database
+                .SqlQueryRaw<int>(
+                    "SELECT COUNT(*) AS [Value] FROM sys.tables WHERE name = 'AspNetRoles' AND schema_id = SCHEMA_ID('dbo')")
+                .AsEnumerable()
+                .First() > 0;
+
+            if (aspNetRolesExists)
+            {
+                var historyRepository = db.GetService<IHistoryRepository>();
+                var productVersion = typeof(DbContext).Assembly.GetName().Version?.ToString() ?? "10.0.0";
+
+                var baselineSql = new StringBuilder();
+                baselineSql.Append(historyRepository.GetCreateIfNotExistsScript());
+                foreach (var migrationId in db.Database.GetMigrations())
+                {
+                    baselineSql.Append(historyRepository.GetInsertScript(new HistoryRow(migrationId, productVersion)));
+                }
+
+                db.Database.ExecuteSqlRaw(baselineSql.ToString());
+            }
+        }
+
         db.Database.Migrate(); // ensures DataProtectionKeys and all pending migrations are applied
     }
 

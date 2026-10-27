@@ -9,8 +9,11 @@
     if (SignInManager.IsSignedIn(User))
     {
         var currentUser = await UserManager.GetUserAsync(User);
-        isPaid = currentUser != null &&
-                 (currentUser.IsPro || currentUser.SubscriptionTier == SubscriptionTier.Admin);
+        // Any subscription level above Free can create simulations. Admins
+        // (via the Identity role or the Admin tier) always have access.
+        isPaid = User.IsInRole("Admin") ||
+                 (currentUser != null &&
+                  currentUser.SubscriptionTier != SubscriptionTier.Free);
     }
 }
 

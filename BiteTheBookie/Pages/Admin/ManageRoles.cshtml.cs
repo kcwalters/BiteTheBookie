@@ -20,10 +20,28 @@ public class ManageRolesModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Role))
+        {
+            Message = "Please provide both an email and a role.";
+            return Page();
+        }
+
         var user = await _userManager.FindByEmailAsync(Email);
         if (user is null) { Message = "User not found."; return Page(); }
 
-        await _userManager.AddToRoleAsync(user, Role);
+        if (await _userManager.IsInRoleAsync(user, Role))
+        {
+            Message = $"{Email} is already in the {Role} role.";
+            return Page();
+        }
+
+        var result = await _userManager.AddToRoleAsync(user, Role);
+        if (!result.Succeeded)
+        {
+            Message = "Could not assign role: " + string.Join(" ", result.Errors.Select(e => e.Description));
+            return Page();
+        }
+
         Message = $"{Email} added to {Role}.";
         return Page();
     }
