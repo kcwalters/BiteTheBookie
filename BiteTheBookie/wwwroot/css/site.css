@@ -681,4 +681,61 @@ img.team-logo {
 .picks-dropdown:hover .dropdown-toggle::after {
     transform: rotate(180deg);
 }
+
+/* ---- Membership paywall gate ---- */
+.membership-gate {
+    position: relative;
+    min-height: 240px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.membership-gate__sample {
+    filter: blur(6px);
+    opacity: 0.55;
+    pointer-events: none;
+    user-select: none;
+}
+
+.membership-gate__table {
+    margin-bottom: 0;
+}
+
+.membership-gate__overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.membership-gate__card {
+    text-align: center;
+    max-width: 440px;
+    padding: 1.75rem;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.membership-gate__icon {
+    font-size: 2rem;
+    color: #f0a500;
+    margin-bottom: 0.75rem;
+}
+
+.membership-gate__title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.membership-gate__text {
+    color: #555;
+    margin-bottom: 1.25rem;
+}
+
+.membership-gate__login {
+    font-size: 0.9rem;
+    color: #666;
 }

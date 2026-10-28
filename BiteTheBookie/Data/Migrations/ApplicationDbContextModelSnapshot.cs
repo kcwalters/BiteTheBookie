@@ -193,6 +193,123 @@ namespace BiteTheBookie.Data.Migrations
                     b.ToTable("ContentBlocks");
                 });
 
+            modelBuilder.Entity("BiteTheBookie.Models.DailyPick", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Analysis")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AwayTeamName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Confidence")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("GameDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GameId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("GameTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("GeneratedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HomeTeamName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("League")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("PickSelection")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PickType")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int?>("PredictedAwayScore")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PredictedHomeScore")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("Week")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameDate");
+
+                    b.HasIndex("League", "GameId")
+                        .IsUnique();
+
+                    b.ToTable("DailyPicks");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.DailyPickRun", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GamesProcessed")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PicksGenerated")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RunDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RunDate")
+                        .IsUnique();
+
+                    b.ToTable("DailyPickRuns");
+                });
+
             modelBuilder.Entity("BiteTheBookie.Models.ExpertPick", b =>
                 {
                     b.Property<int>("Id")
@@ -253,6 +370,41 @@ namespace BiteTheBookie.Data.Migrations
                     b.HasIndex("League");
 
                     b.ToTable("ExpertPicks");
+                });
+
+            modelBuilder.Entity("BiteTheBookie.Models.ExpertPickRun", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GamesProcessed")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PicksGenerated")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("RunDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RunDate")
+                        .IsUnique();
+
+                    b.ToTable("ExpertPickRuns");
                 });
 
             modelBuilder.Entity("BiteTheBookie.Models.ExpertPost", b =>

@@ -20,5 +20,8 @@ namespace BiteTheBookie.ViewModels
 
         /// <summary>When the simulation was originally generated (populated on cache hits).</summary>
         public DateTime? CachedAt { get; set; }
+
+        /// <summary>True when the viewer is not a paid member and must upgrade to see/generate the simulation.</summary>
+        public bool IsLocked { get; set; }
     }
 }

@@ -11,11 +11,13 @@ using Microsoft.EntityFrameworkCore;
 namespace BiteTheBookie.Controllers
 {
     /// <summary>
-    /// Daily Fantasy Football (DFS) salary-cap contests. Browsing and lineup building require a
-    /// Pro/AllAccess membership; contest creation and scoring are admin-only. All player, slate,
-    /// and scoring data comes from the real ESPN API via <see cref="INflFantasyDataService"/>.
+    /// Daily Fantasy Football (DFS) salary-cap contests. The lobby is publicly browseable;
+    /// non-paid visitors see a masked preview and upgrade prompt. Lineup building and entry
+    /// require a Pro/AllAccess membership; contest creation and scoring are admin-only. All
+    /// player, slate, and scoring data comes from the real ESPN API via
+    /// <see cref="INflFantasyDataService"/>.
     /// </summary>
-    [Authorize(Policy = "ProOnly")]
+    [AllowAnonymous]
     public class FantasyController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -44,11 +46,26 @@ namespace BiteTheBookie.Controllers
                 .Take(25)
                 .ToListAsync();
 
+            ViewBag.IsPaid = await IsPaidMemberAsync();
             return View(new FantasyLobbyViewModel { Contests = contests });
+        }
+
+        /// <summary>Determines whether the current user has paid (Pro/AllAccess) or admin access.</summary>
+        private async Task<bool> IsPaidMemberAsync()
+        {
+            if (User?.Identity?.IsAuthenticated != true)
+                return false;
+
+            if (User.IsInRole("Admin"))
+                return true;
+
+            var user = await _userManager.GetUserAsync(User);
+            return user?.IsPro == true || user?.SubscriptionTier == SubscriptionTier.Admin;
         }
 
         /// <summary>Lineup builder for a single contest.</summary>
         [HttpGet]
+        [Authorize(Policy = "ProOnly")]
         public async Task<IActionResult> Contest(int id)
         {
             var contest = await _db.FantasyContests
@@ -75,6 +92,7 @@ namespace BiteTheBookie.Controllers
 
         /// <summary>Submit or replace a lineup for a contest.</summary>
         [HttpPost]
+        [Authorize(Policy = "ProOnly")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Submit(FantasyEntrySubmission submission)
         {

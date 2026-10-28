@@ -1,0 +1,75 @@
+@using Microsoft.AspNetCore.Identity
+@using BiteTheBookie.Models
+@inject SignInManager<ApplicationUser> SignInManager
+
+@*
+    Reusable paywall gate. Renders a masked/blurred example of paid content with an
+    upgrade call-to-action. Pass an optional heading/description via ViewData:
+      ViewData["GateTitle"]       - headline (default below)
+      ViewData["GateDescription"] - supporting copy
+    The caller is responsible for only rendering this partial when the current user
+    is NOT a paid member.
+*@
+
+@{
+    var gateTitle = ViewData["GateTitle"] as string ?? "This is a members-only feature";
+    var gateDescription = ViewData["GateDescription"] as string
+        ?? "Upgrade to a paid membership to unlock full access to this content.";
+    var isSignedIn = SignInManager.IsSignedIn(User);
+}
+
+<div class="membership-gate">
+    <div class="membership-gate__sample" aria-hidden="true">
+        <table class="table membership-gate__table">
+            <thead>
+                <tr>
+                    <th>League</th>
+                    <th>Matchup</th>
+                    <th>Pick</th>
+                    <th>Confidence</th>
+                    <th>Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="badge bg-dark">NFL</span></td>
+                    <td>Chiefs @@ Bills</td>
+                    <td><strong>Home -2.5</strong></td>
+                    <td><span class="badge bg-success">74%</span></td>
+                    <td>Strong home-field edge and a favorable pace matchup.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-dark">NBA</span></td>
+                    <td>Celtics @@ Heat</td>
+                    <td><strong>Over 219.5</strong></td>
+                    <td><span class="badge bg-primary">63%</span></td>
+                    <td>Both teams trending up in offensive efficiency.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge bg-dark">MLB</span></td>
+                    <td>Dodgers @@ Padres</td>
+                    <td><strong>Away ML</strong></td>
+                    <td><span class="badge bg-primary">58%</span></td>
+                    <td>Pitching advantage on the road favors the visitor.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="membership-gate__overlay">
+        <div class="membership-gate__card">
+            <i class="fas fa-lock membership-gate__icon"></i>
+            <h3 class="membership-gate__title">@gateTitle</h3>
+            <p class="membership-gate__text">@gateDescription</p>
+            <a class="btn btn-primary btn-lg" asp-controller="Membership" asp-action="Join">
+                <i class="fas fa-crown me-1"></i> Upgrade Your Membership
+            </a>
+            @if (!isSignedIn)
+            {
+                <div class="membership-gate__login mt-2">
+                    Already a member?
+                    <a asp-area="Identity" asp-page="/Account/Login">Log in</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

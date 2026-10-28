@@ -1,0 +1,126 @@
+@model List<BiteTheBookie.Models.DailyPick>
+
+@{
+    ViewData["Title"] = "Daily AI Picks";
+    var selectedLeague = ViewBag.SelectedLeague as string;
+    var leagues = new[] { "NFL", "NBA", "NHL", "MLB", "CFB", "CBB" };
+    var isAdmin = User.IsInRole("Admin");
+    var isPaid = ViewBag.IsPaid as bool? ?? false;
+
+    string ConfidenceBadgeClass(int c) => c >= 70 ? "bg-success" : c >= 50 ? "bg-primary" : "bg-secondary";
+
+    if (!isPaid)
+    {
+        ViewData["GateTitle"] = "Daily AI Picks are a members-only feature";
+        ViewData["GateDescription"] = "Our computer models generate fresh picks for every in-season league each morning. Upgrade to unlock the full board, confidence ratings, projected scores, and analysis.";
+    }
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-robot me-2"></i>Daily AI Picks
+            </h1>
+            @if (isAdmin)
+            {
+                <form asp-action="GenerateNow" method="post" class="mb-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-bolt me-1"></i>Generate Now
+                    </button>
+                </form>
+            }
+        </div>
+        <p class="text-muted mb-0 mt-2">
+            Computer-generated picks refreshed automatically every morning for all leagues currently in season.
+        </p>
+    </div>
+
+    @if (TempData["PicksMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["PicksMessage"]</div>
+    }
+
+    <div class="content-card">
+        @if (!isPaid)
+        {
+            <partial name="Partials/_MembershipGate" />
+        }
+        else
+        {
+            <ul class="nav nav-pills mb-4 flex-wrap">
+            <li class="nav-item">
+                <a class="nav-link @(string.IsNullOrEmpty(selectedLeague) ? "active" : "")"
+                   asp-action="Index">All</a>
+            </li>
+            @foreach (var lg in leagues)
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(selectedLeague == lg ? "active" : "")"
+                       asp-action="Index" asp-route-league="@lg">@lg</a>
+                </li>
+            }
+        </ul>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-calendar-times fa-2x mb-3"></i>
+                <p class="mb-0">No picks are available yet. Check back after the next generation run.</p>
+            </div>
+        }
+        else
+        {
+            foreach (var dayGroup in Model.GroupBy(p => p.GameDate).OrderBy(g => g.Key))
+            {
+                <h2 class="h5 mt-4 mb-3">@dayGroup.Key.ToString("dddd, MMMM d")</h2>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>League</th>
+                                <th>Matchup</th>
+                                <th>Pick</th>
+                                <th>Type</th>
+                                <th class="text-center">Confidence</th>
+                                <th>Projected</th>
+                                <th>Analysis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pick in dayGroup.OrderBy(p => p.League).ThenBy(p => p.GameTime))
+                            {
+                                <tr>
+                                    <td><span class="badge bg-dark">@pick.League</span></td>
+                                    <td>
+                                        <div>@pick.AwayTeamName</div>
+                                        <div class="text-muted">@@ @pick.HomeTeamName</div>
+                                        <small class="text-muted">@pick.GameTime.ToLocalTime().ToString("h:mm tt")</small>
+                                    </td>
+                                    <td><strong>@pick.PickSelection</strong></td>
+                                    <td><span class="badge bg-secondary">@pick.PickType</span></td>
+                                    <td class="text-center">
+                                        <span class="badge @ConfidenceBadgeClass(pick.Confidence)">@pick.Confidence%</span>
+                                    </td>
+                                    <td>
+                                        @if (pick.PredictedAwayScore.HasValue && pick.PredictedHomeScore.HasValue)
+                                        {
+                                            <span>@pick.PredictedAwayScore&ndash;@pick.PredictedHomeScore</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">&mdash;</span>
+                                        }
+                                    </td>
+                                    <td style="max-width: 320px;"><small>@pick.Analysis</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    }
+    </div>
+</div>

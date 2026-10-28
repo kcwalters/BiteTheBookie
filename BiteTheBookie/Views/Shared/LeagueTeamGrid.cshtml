@@ -23,6 +23,7 @@
             <a class="btn btn-primary" asp-controller="@Model.TeamController" asp-action="Index">@Model.LeagueName Home</a>
             <a class="btn btn-outline-primary" asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">@Model.LeagueName Odds</a>
             <a class="btn btn-outline-primary" asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Expert Picks</a>
+            <a class="btn btn-outline-primary" asp-controller="DailyPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Daily AI Picks</a>
         </div>
     </div>
 

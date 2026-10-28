@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace BiteTheBookie.Controllers
 {
-    [Authorize]
+    [AllowAnonymous]
     public class GameSimulationController : Controller
     {
         private readonly IGameSimulationService _simulationService;
@@ -26,6 +26,19 @@ namespace BiteTheBookie.Controllers
             _simulationService = simulationService;
             _db = db;
             _userManager = userManager;
+        }
+
+        /// <summary>Determines whether the current user has paid (Pro/AllAccess) or admin access.</summary>
+        private async Task<bool> IsPaidMemberAsync()
+        {
+            if (User?.Identity?.IsAuthenticated != true)
+                return false;
+
+            if (User.IsInRole("Admin"))
+                return true;
+
+            var user = await _userManager.GetUserAsync(User);
+            return user?.IsPro == true || user?.SubscriptionTier == SubscriptionTier.Admin;
         }
 
         [HttpGet]
@@ -43,6 +56,20 @@ namespace BiteTheBookie.Controllers
                     ErrorMessage = "Missing game details. Please try again from the scoreboard."
                 };
                 return View(invalid);
+            }
+
+            // Non-paid visitors can see the page shell but not the AI simulation. Never
+            // trigger generation for them; return a locked preview with an upgrade prompt.
+            if (!await IsPaidMemberAsync())
+            {
+                var locked = new GameSimulationViewModel
+                {
+                    HomeTeam = homeTeam,
+                    AwayTeam = awayTeam,
+                    League = league,
+                    IsLocked = true
+                };
+                return View(locked);
             }
 
             var model = await BuildSimulationModelAsync(homeTeam, awayTeam, league, regenerate);

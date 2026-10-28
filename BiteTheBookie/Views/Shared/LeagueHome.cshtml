@@ -25,6 +25,7 @@
             <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction">Odds</a></li>
             <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague">Scores</a></li>
             <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Experts</a></li>
+            <li><a asp-controller="DailyPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague">Daily AI Picks</a></li>
             <li><a href="/GameSimulation?league=@league">$ Game Simulation</a></li>
         </ul>
     </div>
@@ -192,6 +193,7 @@
                     <li><a asp-controller="@Model.TeamController" asp-action="@Model.TeamsAction"><i class="fas fa-users"></i>@league Teams</a></li>
                     <li><a asp-controller="@Model.OddsController" asp-action="@Model.OddsAction"><i class="fas fa-percent"></i>@league Odds</a></li>
                     <li><a asp-controller="ExpertPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-user-tie"></i>Expert Picks</a></li>
+                    <li><a asp-controller="DailyPicks" asp-action="Index" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-robot"></i>Daily AI Picks</a></li>
                     <li><a asp-controller="Scores" asp-action="League" asp-route-league="@Model.ExpertPicksLeague"><i class="fas fa-list-ol"></i>Scores</a></li>
                     @if (!string.IsNullOrWhiteSpace(Model.ExpertPicksLeague))
                     {

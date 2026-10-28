@@ -1,6 +1,7 @@
 @model BiteTheBookie.ViewModels.FantasyLobbyViewModel
 @{
     ViewData["Title"] = "Daily Fantasy Football";
+    var isPaid = ViewBag.IsPaid as bool? ?? false;
 }
 
 <div class="container py-4">
@@ -27,6 +28,22 @@
     @if (TempData["FantasyError"] is string errMsg)
     {
         <div class="alert alert-danger">@errMsg</div>
+    }
+
+    @if (!isPaid)
+    {
+        <div class="content-card mb-4 border-warning">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <i class="fas fa-lock fa-2x text-warning"></i>
+                <div class="flex-grow-1">
+                    <h5 class="mb-1">Building lineups is a members-only feature</h5>
+                    <p class="text-muted mb-0">Browse the contests below for a preview. Upgrade to a Pro or All-Access membership to build lineups and enter contests.</p>
+                </div>
+                <a class="btn btn-primary" asp-controller="Membership" asp-action="Join">
+                    <i class="fas fa-crown me-1"></i> Upgrade Your Membership
+                </a>
+            </div>
+        </div>
     }
 
     @if (!Model.Contests.Any())

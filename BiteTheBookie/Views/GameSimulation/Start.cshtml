@@ -32,6 +32,14 @@
             </div>
         </div>
     }
+    else if (Model.IsLocked)
+    {
+        ViewData["GateTitle"] = "AI Game Simulations are a members-only feature";
+        ViewData["GateDescription"] = "Our AI simulates this matchup drive-by-drive using live data. Upgrade to a Pro or All-Access membership to run and view full game simulations.";
+        <div class="content-card">
+            <partial name="Partials/_MembershipGate" />
+        </div>
+    }
     else
     {
         <div class="content-card">

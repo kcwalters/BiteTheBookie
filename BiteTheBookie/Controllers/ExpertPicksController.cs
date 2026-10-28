@@ -24,6 +24,7 @@ namespace BiteTheBookie.Controllers
         private readonly ICBBGamesService _cbbGamesService;
         private readonly ICFBGamesService _cfbGamesService;
         private readonly TheOddsApiClient _oddsApiClient;
+        private readonly IExpertPickAutomationService _expertPickAutomationService;
 
         public ExpertPicksController(
             ApplicationDbContext db,
@@ -33,7 +34,8 @@ namespace BiteTheBookie.Controllers
             IMLBGamesService mlbGamesService,
             ICBBGamesService cbbGamesService,
             ICFBGamesService cfbGamesService,
-            TheOddsApiClient oddsApiClient)
+            TheOddsApiClient oddsApiClient,
+            IExpertPickAutomationService expertPickAutomationService)
         {
             _db = db;
             _userManager = userManager;
@@ -43,6 +45,7 @@ namespace BiteTheBookie.Controllers
             _cbbGamesService = cbbGamesService;
             _cfbGamesService = cfbGamesService;
             _oddsApiClient = oddsApiClient;
+            _expertPickAutomationService = expertPickAutomationService;
         }
 
         [AllowAnonymous]
@@ -226,6 +229,33 @@ namespace BiteTheBookie.Controllers
 
             TempData["SuccessMessage"] = "Pick deleted";
             return RedirectToAction("Index", new { league });
+        }
+
+        /// <summary>
+        /// Manually triggers the automated Expert Picks generation job (same job that
+        /// runs daily at 4:00 AM Eastern). Generates/refreshes AI Expert Picks for all
+        /// in-season games in the lookahead window and upserts them for all paid users.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateAutomatedNow(string league = "NBA", CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var count = await _expertPickAutomationService.GenerateExpertPicksAsync(cancellationToken);
+                _logger.LogInformation("Admin {User} manually triggered Expert Picks generation; {Count} picks created/refreshed.",
+                    User.Identity?.Name, count);
+                TempData["SuccessMessage"] = count > 0
+                    ? $"Generated or refreshed {count} Expert Picks."
+                    : "No Expert Picks were generated. Check the logs for details.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Admin-triggered Expert Picks generation failed.");
+                TempData["SuccessMessage"] = "Expert Picks generation failed. Check the logs for details.";
+            }
+
+            return RedirectToAction("Manage", new { league });
         }
 
         /// <summary>

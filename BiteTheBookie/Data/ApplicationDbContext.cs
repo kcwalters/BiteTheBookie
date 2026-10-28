@@ -15,8 +15,11 @@ namespace BiteTheBookie.Data
 
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; }
         public DbSet<ExpertPick> ExpertPicks { get; set; }
+        public DbSet<DailyPick> DailyPicks { get; set; }
         public DbSet<ExpertPost> ExpertPosts { get; set; }
         public DbSet<GameSimulation> GameSimulations { get; set; }
+        public DbSet<DailyPickRun> DailyPickRuns { get; set; }
+        public DbSet<ExpertPickRun> ExpertPickRuns { get; set; }
         public DbSet<SiteVideo> SiteVideos { get; set; }
         public DbSet<ContentBlock> ContentBlocks { get; set; }
         public DbSet<FantasyContest> FantasyContests { get; set; }
@@ -44,6 +47,25 @@ namespace BiteTheBookie.Data
                 entity.HasIndex(e => e.League);
                 entity.Property(e => e.CreatedAt)
                       .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            builder.Entity<DailyPick>(entity =>
+            {
+                entity.HasIndex(e => new { e.League, e.GameId }).IsUnique();
+                entity.HasIndex(e => e.GameDate);
+                entity.Property(e => e.Analysis).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.GeneratedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            builder.Entity<DailyPickRun>(entity =>
+            {
+                entity.HasIndex(e => e.RunDate).IsUnique();
+            });
+
+            builder.Entity<ExpertPickRun>(entity =>
+            {
+                entity.HasIndex(e => e.RunDate).IsUnique();
             });
 
             builder.Entity<GameSimulation>(entity =>

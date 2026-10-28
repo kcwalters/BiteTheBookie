@@ -44,7 +44,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Persist Data Protection keys to the database so they survive container restarts
 builder.Services.AddDataProtection()
-    .PersistKeysToDbContext<ApplicationDbContext>();
+    .PersistKeysToDbContext<ApplicationDbContext>()
+    // Pin a stable application name so the key ring (and therefore the auth cookie)
+    // is shared across restarts, replicas, and the local vs. container environment.
+    // Without this the name is derived from the content-root path, which varies, so
+    // cookies encrypted by one instance can't be decrypted by another and users are
+    // silently treated as signed-out and bounced back to the login screen.
+    .SetApplicationName("BiteTheBookie");
  
 // Identity with ApplicationUser and Roles
 builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
@@ -58,6 +64,24 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Configure the Identity authentication cookie. Behind Azure's TLS-terminating proxy
+// the public request is HTTPS while the container sees HTTP, so SecurePolicy must be
+// SameAsRequest (not Always) or the cookie is dropped and the user is redirected back
+// to the login screen on every request. Keep the login/access-denied paths pointed at
+// the Identity UI pages and give the cookie a sliding expiration.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Identity/Account/Login";
+    options.LogoutPath = "/Identity/Account/Logout";
+    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromDays(14);
+    options.SlidingExpiration = true;
+});
 
 // Authorization policies for Free vs Paid access
 builder.Services.AddAuthorization(options =>
@@ -138,6 +162,14 @@ builder.Services.AddScoped<ICBBGamesService, CBBGamesService>();
 builder.Services.AddScoped<ICBBRosterService, CBBRosterService>();
 builder.Services.AddScoped<ICFBGamesService, CFBGamesService>();
 builder.Services.AddScoped<INBAScoresService, NBAScoresService>();
+
+// Automated daily AI picks
+builder.Services.AddScoped<IDailyPickService, DailyPickService>();
+builder.Services.AddHostedService<DailyPickGenerationHostedService>();
+
+// Automated Expert Picks (daily AI-generated, admin-triggerable)
+builder.Services.AddScoped<IExpertPickAutomationService, ExpertPickAutomationService>();
+builder.Services.AddHostedService<ExpertPickGenerationHostedService>();
 
 // Date-aware NBA schedule (ESPN scoreboard by date) for Scores & Simulations
 builder.Services.AddHttpClient<INBAScheduleService, NBAScheduleService>();
@@ -290,6 +322,70 @@ BEGIN
     CREATE NONCLUSTERED INDEX [Index_ExpiresAtTime] ON [dbo].[SessionCache] ([ExpiresAtTime]);
 END";
         db.Database.ExecuteSqlRaw(createSessionCacheTable);
+    }
+
+    // Ensure the automated daily picks tables exist even where migrations are gated off
+    // (Production manages schema out-of-band). Created idempotently to keep the app self-healing.
+    if (!app.Environment.IsDevelopment())
+    {
+        const string createDailyPickTables = @"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'DailyPickRuns' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    CREATE TABLE [dbo].[DailyPickRuns] (
+        [Id] int IDENTITY(1,1) NOT NULL,
+        [RunDate] datetime2 NOT NULL,
+        [StartedAt] datetime2 NOT NULL,
+        [CompletedAt] datetime2 NULL,
+        [GamesProcessed] int NOT NULL,
+        [PicksGenerated] int NOT NULL,
+        [Notes] nvarchar(2000) NULL,
+        CONSTRAINT [PK_DailyPickRuns] PRIMARY KEY ([Id])
+    );
+    CREATE UNIQUE NONCLUSTERED INDEX [IX_DailyPickRuns_RunDate] ON [dbo].[DailyPickRuns] ([RunDate]);
+END
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'DailyPicks' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    CREATE TABLE [dbo].[DailyPicks] (
+        [Id] int IDENTITY(1,1) NOT NULL,
+        [GameId] nvarchar(100) NOT NULL,
+        [League] nvarchar(10) NOT NULL,
+        [AwayTeamName] nvarchar(150) NOT NULL,
+        [HomeTeamName] nvarchar(150) NOT NULL,
+        [GameTime] datetime2 NOT NULL,
+        [GameDate] datetime2 NOT NULL,
+        [Week] int NULL,
+        [PickType] nvarchar(40) NOT NULL,
+        [PickSelection] nvarchar(200) NOT NULL,
+        [Confidence] int NOT NULL,
+        [PredictedAwayScore] int NULL,
+        [PredictedHomeScore] int NULL,
+        [Analysis] nvarchar(max) NULL,
+        [GeneratedBy] nvarchar(100) NOT NULL,
+        [GeneratedAt] datetime2 NOT NULL CONSTRAINT [DF_DailyPicks_GeneratedAt] DEFAULT (GETUTCDATE()),
+        [UpdatedAt] datetime2 NULL,
+        CONSTRAINT [PK_DailyPicks] PRIMARY KEY ([Id])
+    );
+    CREATE INDEX [IX_DailyPicks_GameDate] ON [dbo].[DailyPicks] ([GameDate]);
+    CREATE UNIQUE NONCLUSTERED INDEX [IX_DailyPicks_League_GameId] ON [dbo].[DailyPicks] ([League], [GameId]);
+END";
+        db.Database.ExecuteSqlRaw(createDailyPickTables);
+
+        const string createExpertPickRunsTable = @"
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ExpertPickRuns' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    CREATE TABLE [dbo].[ExpertPickRuns] (
+        [Id] int IDENTITY(1,1) NOT NULL,
+        [RunDate] datetime2 NOT NULL,
+        [StartedAt] datetime2 NOT NULL,
+        [CompletedAt] datetime2 NULL,
+        [GamesProcessed] int NOT NULL,
+        [PicksGenerated] int NOT NULL,
+        [Notes] nvarchar(2000) NULL,
+        CONSTRAINT [PK_ExpertPickRuns] PRIMARY KEY ([Id])
+    );
+    CREATE UNIQUE NONCLUSTERED INDEX [IX_ExpertPickRuns_RunDate] ON [dbo].[ExpertPickRuns] ([RunDate]);
+END";
+        db.Database.ExecuteSqlRaw(createExpertPickRunsTable);
     }
 
     // Ensure the subscription/access roles exist so AddToRoleAsync never fails.
