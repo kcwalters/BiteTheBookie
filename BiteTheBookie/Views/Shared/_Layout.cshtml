@@ -1,5 +1,4 @@
-﻿
-@using Microsoft.AspNetCore.Identity
+﻿@using Microsoft.AspNetCore.Identity
 @using BiteTheBookie.Models
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -243,7 +242,7 @@
                             </li>
                         }
                         <li class="nav-item"><a class="nav-link" asp-controller="Experts" asp-action="Index">Experts</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#">Analysis</a></li>
+                        @* <li class="nav-item"><a class="nav-link" href="#">Analysis</a></li> *@
                     </ul>
 
                     <!-- League quick-links with icons; also drives the ticker switcher -->
@@ -461,4 +460,4 @@
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
-</html>
+</html></html>
