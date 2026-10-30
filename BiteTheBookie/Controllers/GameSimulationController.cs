@@ -34,11 +34,13 @@ namespace BiteTheBookie.Controllers
             if (User?.Identity?.IsAuthenticated != true)
                 return false;
 
-            if (User.IsInRole("Admin"))
+            if (User.IsInRole("Admin") || User.IsInRole("Pro") || User.IsInRole("AllAccess"))
                 return true;
 
             var user = await _userManager.GetUserAsync(User);
-            return user?.IsPro == true || user?.SubscriptionTier == SubscriptionTier.Admin;
+            return user?.IsPro == true
+                || user?.SubscriptionTier == SubscriptionTier.AllAccess
+                || user?.SubscriptionTier == SubscriptionTier.Admin;
         }
 
         [HttpGet]

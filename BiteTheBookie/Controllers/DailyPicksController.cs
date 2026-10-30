@@ -44,14 +44,16 @@ namespace BiteTheBookie.Controllers
             var isPaid = false;
             if (User?.Identity?.IsAuthenticated == true)
             {
-                if (User.IsInRole("Admin"))
+                if (User.IsInRole("Admin") || User.IsInRole("Pro") || User.IsInRole("AllAccess"))
                 {
                     isPaid = true;
                 }
                 else
                 {
                     var user = await _userManager.GetUserAsync(User);
-                    isPaid = user?.IsPro == true || user?.SubscriptionTier == SubscriptionTier.Admin;
+                    isPaid = user?.IsPro == true
+                        || user?.SubscriptionTier == SubscriptionTier.AllAccess
+                        || user?.SubscriptionTier == SubscriptionTier.Admin;
                 }
             }
 
