@@ -6,7 +6,7 @@
             const response = await fetch('/Scores/NflTickerInner');
             if (!response.ok) return;
             const html = await response.text();
-            const inner = document.querySelector('#nfl-ticker .nfl-ticker-inner');
+            const inner = document.querySelector('#nfl-ticker .league-ticker-inner');
             if (inner) inner.innerHTML = html;
         } catch (e) {
             console.error('NFL ticker refresh failed', e);

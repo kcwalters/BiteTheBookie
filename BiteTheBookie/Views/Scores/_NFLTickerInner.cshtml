@@ -2,11 +2,15 @@
 @model IReadOnlyList<NFLTickerView>
 <div class="nfl-header-row">
     <img src="../img/NFL/NFL_Ticker_Logo.jpg" alt="NFL" class="league-logo" />
-    <div class="nfl-ticker">
-        <div class="nfl-ticker-track">
+    <div class="league-ticker">
+        <div class="league-ticker-track">
+            @if (Model.Count == 0)
+            {
+                <div class="league-ticker-empty">Out of season or no games scheduled in the next 10 days</div>
+            }
             @foreach (var g in Model)
             {
-                <div class="nfl-ticker-item">
+                <div class="league-ticker-item">
                     @if (!string.IsNullOrWhiteSpace(g.AwayLogo))
                     {
                         <img class="team-logo" src="@g.AwayLogo" alt="@g.AwayTeam" decoding="async" />

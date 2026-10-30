@@ -34,7 +34,7 @@
 
   function tickerHasGames(league) {
     var el = document.getElementById(league + '-ticker');
-    return !!(el && el.querySelector('.nfl-ticker-item'));
+    return !!(el && el.querySelector('.league-ticker-item'));
   }
 
   // Picks the league to show on load: the previously selected one (if it still has

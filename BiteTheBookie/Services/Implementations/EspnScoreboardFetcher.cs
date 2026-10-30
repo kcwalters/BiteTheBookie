@@ -4,13 +4,16 @@ namespace BiteTheBookie.Services.Implementations
 {
     /// <summary>
     /// Shared helper for the league ticker scores services. Fetches the ESPN scoreboard
-    /// for today and, when the league has no games today (off-day or out of season),
-    /// falls forward to the next date within a look-ahead window that actually has games.
-    /// This keeps every ticker populated year-round instead of going blank off-season.
+    /// for today and, when the league has no games today (off-day), falls forward to the
+    /// next date within a short look-ahead window that actually has games. When a sport is
+    /// out of season (no games within the window) an empty list is returned so the ticker
+    /// stays hidden instead of showing a game weeks or months away.
     /// </summary>
     internal static class EspnScoreboardFetcher
     {
-        private const int LookAheadDays = 120;
+        // Short window so in-season off-days still populate the ticker, but out-of-season
+        // leagues (whose next game is further out) return empty and are hidden.
+        private const int LookAheadDays = 10;
 
         /// <summary>
         /// Returns the ESPN scoreboard events for today, or — when today is empty — the
@@ -19,33 +22,33 @@ namespace BiteTheBookie.Services.Implementations
         /// underlying <see cref="JsonDocument"/> is disposed.
         /// </summary>
         public static async Task<List<JsonElement>> GetEarliestDayEventsAsync(
-            HttpClient http, string scoreboardUrl, CancellationToken cancellationToken, string? extraQuery = null)
+            HttpClient http, string scoreboardUrl, CancellationToken cancellationToken, string? extraQuery = null, int? lookAheadDays = null)
         {
             var today = DateTime.UtcNow.Date;
             var suffix = string.IsNullOrWhiteSpace(extraQuery) ? string.Empty : $"&{extraQuery}";
+            var window = lookAheadDays ?? LookAheadDays;
 
-            // 1) Try today first (cheap, most common case for in-season leagues).
-            var todays = await FetchEventsAsync(
-                http, $"{scoreboardUrl}?dates={today:yyyyMMdd}{suffix}", cancellationToken);
-            if (todays.Count > 0)
+            // Walk forward one day at a time and return the first day that has games.
+            // The ESPN scoreboard API only accepts a single "dates=yyyyMMdd" value; the
+            // "dates=start-end" range format responds with HTTP 400, so we probe each day
+            // within the look-ahead window instead. Today is checked first (the common
+            // in-season case); if the league has no games within the window an empty list
+            // is returned so the ticker stays hidden.
+            for (var offset = 0; offset <= window; offset++)
             {
-                return todays.Select(e => e.Element).ToList();
+                var day = today.AddDays(offset);
+                var events = await FetchEventsAsync(
+                    http, $"{scoreboardUrl}?dates={day:yyyyMMdd}{suffix}", cancellationToken);
+                if (events.Count > 0)
+                {
+                    return events
+                        .OrderBy(e => e.Date)
+                        .Select(e => e.Element)
+                        .ToList();
+                }
             }
 
-            // 2) Off-day / offseason: widen to a date range and keep the earliest game day.
-            var rangeUrl = $"{scoreboardUrl}?dates={today:yyyyMMdd}-{today.AddDays(LookAheadDays):yyyyMMdd}&limit=100{suffix}";
-            var range = await FetchEventsAsync(http, rangeUrl, cancellationToken);
-            if (range.Count == 0)
-            {
-                return new List<JsonElement>();
-            }
-
-            var earliestDay = range.Min(e => e.Date.Date);
-            return range
-                .Where(e => e.Date.Date == earliestDay)
-                .OrderBy(e => e.Date)
-                .Select(e => e.Element)
-                .ToList();
+            return new List<JsonElement>();
         }
 
         public static async Task<List<JsonElement>> GetEventsForDateAsync(

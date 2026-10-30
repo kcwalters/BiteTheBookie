@@ -22,6 +22,10 @@ namespace BiteTheBookie.Services.Implementations
         private const string CacheKey = "nfl:scoreboard";
         private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(60);
 
+        // Only show the NFL ticker when there is a game within this many days.
+        // If the next scheduled game is further out, the ticker stays empty and is hidden.
+        private const int TickerLookAheadDays = 10;
+
         public NFLScoresService(HttpClient httpClient, ILogger<NFLScoresService> logger, IMemoryCache cache, IOptions<SportsTickerOptions> options, ChatClient? chatClient = null)
         {
             _httpClient = httpClient;
@@ -42,18 +46,18 @@ namespace BiteTheBookie.Services.Implementations
 
             try
             {
-                // Fetch today's games, falling forward to the next scheduled day when the
-                // league is off today (off-day or out of season) so the ticker stays populated.
+                // Fetch today's games, falling forward to the next scheduled day only when
+                // it is within the ticker look-ahead window. If the league has no games in
+                // the next few days the ticker is left empty so the UI hides it.
                 var events = await EspnScoreboardFetcher.GetEarliestDayEventsAsync(
-                    _httpClient, _scoreboardUrl, cancellationToken);
+                    _httpClient, _scoreboardUrl, cancellationToken, lookAheadDays: TickerLookAheadDays);
 
                 if (events.Count == 0)
                 {
-                    _logger.LogInformation("ESPN NFL scoreboard: no games today or upcoming. Falling back to OpenAI.");
-                    var aiGames = await GetGamesFromOpenAiAsync(cancellationToken);
-                    var fallback = (IReadOnlyList<NFLTickerView>)aiGames;
-                    _cache.Set(CacheKey, fallback, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl });
-                    return fallback;
+                    _logger.LogInformation("ESPN NFL scoreboard: no games within {Days} days. Hiding ticker.", TickerLookAheadDays);
+                    var empty = (IReadOnlyList<NFLTickerView>)Array.Empty<NFLTickerView>();
+                    _cache.Set(CacheKey, empty, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = CacheTtl });
+                    return empty;
                 }
 
                 var games = new List<NFLTickerView>();

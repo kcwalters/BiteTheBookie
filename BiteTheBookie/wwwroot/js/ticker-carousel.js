@@ -43,7 +43,7 @@
     }
 
     // Otherwise, treat this as a horizontal scroller: move the ticker track left/right.
-    const track = viewport.querySelector('.nfl-ticker-track, .nba-ticker-track, .nhl-ticker-track');
+    const track = viewport.querySelector('.league-ticker-track, .nba-ticker-track, .nhl-ticker-track');
     if (!track) return;
 
     let offset = 0;

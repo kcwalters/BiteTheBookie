@@ -138,7 +138,7 @@ footer {
     border-top: 1px solid var(--border-light);
 }
 /* Ticker shell */
-.nfl-ticker {
+.league-ticker {
     width: 100%;
     overflow: hidden;
     background-color: #111827;
@@ -149,12 +149,12 @@ footer {
 }
 
 /* Container (non-scrolling) */
-.nfl-ticker-inner {
+.league-ticker-inner {
     display: block; /* ensure inner wrapper does not scroll */
 }
 
 /* Horizontal scrolling container */
-.nfl-ticker-track {
+.league-ticker-track {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem; /* spacing between box scores */
@@ -162,7 +162,7 @@ footer {
 }
 
 /* Box score item */
-.nfl-ticker-item {
+.league-ticker-item {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -172,13 +172,24 @@ footer {
     background-color: #0f172a; /* subtle panel bg */
 }
 
-    .nfl-ticker-item.live {
+    .league-ticker-item.live {
         color: #f97316;
     }
 
-    .nfl-ticker-item.final {
+    .league-ticker-item.final {
         opacity: 0.85;
     }
+
+/* Out-of-season placeholder shown when a league has no games in the look-ahead window */
+.league-ticker-empty {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    color: #94a3b8;
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
 
 /* Text bits */
 .ticker-status {
@@ -213,7 +224,7 @@ footer {
 }
 
 /* Pause marquee on hover */
-.nfl-ticker:hover .nfl-ticker-track {
+.league-ticker:hover .league-ticker-track {
     animation-play-state: paused;
 }
 
@@ -246,7 +257,7 @@ footer {
 }
 
 /* Team logo sizing: enforce larger square while keeping content visible */
-.nfl-ticker-item img.team-logo {
+.league-ticker-item img.team-logo {
     display: inline-block;
     height: 80px !important;
     width: 80px !important;
@@ -258,7 +269,7 @@ footer {
 }
 
 /* Marquee-style tickers: large team logos */
-.nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo,
+.league-ticker .league-ticker-track .league-ticker-item img.team-logo,
 .nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo,
 .nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
   height: 80px !important;
@@ -267,7 +278,7 @@ footer {
 }
 
 /* Carousel/grid tickers (NFL/NBA): large team logos */
-.nfl-ticker-carousel .ticker-game img.team-logo,
+.league-ticker-carousel .ticker-game img.team-logo,
 .nba-ticker-carousel .ticker-game img.team-logo {
   height: 60px !important;
   width: auto !important;
@@ -275,21 +286,21 @@ footer {
 }
 
 @media (max-width: 480px) {
-  .nfl-ticker-item img.team-logo {
+  .league-ticker-item img.team-logo {
     height: 56px !important;
     width: 56px !important;
     max-height: 56px !important;
     max-width: 56px !important;
   }
 
-  .nfl-ticker .nfl-ticker-track .nfl-ticker-item img.team-logo,
+  .league-ticker .league-ticker-track .league-ticker-item img.team-logo,
   .nba-ticker .nba-ticker-track .nba-ticker-item img.team-logo,
   .nhl-ticker .nhl-ticker-track .nhl-ticker-item img.team-logo {
     height: 56px !important;
     max-height: 56px !important;
   }
 
-  .nfl-ticker-carousel .ticker-game img.team-logo,
+  .league-ticker-carousel .ticker-game img.team-logo,
   .nba-ticker-carousel .ticker-game img.team-logo {
     height: 44px !important;
     max-height: 44px !important;
@@ -522,7 +533,7 @@ footer {
 }
 
 /* --- TICKER SIZE OVERRIDES (LARGER) --- */
-.nfl-ticker,
+.league-ticker,
 .nba-ticker,
 .nhl-ticker {
   font-size: 1.2rem;
@@ -541,7 +552,7 @@ img.team-logo {
 }
 
 /* NCAA ticker shell (same as NFL) */
-.nfl-ticker,
+.league-ticker,
 .ncaa-ticker {
     width: 100%;
     overflow: hidden;
@@ -553,13 +564,13 @@ img.team-logo {
 }
 
 /* Container (non-scrolling) */
-.nfl-ticker-inner,
+.league-ticker-inner,
 .ncaa-ticker-inner {
     display: block; /* ensure inner wrapper does not scroll */
 }
 
 /* Horizontal scrolling container */
-.nfl-ticker-track,
+.league-ticker-track,
 .ncaa-ticker-track {
     display: inline-flex;
     align-items: center;
@@ -568,7 +579,7 @@ img.team-logo {
 }
 
 /* Box score item */
-.nfl-ticker-item,
+.league-ticker-item,
 .ncaa-ticker-item {
     display: inline-flex;
     align-items: center;
@@ -579,24 +590,24 @@ img.team-logo {
     background-color: #0f172a; /* subtle panel bg */
 }
 
-.nfl-ticker-item.live,
+.league-ticker-item.live,
 .ncaa-ticker-item.live {
     color: #f97316;
 }
 
-.nfl-ticker-item.final,
+.league-ticker-item.final,
 .ncaa-ticker-item.final {
     opacity: 0.85;
 }
 
 /* Pause marquee on hover */
-.nfl-ticker:hover .nfl-ticker-track,
+.league-ticker:hover .league-ticker-track,
 .ncaa-ticker:hover .ncaa-ticker-track {
     animation-play-state: paused;
 }
 
 /* Team logo sizing: match NFL */
-.nfl-ticker-item img.team-logo,
+.league-ticker-item img.team-logo,
 .ncaa-ticker-item img.team-logo {
     display: inline-block;
     height: 80px !important;

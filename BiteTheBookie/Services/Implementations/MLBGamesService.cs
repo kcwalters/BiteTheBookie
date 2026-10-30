@@ -11,21 +11,47 @@ namespace BiteTheBookie.Services
         private readonly HttpClient _http;
         private const string BaseUrl = "https://statsapi.mlb.com/api/v1/";
 
+        // Only show the MLB ticker when there is a game within this many days.
+        // If the next scheduled game is further out (out of season) the ticker stays
+        // empty and is hidden by the UI.
+        private const int TickerLookAheadDays = 10;
+
         public MLBGamesService(HttpClient http) => _http = http;
 
         public async Task<List<Game>> GetTodayGamesAsync()
         {
-            var date = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
-            // hydrate=probablePitcher tells the API to include scheduled starters
-            var url = $"schedule?sportId=1&date={date}&hydrate=probablePitcher";
-            var schedule = await _http.GetFromJsonAsync<ScheduleResponse>(url);
+            var today = DateTime.UtcNow.Date;
             var teamUrl = "https://statsapi.mlb.com/api/v1/teams?sportIds=1";
             var teams = await _http.GetFromJsonAsync<TeamsResponse>(teamUrl);
 
-            if (schedule?.Dates == null) return new List<Game>();
+            // 1) Try today first (most common case in-season).
+            var todayUrl = $"schedule?sportId=1&date={today:yyyy-MM-dd}&hydrate=probablePitcher";
+            var todaySchedule = await _http.GetFromJsonAsync<ScheduleResponse>(todayUrl);
+            var todayGames = MapGames(todaySchedule?.Dates?.SelectMany(d => d.Games ?? Enumerable.Empty<GameDto>()), teams);
+            if (todayGames.Count > 0)
+            {
+                return todayGames;
+            }
 
-            var games = schedule.Dates
-                .SelectMany(d => d.Games ?? Enumerable.Empty<GameDto>())
+            // 2) Off-day: look ahead a short window and use the earliest day that has games.
+            // Out of season or no games scheduled in the next 10 days (no games within the window) returns empty so the ticker hides.
+            var rangeUrl = $"schedule?sportId=1&startDate={today:yyyy-MM-dd}&endDate={today.AddDays(TickerLookAheadDays):yyyy-MM-dd}&hydrate=probablePitcher";
+            var rangeSchedule = await _http.GetFromJsonAsync<ScheduleResponse>(rangeUrl);
+
+            var earliestDay = rangeSchedule?.Dates?
+                .FirstOrDefault(d => d.Games != null && d.Games.Count > 0);
+
+            return MapGames(earliestDay?.Games, teams);
+        }
+
+        private static List<Game> MapGames(IEnumerable<GameDto>? dtos, TeamsResponse? teams)
+        {
+            if (dtos is null)
+            {
+                return new List<Game>();
+            }
+
+            return dtos
                 .Select(g =>
                 {
                     var homeTeam = g?.Teams?.Home?.Team;
@@ -45,7 +71,6 @@ namespace BiteTheBookie.Services
                         ? $"https://www.mlbstatic.com/team-logos/{awayTeamInfo.Id}.svg"
                         : null;
 
-                    // Correctly handling GameDate using null-check for g before accessing GameDate
                     var gameTime = g is not null ? g.GameDate.ToLocalTime() : DateTime.MinValue;
 
                     return new Game
@@ -65,8 +90,6 @@ namespace BiteTheBookie.Services
                     };
                 })
                 .ToList();
-
-            return games;
         }
 
         public async Task<IReadOnlyList<Game>> GetGamesForDateAsync(DateTime date, CancellationToken cancellationToken = default)
