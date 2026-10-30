@@ -58,4 +58,27 @@ namespace BiteTheBookie.ViewModels
         public int TotalSalary { get; set; }
         public bool IsCurrentUser { get; set; }
     }
+
+    /// <summary>
+    /// The current member's entries across all contests, for the "My Entries" page.
+    /// </summary>
+    public class FantasyMyEntriesViewModel
+    {
+        public List<FantasyMyEntryRow> Entries { get; set; } = new();
+    }
+
+    public class FantasyMyEntryRow
+    {
+        public int ContestId { get; set; }
+        public string ContestName { get; set; } = string.Empty;
+        public string League { get; set; } = string.Empty;
+        public DateTime LockTime { get; set; }
+        public bool IsScored { get; set; }
+        public int TotalSalary { get; set; }
+        public int SalaryCap { get; set; }
+        public decimal? TotalPoints { get; set; }
+        public DateTime SubmittedAt { get; set; }
+
+        public bool IsLocked => DateTime.UtcNow >= LockTime;
+    }
 }

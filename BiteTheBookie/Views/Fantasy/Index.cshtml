@@ -2,6 +2,10 @@
 @{
     ViewData["Title"] = "Daily Fantasy Football";
     var isPaid = ViewBag.IsPaid as bool? ?? false;
+    var rosterSlots = BiteTheBookie.Models.Fantasy.FantasyRoster.Slots;
+    var rosterSlotCount = rosterSlots.Count;
+    var rosterSummary = string.Join(", ", rosterSlots.Select(s => s.Slot));
+    var salaryCap = BiteTheBookie.Models.Fantasy.FantasyRoster.DefaultSalaryCap;
 }
 
 <div class="container py-4">
@@ -16,6 +20,12 @@
             {
                 <a asp-action="Create" class="btn btn-primary">
                     <i class="fas fa-plus me-1"></i> New Contest
+                </a>
+            }
+            @if (isPaid)
+            {
+                <a asp-action="MyEntries" class="btn btn-outline-primary">
+                    <i class="fas fa-list-check me-1"></i> My Entries
                 </a>
             }
         </div>
@@ -45,6 +55,52 @@
             </div>
         </div>
     }
+
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2" role="button" data-bs-toggle="collapse" data-bs-target="#howToPlay" aria-expanded="false" aria-controls="howToPlay">
+            <h5 class="mb-0"><i class="fas fa-circle-info me-2 text-primary"></i>How to Play Daily Fantasy</h5>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+        <div id="howToPlay" class="collapse mt-3">
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="display-6 text-primary"><i class="fas fa-calendar-day"></i></div>
+                        <div class="fw-bold">1. Pick a contest</div>
+                        <div class="text-muted small">Each contest covers one NFL slate. Enter any contest marked <span class="badge bg-success">Open</span> before it locks.</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="display-6 text-primary"><i class="fas fa-users"></i></div>
+                        <div class="fw-bold">2. Draft a lineup</div>
+                        <div class="text-muted small">Fill all @rosterSlotCount roster spots (@rosterSummary) using real NFL players.</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="display-6 text-primary"><i class="fas fa-coins"></i></div>
+                        <div class="fw-bold">3. Stay under the cap</div>
+                        <div class="text-muted small">Every player has a salary. Your full lineup must fit under the $@salaryCap.ToString("N0") salary cap.</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="display-6 text-primary"><i class="fas fa-trophy"></i></div>
+                        <div class="fw-bold">4. Score &amp; climb</div>
+                        <div class="text-muted small">After games finish, your players earn PPR fantasy points from real stats. Check the leaderboard to see where you rank.</div>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <div class="small text-muted">
+                <i class="fas fa-lightbulb me-1 text-warning"></i>
+                <strong>Tips:</strong> Edit your lineup as often as you like until the contest locks at the first kickoff.
+                Higher-salary players are usually projected to score more&mdash;balance stars with cheaper value picks to fit the cap.
+                This is a free-to-play leaderboard for fun&mdash;no real-money wagering.
+            </div>
+        </div>
+    </div>
 
     @if (!Model.Contests.Any())
     {

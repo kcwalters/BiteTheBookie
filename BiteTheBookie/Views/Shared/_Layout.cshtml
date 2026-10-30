@@ -233,6 +233,14 @@
                                 </div>
                             </li>
                         }
+                        else if (navIsSignedIn)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Fantasy" asp-action="Index">
+                                    <i class="fas fa-football me-1"></i>Fantasy
+                                </a>
+                            </li>
+                        }
                         else
                         {
                             <li class="nav-item">

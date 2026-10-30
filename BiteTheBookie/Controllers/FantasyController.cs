@@ -50,6 +50,38 @@ namespace BiteTheBookie.Controllers
             return View(new FantasyLobbyViewModel { Contests = contests });
         }
 
+        /// <summary>Lists every contest the current member has entered, newest first.</summary>
+        [HttpGet]
+        [Authorize(Policy = "ProOnly")]
+        public async Task<IActionResult> MyEntries()
+        {
+            var userId = _userManager.GetUserId(User)!;
+
+            var entries = await _db.FantasyEntries
+                .Where(e => e.UserId == userId)
+                .Include(e => e.FantasyContest)
+                .OrderByDescending(e => e.SubmittedAt)
+                .ToListAsync();
+
+            var rows = entries
+                .Where(e => e.FantasyContest is not null)
+                .Select(e => new FantasyMyEntryRow
+                {
+                    ContestId = e.FantasyContestId,
+                    ContestName = e.FantasyContest!.Name,
+                    League = e.FantasyContest.League,
+                    LockTime = e.FantasyContest.LockTime,
+                    IsScored = e.FantasyContest.IsScored,
+                    TotalSalary = e.TotalSalary,
+                    SalaryCap = e.FantasyContest.SalaryCap,
+                    TotalPoints = e.TotalPoints,
+                    SubmittedAt = e.SubmittedAt
+                })
+                .ToList();
+
+            return View(new FantasyMyEntriesViewModel { Entries = rows });
+        }
+
         /// <summary>Determines whether the current user has paid (Pro/AllAccess) or admin access.</summary>
         private async Task<bool> IsPaidMemberAsync()
         {

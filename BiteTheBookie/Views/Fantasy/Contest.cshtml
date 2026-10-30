@@ -39,6 +39,16 @@
         </div>
     }
 
+    <div class="alert alert-info d-flex align-items-start gap-2">
+        <i class="fas fa-circle-info mt-1"></i>
+        <div class="small mb-0">
+            <strong>How it works:</strong> Fill every roster slot below with a real NFL player and keep your total salary
+            under the <strong>$@Model.Contest.SalaryCap.ToString("N0")</strong> cap. You can save and change your lineup as
+            often as you like until the contest locks at the first kickoff. Players earn PPR fantasy points from their real
+            game stats, and final totals appear on the leaderboard.
+        </div>
+    </div>
+
     <form asp-action="Submit" method="post" id="lineupForm">
         @Html.AntiForgeryToken()
         <input type="hidden" name="ContestId" value="@Model.Contest.Id" />

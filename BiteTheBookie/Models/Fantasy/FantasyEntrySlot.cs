@@ -10,7 +10,7 @@ namespace BiteTheBookie.Models.Fantasy
         public int FantasyEntryId { get; set; }
         public FantasyEntry? FantasyEntry { get; set; }
 
-        /// <summary>Lineup slot label: QB, RB1, RB2, WR1, WR2, TE, FLEX, DST.</summary>
+        /// <summary>Lineup slot label: QB, RB1, RB2, WR1, WR2, WR3, TE, FLEX, DST.</summary>
         public string SlotLabel { get; set; } = string.Empty;
 
         public int FantasyPlayerId { get; set; }

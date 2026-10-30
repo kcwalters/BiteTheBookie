@@ -1,0 +1,93 @@
+@model BiteTheBookie.ViewModels.FantasyMyEntriesViewModel
+@{
+    ViewData["Title"] = "My Entries";
+}
+
+<div class="container py-4">
+    <div class="content-card mb-4">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="text-uppercase text-muted small fw-bold">Daily Fantasy</div>
+                <h1 class="mb-2">My Entries</h1>
+                <p class="text-muted mb-0">Every contest you've entered. Edit lineups until each contest locks.</p>
+            </div>
+            <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> Lobby</a>
+        </div>
+    </div>
+
+    @if (TempData["FantasyMessage"] is string okMsg)
+    {
+        <div class="alert alert-success">@okMsg</div>
+    }
+    @if (TempData["FantasyError"] is string errMsg)
+    {
+        <div class="alert alert-danger">@errMsg</div>
+    }
+
+    @if (!Model.Entries.Any())
+    {
+        <div class="content-card">
+            <p class="mb-2 text-muted">You haven't entered any contests yet.</p>
+            <a asp-action="Index" class="btn btn-primary btn-sm"><i class="fas fa-football me-1"></i> Browse Contests</a>
+        </div>
+    }
+    else
+    {
+        <div class="content-card">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Contest</th>
+                            <th>Status</th>
+                            <th class="text-end">Salary Used</th>
+                            <th class="text-end">Points</th>
+                            <th class="text-end" style="width: 160px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model.Entries)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">@e.ContestName</div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-lock me-1"></i>Locks: @e.LockTime.ToLocalTime().ToString("ddd MMM d, h:mm tt")
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (e.IsScored)
+                                    {
+                                        <span class="badge bg-secondary">Final</span>
+                                    }
+                                    else if (e.IsLocked)
+                                    {
+                                        <span class="badge bg-warning text-dark">Locked</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Open</span>
+                                    }
+                                </td>
+                                <td class="text-end">$@e.TotalSalary.ToString("N0") <span class="text-muted">/ $@e.SalaryCap.ToString("N0")</span></td>
+                                <td class="text-end fw-bold">@(e.TotalPoints.HasValue ? e.TotalPoints.Value.ToString("N2") : "—")</td>
+                                <td class="text-end">
+                                    @if (e.IsScored)
+                                    {
+                                        <a asp-action="Leaderboard" asp-route-id="@e.ContestId" class="btn btn-outline-primary btn-sm">Leaderboard</a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Contest" asp-route-id="@e.ContestId" class="btn btn-primary btn-sm">
+                                            @(e.IsLocked ? "View" : "Edit Lineup")
+                                        </a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

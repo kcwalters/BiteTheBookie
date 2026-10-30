@@ -44,6 +44,7 @@ namespace BiteTheBookie.Models.Fantasy
                 ("RB2",  new[] { "RB" }),
                 ("WR1",  new[] { "WR" }),
                 ("WR2",  new[] { "WR" }),
+                ("WR3",  new[] { "WR" }),
                 ("TE",   new[] { "TE" }),
                 ("FLEX", new[] { "RB", "WR", "TE" }),
                 ("DST",  new[] { "DST" }),
