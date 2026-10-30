@@ -2,6 +2,7 @@ using BiteTheBookie.Models;
 using BiteTheBookie.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenAI.Chat;
 
 namespace BiteTheBookie.Controllers
 {
@@ -18,15 +19,18 @@ namespace BiteTheBookie.Controllers
         private readonly IDailyPickService _dailyPickService;
         private readonly ILogger<DailyPicksController> _logger;
         private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _userManager;
+        private readonly ChatClient? _chatClient;
 
         public DailyPicksController(
             IDailyPickService dailyPickService,
             ILogger<DailyPicksController> logger,
-            Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager)
+            Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager,
+            ChatClient? chatClient = null)
         {
             _dailyPickService = dailyPickService;
             _logger = logger;
             _userManager = userManager;
+            _chatClient = chatClient;
         }
 
         /// <summary>Lists upcoming AI picks grouped by day and league.</summary>
@@ -52,6 +56,7 @@ namespace BiteTheBookie.Controllers
             }
 
             ViewBag.IsPaid = isPaid;
+            ViewBag.AiConfigured = _chatClient != null;
             return View(picks);
         }
 
@@ -63,8 +68,17 @@ namespace BiteTheBookie.Controllers
         {
             try
             {
+                if (_chatClient == null)
+                {
+                    _logger.LogWarning("Manual daily pick generation requested but Azure OpenAI ChatClient is not configured.");
+                    TempData["PicksMessage"] = "Pick generation is unavailable: Azure OpenAI is not configured (set AzureOpenAI:Endpoint, ApiKey, and DeploymentName).";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 var count = await _dailyPickService.GenerateDailyPicksAsync(cancellationToken);
-                TempData["PicksMessage"] = $"Generated or refreshed {count} picks.";
+                TempData["PicksMessage"] = count > 0
+                    ? $"Generated or refreshed {count} picks."
+                    : "Generation ran but produced 0 picks (no upcoming games found in the look-ahead window).";
             }
             catch (Exception ex)
             {
