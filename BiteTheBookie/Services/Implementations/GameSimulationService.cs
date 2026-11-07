@@ -143,6 +143,10 @@ namespace BiteTheBookie.Services.Implementations
                     awayTeam, homeTeam, league, attempt, maxAttempts);
             }
 
+            _logger.LogDebug(
+                "Simulation generation completed for {AwayTeam} @ {HomeTeam} ({League}) after up to {MaxAttempts} attempt(s).",
+                awayTeam, homeTeam, league, maxAttempts);
+
             return PrependDisclaimer(result);
         }
 
@@ -153,6 +157,65 @@ namespace BiteTheBookie.Services.Implementations
             if (html.Contains("AI Generated - Results not guaranteed", StringComparison.OrdinalIgnoreCase))
                 return html;
             return AiDisclaimerBanner + html;
+        }
+
+        public async Task<List<NBAGameMatchup>> GetRecentNBAScoresAsync(
+            string teamCode,
+            int daysBack,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(teamCode) || daysBack <= 0)
+                return new List<NBAGameMatchup>();
+
+            var recentGames = await _espnClient.GetRecentNBAScoresAsync(teamCode, daysBack, cancellationToken);
+            return recentGames
+                .Where(g => g.AwayScore.HasValue && g.HomeScore.HasValue)
+                .ToList();
+        }
+
+        private async Task<List<NBAPlayer>> BuildCurrentLineup(
+            string teamCode,
+            List<PlayerInjuryReport>? injuries,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(teamCode))
+                return new List<NBAPlayer>();
+
+            var roster = await _espnClient.GetTeamRosterAsync(teamCode, cancellationToken);
+            if (roster?.Players == null || roster.Players.Count == 0)
+                return new List<NBAPlayer>();
+
+            var outPlayers = injuries?
+                .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
+                .Select(i => i.PlayerName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+                ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            return roster.Players
+                .Where(p => p.IsStarter && !outPlayers.Contains(p.Name))
+                .ToList();
+        }
+
+        private static HashSet<string> GetTeamInjuryReport(
+            List<PlayerInjuryReport>? injuries,
+            string? teamCode)
+        {
+            if (injuries == null || injuries.Count == 0)
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var query = injuries.Where(i =>
+                i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrWhiteSpace(teamCode))
+            {
+                query = query.Where(i =>
+                    i.TeamCode.Equals(teamCode, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query
+                .Select(i => i.PlayerName)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
         private async Task<string> GenerateGameSimulationCoreAsync(
@@ -217,12 +280,6 @@ namespace BiteTheBookie.Services.Implementations
             }
 
             // ── NBA ───────────────────────────────────────────────────────────
-            var injuredPlayersNba = injuries?
-                .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
-                .Select(i => i.PlayerName)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>();
-
-
             // -- Fetch rosters from ESPN (authoritative live source), with OpenAI fallback.
             // ESPN is the primary source because it reflects the CURRENT roster; OpenAI is prone
             // to returning stale training-data players and is only used if ESPN is unavailable.
@@ -249,6 +306,13 @@ namespace BiteTheBookie.Services.Implementations
                 _logger.LogWarning("ESPN returned no roster for {Team} -- falling back to OpenAI", homeTeam);
                 homeRoster = await FetchOpenAIRosterAsync(homeTeam, homeRoster?.TeamCode ?? homeTeam, cancellationToken);
             }
+
+            var awayInjuredPlayersNba = GetTeamInjuryReport(injuries, awayRoster?.TeamCode);
+            var homeInjuredPlayersNba = GetTeamInjuryReport(injuries, homeRoster?.TeamCode);
+            var injuredPlayersNba = awayInjuredPlayersNba
+                .Union(homeInjuredPlayersNba, StringComparer.OrdinalIgnoreCase)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             if (injuries != null && injuredPlayersNba.Count > 0)
             {
                 _logger.LogWarning("EXCLUDING {Count} injured players: {Players}",
@@ -266,11 +330,11 @@ namespace BiteTheBookie.Services.Implementations
                 _logger.LogInformation("Calling Azure OpenAI for {HomeTeam} vs {AwayTeam}...", homeTeam, awayTeam);
 
                 var awayPlayerList = awayRoster?.Players
-                    .Where(p => !injuredPlayersNba.Contains(p.Name))
+                    .Where(p => !awayInjuredPlayersNba.Contains(p.Name))
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
                 var homePlayerList = homeRoster?.Players
-                    .Where(p => !injuredPlayersNba.Contains(p.Name))
+                    .Where(p => !homeInjuredPlayersNba.Contains(p.Name))
                     .Select(p => p.Name)
                     .ToList() ?? new List<string>();
 
@@ -290,6 +354,12 @@ namespace BiteTheBookie.Services.Implementations
     Please try again in a few minutes.</p>
 </section>";
                 }
+
+                var nbaRecentScores = await Task.WhenAll(
+                    GetRecentNBAScoresAsync(awayRoster?.TeamCode ?? awayTeam, 10, cancellationToken),
+                    GetRecentNBAScoresAsync(homeRoster?.TeamCode ?? homeTeam, 10, cancellationToken));
+                var nbaScoringSection = BuildNbaScoringSection(
+                    awayTeam, nbaRecentScores[0], homeTeam, nbaRecentScores[1]);
 
                 var injuryInfo = "";
                 if (injuredPlayersNba.Any())
@@ -317,10 +387,10 @@ namespace BiteTheBookie.Services.Implementations
                 }
 
                 var awayRosterLines = awayRoster!.Players
-                    .Where(p => !injuredPlayersNba.Contains(p.Name))
+                    .Where(p => !awayInjuredPlayersNba.Contains(p.Name))
                     .Select(PlayerLine);
                 var homeRosterLines = homeRoster!.Players
-                    .Where(p => !injuredPlayersNba.Contains(p.Name))
+                    .Where(p => !homeInjuredPlayersNba.Contains(p.Name))
                     .Select(PlayerLine);
 
                 var rosterBlock = $@"=== AUTHORITATIVE ROSTER — TODAY'S DATE: {DateTime.UtcNow:yyyy-MM-dd} ===
@@ -354,6 +424,7 @@ GENERATED AT   : {timestamp}
 {rosterBlock}
 
 {injuryInfo}
+{nbaScoringSection}
 
 ═══════════════════════════════════════════════════════════
 OUTPUT FORMAT — NON-NEGOTIABLE
@@ -1907,6 +1978,36 @@ private static readonly Regex TableRegex = new(
                    $"Use ONLY players listed below. Do NOT include any player not on this list.\n\n" +
                    $"{awayTeam} ROSTER:\n{awayBlock}\n\n" +
                    $"{homeTeam} ROSTER:\n{homeBlock}\n\n";
+        }
+
+        private static string BuildNbaScoringSection(
+            string awayTeam, List<NBAGameMatchup> awayRecentGames,
+            string homeTeam, List<NBAGameMatchup> homeRecentGames)
+        {
+            static double AverageTeamPoints(List<NBAGameMatchup> games)
+            {
+                if (games.Count == 0) return 0;
+                return games.Average(g => ((g.AwayScore ?? 0) + (g.HomeScore ?? 0)) / 2.0);
+            }
+
+            var awayAvg = AverageTeamPoints(awayRecentGames);
+            var homeAvg = AverageTeamPoints(homeRecentGames);
+
+            if (awayAvg <= 0 && homeAvg <= 0)
+            {
+                return "NBA RECENT SCORING CONTEXT: Recent team scoring data was unavailable. " +
+                       "Use realistic NBA scoring ranges and avoid inflated totals.\n\n";
+            }
+
+            var projectedAway = awayAvg > 0 && homeAvg > 0 ? (awayAvg + homeAvg) / 2.0 : awayAvg > 0 ? awayAvg : homeAvg;
+            var projectedHome = awayAvg > 0 && homeAvg > 0 ? (awayAvg + homeAvg) / 2.0 : homeAvg > 0 ? homeAvg : awayAvg;
+
+            return $"NBA RECENT SCORING CONTEXT (last 10 games):\n" +
+                   $"  • {awayTeam}: ~{awayAvg:F1} estimated points/game\n" +
+                   $"  • {homeTeam}: ~{homeAvg:F1} estimated points/game\n" +
+                   $"SCORING GUIDANCE: Anchor the final score near these baselines " +
+                   $"(target range: {awayTeam} ~{projectedAway:F0}, {homeTeam} ~{projectedHome:F0}). " +
+                   $"Only deviate materially if clearly justified by matchup dynamics.\n\n";
         }
 
         // Builds the current-season scoring section injected into the NFL prompt so the AI can

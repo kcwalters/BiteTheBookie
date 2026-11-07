@@ -459,6 +459,120 @@ namespace BiteTheBookie.Services.Implementations
         }
 
         /// <summary>
+        /// Fetches a team's recent completed NBA games from the ESPN schedule API so the
+        /// simulation can anchor score predictions to real, recent results. Returns the
+        /// most recent games that started within <paramref name="daysBack"/> days, newest
+        /// first. Returns an empty list on any failure so callers degrade gracefully.
+        /// </summary>
+        public async Task<List<NBAGameMatchup>> GetRecentNBAScoresAsync(string teamCode, int daysBack, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(teamCode) || daysBack <= 0)
+                return new List<NBAGameMatchup>();
+
+            try
+            {
+                var espnCode = MapToEspnCode(teamCode);
+                var response = await _httpClient.GetAsync(
+                    $"apis/site/v2/sports/basketball/nba/teams/{espnCode}/schedule",
+                    cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN NBA schedule API returned {Status} for {Team}", response.StatusCode, teamCode);
+                    return new List<NBAGameMatchup>();
+                }
+
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("events", out var events) || events.ValueKind != JsonValueKind.Array)
+                    return new List<NBAGameMatchup>();
+
+                var cutoff = DateTime.UtcNow.AddDays(-daysBack);
+                var games = new List<NBAGameMatchup>();
+
+                foreach (var ev in events.EnumerateArray())
+                {
+                    if (!ev.TryGetProperty("competitions", out var competitions) ||
+                        competitions.ValueKind != JsonValueKind.Array)
+                        continue;
+
+                    foreach (var comp in competitions.EnumerateArray())
+                    {
+                        if (!comp.TryGetProperty("date", out var dateEl) ||
+                            !dateEl.TryGetDateTime(out var gameDate))
+                            continue;
+
+                        var gameDateUtc = gameDate.ToUniversalTime();
+                        if (gameDateUtc < cutoff || gameDateUtc > DateTime.UtcNow)
+                            continue;
+
+                        var completed = comp.TryGetProperty("status", out var statusEl) &&
+                            statusEl.TryGetProperty("type", out var statusType) &&
+                            statusType.TryGetProperty("completed", out var completedEl) &&
+                            completedEl.ValueKind == JsonValueKind.True;
+
+                        if (!completed)
+                            continue;
+
+                        if (!comp.TryGetProperty("competitors", out var competitors) ||
+                            competitors.ValueKind != JsonValueKind.Array)
+                            continue;
+
+                        var game = new NBAGameMatchup
+                        {
+                            GameId = GetString(ev, "id"),
+                            GameTime = gameDateUtc,
+                            Status = "Final"
+                        };
+
+                        foreach (var c in competitors.EnumerateArray())
+                        {
+                            var homeAway = GetString(c, "homeAway");
+                            var teamName = c.TryGetProperty("team", out var t) ? GetString(t, "displayName") : string.Empty;
+                            var abbr = c.TryGetProperty("team", out var t2) ? GetString(t2, "abbreviation") : string.Empty;
+                            int? score = null;
+                            if (c.TryGetProperty("score", out var scoreEl))
+                            {
+                                var scoreText = scoreEl.ValueKind == JsonValueKind.Object && scoreEl.TryGetProperty("value", out var sv)
+                                    ? sv.ToString()
+                                    : scoreEl.ToString();
+                                if (int.TryParse(scoreText, out var parsed))
+                                    score = parsed;
+                            }
+
+                            if (homeAway.Equals("home", StringComparison.OrdinalIgnoreCase))
+                            {
+                                game.HomeTeamName = teamName;
+                                game.HomeTeamCode = abbr;
+                                game.HomeScore = score;
+                            }
+                            else if (homeAway.Equals("away", StringComparison.OrdinalIgnoreCase))
+                            {
+                                game.AwayTeamName = teamName;
+                                game.AwayTeamCode = abbr;
+                                game.AwayScore = score;
+                            }
+                        }
+
+                        if (game.HomeScore.HasValue && game.AwayScore.HasValue)
+                            games.Add(game);
+                    }
+                }
+
+                return games
+                    .OrderByDescending(g => g.GameTime)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to fetch recent NBA scores for {Team}", teamCode);
+                return new List<NBAGameMatchup>();
+            }
+        }
+
+        /// <summary>
         /// Fetches live team details (location, venue, record, standing) from the ESPN Site
         /// API. <paramref name="sportLeaguePath"/> is the ESPN segment such as
         /// "football/college-football", "basketball/mens-college-basketball", or
