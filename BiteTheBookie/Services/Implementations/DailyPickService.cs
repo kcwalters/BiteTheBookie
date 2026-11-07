@@ -97,8 +97,8 @@ public class DailyPickService : IDailyPickService
 
         return await query
             .OrderBy(p => p.GameDate)
-            .ThenBy(p => p.League)
             .ThenBy(p => p.GameTime)
+            .ThenBy(p => p.League)
             .ToListAsync(cancellationToken);
     }
 
