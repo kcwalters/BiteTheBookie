@@ -218,23 +218,35 @@ builder.Services.AddSession(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// Serilog: write logs to console and to SQL Server (Logs table). Uses DefaultConnection.
+// Serilog: write logs to console, a rolling file in the "logs" folder, and SQL Server (Logs table). Uses DefaultConnection.
 var sqlConnectionString = connectionString;
 var sinkOptions = new MSSqlServerSinkOptions { TableName = "Logs", AutoCreateSqlTable = true };
 
-// Configurable minimum level. Set "Serilog:MinimumLevel" to "Error" to log errors only,
-// or "Information" (default) to capture all logging. Any valid LogEventLevel is accepted.
-var configuredLevel = builder.Configuration["Serilog:MinimumLevel"];
+// SQL Server sink minimum level is configured separately via "Serilog:SqlMinimumLevel"
+// (e.g. "Error" to only persist errors to the database). Defaults to Information.
+var configuredLevel = builder.Configuration["Serilog:SqlMinimumLevel"];
 var minimumLevel = Enum.TryParse<LogEventLevel>(configuredLevel, ignoreCase: true, out var parsedLevel)
     ? parsedLevel
     : LogEventLevel.Information;
 
+// Ensure the "logs" folder exists next to the app so the file sink can write to it.
+var logsDirectory = Path.Combine(builder.Environment.ContentRootPath, "logs");
+Directory.CreateDirectory(logsDirectory);
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Is(minimumLevel)
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    // Minimum levels and per-category overrides are read from the "Serilog" section
+    // in appsettings.json so they can be tuned without recompiling.
+    .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console()
-    .WriteTo.MSSqlServer(sqlConnectionString, sinkOptions)
+    // Rolling daily log files capturing Information, Warning and Error in the logs folder.
+    .WriteTo.File(
+        Path.Combine(logsDirectory, "log-.txt"),
+        restrictedToMinimumLevel: LogEventLevel.Information,
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 31)
+    // Preserve existing SQL Server behaviour using the configured minimum level.
+    .WriteTo.MSSqlServer(sqlConnectionString, sinkOptions, restrictedToMinimumLevel: minimumLevel)
     .CreateLogger();
 
 builder.Host.UseSerilog();

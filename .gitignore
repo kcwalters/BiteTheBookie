@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 /BiteTheBookie/package.json
 /.gitignore
+
+# Application log files
+[Ll]ogs/
+BiteTheBookie/logs/
