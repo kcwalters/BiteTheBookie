@@ -323,6 +323,21 @@ namespace BiteTheBookie.Services.Implementations
                     .Where(p => !injuredPlayersNba.Contains(p.Name))
                     .Select(PlayerLine);
 
+                // -- Fetch current-season scoring averages and win-loss records from ESPN standings
+                //    (same approach as NFL) so the AI anchors the final score to real production and
+                //    team strength instead of inventing inflated totals. Degrades gracefully to
+                //    guidance-only text when ESPN standings are unavailable.
+                var nbaSeasonYear = GetCurrentNbaSeasonYear(DateTime.UtcNow);
+                var awayNbaCode = awayRoster!.TeamCode;
+                var homeNbaCode = homeRoster!.TeamCode;
+                var nbaScoringStats = await Task.WhenAll(
+                    string.IsNullOrWhiteSpace(awayNbaCode) ? Task.FromResult<NflTeamScoringStats?>(null) : _espnClient.GetNbaTeamScoringStatsAsync(awayNbaCode, nbaSeasonYear, cancellationToken),
+                    string.IsNullOrWhiteSpace(homeNbaCode) ? Task.FromResult<NflTeamScoringStats?>(null) : _espnClient.GetNbaTeamScoringStatsAsync(homeNbaCode, nbaSeasonYear, cancellationToken));
+                var awayNbaStats = nbaScoringStats[0];
+                var homeNbaStats = nbaScoringStats[1];
+
+                var nbaScoringSection = BuildNbaScoringSection(awayTeam, awayNbaStats, homeTeam, homeNbaStats, nbaSeasonYear);
+
                 var rosterBlock = $@"=== AUTHORITATIVE ROSTER — TODAY'S DATE: {DateTime.UtcNow:yyyy-MM-dd} ===
 These are the ONLY players you are permitted to mention anywhere in the simulation.
 This list was fetched live from OpenAI moments ago. Any player NOT on this list is
@@ -372,10 +387,14 @@ ROSTER ENFORCEMENT — NON-NEGOTIABLE
 • Injured players (listed above) must appear ONLY in the Injury Report section as OUT.
   They must NEVER appear in game action, stats, or analysis.
 
-SIMULATION REQUIREMENTS:
+{nbaScoringSection}SIMULATION REQUIREMENTS:
 • Make it UNIQUE (ID {simulationId}) — vary score, key performers, and narrative each time.
 • Reflect realistic playing styles for {awayTeam} and {homeTeam}.
-• Scores should be believable NBA totals (typically 100-130 per team).
+• ANCHOR each team's final score to its current-season scoring averages and record shown above:
+  a team's final total should land near its own points-per-game and its opponent's points-allowed-per-game,
+  and a stronger win-loss record should generally translate into winning more often. Scores should still be
+  believable NBA totals (typically 100-130 per team); only deviate for a clearly explained reason
+  (injuries, blowout, overtime, pace).
 • STAT REALISM IS MANDATORY:
   - Base every player's game line on the season averages in the AUTHORITATIVE ROSTER.
   - A single-game line may vary up to ~30% above or below the season average.
@@ -1934,6 +1953,41 @@ private static readonly Regex TableRegex = new(
                     : $"  • {team}: season scoring average unavailable — use typical NFL production (~17-27 pts/game)";
 
             return $"{seasonYear} SEASON SCORING AVERAGES (anchor the final score to these):\n" +
+                   $"{Line(awayTeam, awayStats)}\n" +
+                   $"{Line(homeTeam, homeStats)}\n\n";
+        }
+
+        /// <summary>
+        /// Derives the NBA season year (the calendar year the season ends in, which ESPN's
+        /// standings endpoint keys on) from a date. The NBA season runs Oct-Jun, so the
+        /// Oct-Dec months belong to the season that finishes the following calendar year.
+        /// </summary>
+        private static int GetCurrentNbaSeasonYear(DateTime nowUtc)
+            => nowUtc.Month >= 10 ? nowUtc.Year + 1 : nowUtc.Year;
+
+        private static string BuildNbaScoringSection(
+            string awayTeam, NflTeamScoringStats? awayStats,
+            string homeTeam, NflTeamScoringStats? homeStats,
+            int seasonYear)
+        {
+            var label = $"{seasonYear - 1}-{seasonYear}";
+            var haveAway = awayStats?.HasData == true;
+            var haveHome = homeStats?.HasData == true;
+
+            if (!haveAway && !haveHome)
+            {
+                return $"SCORING CONTEXT: Live {label} team scoring averages and records were unavailable. " +
+                       $"Base the final score on typical NBA production for {awayTeam} and {homeTeam} " +
+                       $"(most teams average roughly 105-120 points per game). Do NOT inflate the score.\n\n";
+            }
+
+            string Line(string team, NflTeamScoringStats? s) =>
+                s?.HasData == true
+                    ? $"  • {team}: {s.PointsPerGame:F1} pts/game scored, {s.PointsAllowedPerGame:F1} pts/game allowed" +
+                      (string.IsNullOrWhiteSpace(s.RecordSummary) ? "" : $" (record {s.RecordSummary}, {s.GamesPlayed} GP)")
+                    : $"  • {team}: season scoring average unavailable — use typical NBA production (~105-120 pts/game)";
+
+            return $"{label} SEASON SCORING AVERAGES & RECORDS (anchor the final score to these):\n" +
                    $"{Line(awayTeam, awayStats)}\n" +
                    $"{Line(homeTeam, homeStats)}\n\n";
         }

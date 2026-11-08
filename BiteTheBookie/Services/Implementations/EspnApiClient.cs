@@ -631,6 +631,104 @@ namespace BiteTheBookie.Services.Implementations
                 }
             }
 
+            // Per-season cache of NBA scoring stats keyed by team id AND lowercase abbreviation.
+            // Mirrors the NFL cache; standings are league-wide and static within a day.
+            private static readonly Dictionary<int, Dictionary<string, NflTeamScoringStats>> _nbaScoringCache = new();
+            private static readonly SemaphoreSlim _nbaScoringLock = new(1, 1);
+
+            /// <summary>
+            /// Returns current-season scoring averages (points for/against per game) and the
+            /// win-loss record for a single NBA team, derived from the ESPN standings endpoint.
+            /// <paramref name="teamIdOrCode"/> may be the ESPN numeric id or abbreviation (e.g. "bos").
+            /// Returns null if standings are unavailable or the team cannot be matched so callers
+            /// can degrade gracefully to guidance-only prompts.
+            /// </summary>
+            public async Task<NflTeamScoringStats?> GetNbaTeamScoringStatsAsync(string teamIdOrCode, int season, CancellationToken cancellationToken = default)
+            {
+                if (string.IsNullOrWhiteSpace(teamIdOrCode))
+                    return null;
+
+                var table = await GetNbaScoringTableAsync(season, cancellationToken);
+                if (table == null || table.Count == 0)
+                    return null;
+
+                return table.TryGetValue(teamIdOrCode.Trim().ToLowerInvariant(), out var stats) ? stats : null;
+            }
+
+            private async Task<Dictionary<string, NflTeamScoringStats>?> GetNbaScoringTableAsync(int season, CancellationToken cancellationToken)
+            {
+                lock (_nbaScoringCache)
+                {
+                    if (_nbaScoringCache.TryGetValue(season, out var cached))
+                        return cached;
+                }
+
+                await _nbaScoringLock.WaitAsync(cancellationToken);
+                try
+                {
+                    lock (_nbaScoringCache)
+                    {
+                        if (_nbaScoringCache.TryGetValue(season, out var cached))
+                            return cached;
+                    }
+
+                    var table = await FetchNbaScoringTableAsync(season, cancellationToken);
+                    if (table != null)
+                    {
+                        lock (_nbaScoringCache)
+                        {
+                            _nbaScoringCache[season] = table;
+                        }
+                    }
+                    return table;
+                }
+                finally
+                {
+                    _nbaScoringLock.Release();
+                }
+            }
+
+            private async Task<Dictionary<string, NflTeamScoringStats>?> FetchNbaScoringTableAsync(int season, CancellationToken cancellationToken)
+            {
+                try
+                {
+                    var url = $"apis/v2/sports/basketball/nba/standings?level=3&season={season}";
+                    var response = await _httpClient.GetAsync(url, cancellationToken);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning("ESPN NBA standings returned {Status} for season {Season}", response.StatusCode, season);
+                        return null;
+                    }
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                    var table = new Dictionary<string, NflTeamScoringStats>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var entries in EnumerateStandingsEntryArrays(doc.RootElement))
+                    {
+                        foreach (var entry in entries.EnumerateArray())
+                        {
+                            var stats = ParseStandingsEntry(entry);
+                            if (stats == null) continue;
+
+                            if (!string.IsNullOrWhiteSpace(stats.TeamId))
+                                table[stats.TeamId.ToLowerInvariant()] = stats;
+                            if (!string.IsNullOrWhiteSpace(stats.Abbreviation))
+                                table[stats.Abbreviation.ToLowerInvariant()] = stats;
+                        }
+                    }
+
+                    _logger.LogInformation("ESPN NBA standings parsed {Count} team entries for season {Season}", table.Count, season);
+                    return table.Count > 0 ? table : null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch ESPN NBA standings for season {Season}", season);
+                    return null;
+                }
+            }
+
             // The standings payload nests entries either under children[].standings.entries
             // (conference/division groupings) or a top-level standings.entries. Yield whichever exist.
             private static IEnumerable<JsonElement> EnumerateStandingsEntryArrays(JsonElement root)
