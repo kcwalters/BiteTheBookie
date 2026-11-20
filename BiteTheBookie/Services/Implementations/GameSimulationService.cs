@@ -188,6 +188,9 @@ namespace BiteTheBookie.Services.Implementations
                     || league.Equals("NFL", StringComparison.OrdinalIgnoreCase))
                     return GetCfbMockSimulation(homeTeam, awayTeam);
 
+                if (league.Equals("CBB", StringComparison.OrdinalIgnoreCase))
+                    return GetCbbMockSimulation(homeTeam, awayTeam);
+
                 var injuredPlayers = injuries?
                     .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
                     .Select(i => i.PlayerName)
@@ -216,7 +219,12 @@ namespace BiteTheBookie.Services.Implementations
                 return await GenerateHockeySimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken);
             }
 
-            // ── NBA ───────────────────────────────────────────────────────────
+            if (league.Equals("CBB", StringComparison.OrdinalIgnoreCase))
+            {
+                return await GenerateCollegeBasketballSimulationAsync(homeTeam, awayTeam, simulationId, timestamp, gameTime, cancellationToken);
+            }
+
+            // ── NBA ──
             var injuredPlayersNba = injuries?
                 .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
                 .Select(i => i.PlayerName)
@@ -1160,7 +1168,59 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is realistic col
 <p><em>Simulated game for entertainment purposes only.</em></p>";
         }
 
-        // ── NFL (professional football) ────────────────────────────────────────
+        // CBB mock (used only when Azure OpenAI is unconfigured and mock data is enabled)
+        private static string GetCbbMockSimulation(string homeTeam, string awayTeam)
+        {
+            var seed = (homeTeam + awayTeam + DateTime.UtcNow.Ticks).GetHashCode();
+            var rng = new Random(seed);
+
+            int[] awayH = { rng.Next(28, 45), rng.Next(28, 45) };
+            int[] homeH = { rng.Next(28, 45), rng.Next(28, 45) };
+            int awayScore = awayH.Sum();
+            int homeScore = homeH.Sum();
+            while (awayScore == homeScore) { homeH[1] += rng.Next(2, 6); homeScore = homeH.Sum(); }
+
+            bool awayWins = awayScore > homeScore;
+            string winner = awayWins ? awayTeam : homeTeam;
+            string loser = awayWins ? homeTeam : awayTeam;
+            int margin = Math.Abs(awayScore - homeScore);
+
+            return $@"<h1>GAME SIMULATION: {awayTeam} @ {homeTeam}</h1>
+
+<h2>Final Score</h2>
+<table>
+  <thead><tr><th>Team</th><th>1st Half</th><th>2nd Half</th><th>Final</th></tr></thead>
+  <tbody>
+    <tr><td><strong>{awayTeam}</strong></td><td>{awayH[0]}</td><td>{awayH[1]}</td><td><strong>{awayScore}</strong></td></tr>
+    <tr><td><strong>{homeTeam}</strong></td><td>{homeH[0]}</td><td>{homeH[1]}</td><td><strong>{homeScore}</strong></td></tr>
+  </tbody>
+</table>
+
+<h2>Game Summary</h2>
+<p>In a {(margin <= 6 ? "tightly contested" : "decisive")} college basketball matchup, <strong>{winner}</strong> {(margin <= 6 ? "edges out" : "pulls away from")} <strong>{loser}</strong> {Math.Max(awayScore, homeScore)}-{Math.Min(awayScore, homeScore)}. Strong shooting and rebounding made the difference down the stretch.</p>
+
+<h2>Team Statistics</h2>
+<table>
+  <thead><tr><th>Statistic</th><th>{awayTeam}</th><th>{homeTeam}</th></tr></thead>
+  <tbody>
+    <tr><td>FG%</td><td>{rng.Next(40, 52)}%</td><td>{rng.Next(40, 52)}%</td></tr>
+    <tr><td>3P%</td><td>{rng.Next(28, 42)}%</td><td>{rng.Next(28, 42)}%</td></tr>
+    <tr><td>FT%</td><td>{rng.Next(65, 85)}%</td><td>{rng.Next(65, 85)}%</td></tr>
+    <tr><td>Rebounds</td><td>{rng.Next(28, 42)}</td><td>{rng.Next(28, 42)}</td></tr>
+    <tr><td>Assists</td><td>{rng.Next(10, 20)}</td><td>{rng.Next(10, 20)}</td></tr>
+    <tr><td>Turnovers</td><td>{rng.Next(7, 16)}</td><td>{rng.Next(7, 16)}</td></tr>
+  </tbody>
+</table>
+
+<h2>Betting Analysis</h2>
+<ul>
+  <li><strong>Spread:</strong> {winner} wins by {margin}</li>
+  <li><strong>Over/Under:</strong> Combined {awayScore + homeScore} points</li>
+  <li><strong>Moneyline:</strong> {winner} wins outright</li>
+</ul>
+<p><em>Simulated game for entertainment purposes only.</em></p>";
+        }
+
 
         /// <summary>
         /// Derives the NFL season year (the year the season kicked off) from a date.
@@ -1297,6 +1357,215 @@ FINAL CHECK: (1) Every stat is a FOOTBALL stat. (2) Final score is a realistic N
                     return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
                 return GetCfbMockSimulation(homeTeam, awayTeam);
             }
+        }
+
+        // ── CBB (men's college basketball) ──────────────────────────────────────
+
+        /// <summary>
+        /// Derives the men's college basketball season year (the calendar year the season ends in,
+        /// which ESPN's standings endpoint keys on). The season runs Nov-Apr, so Nov-Dec months
+        /// belong to the season that finishes the following calendar year.
+        /// </summary>
+        private static int GetCurrentCbbSeasonYear(DateTime nowUtc)
+            => nowUtc.Month >= 10 ? nowUtc.Year + 1 : nowUtc.Year;
+
+        private async Task<string> GenerateCollegeBasketballSimulationAsync(
+            string homeTeam, string awayTeam, string simulationId,
+            string timestamp, DateTime? gameTime, CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation(
+                    "Calling Azure OpenAI for CBB: {AwayTeam} @ {HomeTeam}", awayTeam, homeTeam);
+
+                var nowUtc = DateTime.UtcNow;
+                var today = nowUtc.ToString("yyyy-MM-dd");
+                var seasonYear = GetCurrentCbbSeasonYear(nowUtc);
+
+                // -- Resolve ESPN team ids from team names, then fetch live rosters.
+                var awayCode = await _espnClient.ResolveCbbTeamCodeAsync(awayTeam, cancellationToken);
+                var homeCode = await _espnClient.ResolveCbbTeamCodeAsync(homeTeam, cancellationToken);
+
+                var rosters = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayCode) ? Task.FromResult(new List<string>()) : _espnClient.GetCbbRosterAsync(awayCode, cancellationToken),
+                    string.IsNullOrEmpty(homeCode) ? Task.FromResult(new List<string>()) : _espnClient.GetCbbRosterAsync(homeCode, cancellationToken));
+                var awayRosterAll = rosters[0];
+                var homeRosterAll = rosters[1];
+
+                if (awayRosterAll.Count == 0 || homeRosterAll.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "CBB simulation aborted for {AwayTeam} @ {HomeTeam} \u2014 live roster unavailable (away={AwayCount}, home={HomeCount}).",
+                        awayTeam, homeTeam, awayRosterAll.Count, homeRosterAll.Count);
+
+                    return $@"<section class=""alert alert-warning"">
+  <h2>Simulation Unavailable</h2>
+  <p>The current roster could not be retrieved for
+    <strong>{awayTeam}</strong> and/or <strong>{homeTeam}</strong> at this time.</p>
+  <p>To protect accuracy, this simulation will not run with unverified player data.
+    Please try again in a few minutes.</p>
+</section>";
+                }
+
+                // -- Fetch day-of-game injuries and exclude players who are OUT.
+                var injuryResults = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayCode) ? Task.FromResult(new List<PlayerInjuryReport>()) : _espnClient.GetCbbTeamInjuriesAsync(awayCode, cancellationToken),
+                    string.IsNullOrEmpty(homeCode) ? Task.FromResult(new List<PlayerInjuryReport>()) : _espnClient.GetCbbTeamInjuriesAsync(homeCode, cancellationToken));
+                var allInjuries = injuryResults[0].Concat(injuryResults[1]).ToList();
+                var injuredOut = allInjuries
+                    .Where(i => i.InjuryStatus.Equals("Out", StringComparison.OrdinalIgnoreCase))
+                    .Select(i => i.PlayerName)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var awayRoster = awayRosterAll.Where(n => !injuredOut.Contains(n)).ToList();
+                var homeRoster = homeRosterAll.Where(n => !injuredOut.Contains(n)).ToList();
+
+                if (awayRoster.Count == 0 || homeRoster.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "CBB simulation aborted for {AwayTeam} @ {HomeTeam} \u2014 no available players after injury exclusion.",
+                        awayTeam, homeTeam);
+
+                    return $@"<section class=""alert alert-warning"">
+  <h2>Simulation Unavailable</h2>
+  <p>Not enough available players could be verified for
+    <strong>{awayTeam}</strong> and/or <strong>{homeTeam}</strong> after accounting for injuries.</p>
+  <p>Please try again later.</p>
+</section>";
+                }
+
+                var rosterSection = BuildRosterSection(awayTeam, awayRoster, homeTeam, homeRoster, today);
+
+                var injuryInfo = "";
+                var awayInj = injuryResults[0].Where(i => injuredOut.Contains(i.PlayerName)).ToList();
+                var homeInj = injuryResults[1].Where(i => injuredOut.Contains(i.PlayerName)).ToList();
+                if (awayInj.Any() || homeInj.Any())
+                {
+                    injuryInfo = "<p><strong>INJURY REPORT (Players OUT for this game):</strong></p><ul>";
+                    if (awayInj.Any())
+                        injuryInfo += $"<li>{awayTeam}: {string.Join(", ", awayInj.Select(i => $"<strong>{i.PlayerName}</strong> ({i.InjuryDescription})"))}</li>";
+                    if (homeInj.Any())
+                        injuryInfo += $"<li>{homeTeam}: {string.Join(", ", homeInj.Select(i => $"<strong>{i.PlayerName}</strong> ({i.InjuryDescription})"))}</li>";
+                    injuryInfo += "</ul>";
+                }
+
+                // -- Fetch current-season scoring averages & records so the AI anchors the final
+                //    score to real production. Degrade gracefully to guidance-only when unavailable.
+                var scoringStats = await Task.WhenAll(
+                    string.IsNullOrEmpty(awayCode) ? Task.FromResult<NflTeamScoringStats?>(null) : _espnClient.GetCbbTeamScoringStatsAsync(awayCode, seasonYear, cancellationToken),
+                    string.IsNullOrEmpty(homeCode) ? Task.FromResult<NflTeamScoringStats?>(null) : _espnClient.GetCbbTeamScoringStatsAsync(homeCode, seasonYear, cancellationToken));
+                var awayStats = scoringStats[0];
+                var homeStats = scoringStats[1];
+
+                var scoringSection = BuildCbbScoringSection(awayTeam, awayStats, homeTeam, homeStats, seasonYear);
+
+                var prompt = $@"Generate a FRESH, UNIQUE CBB (men's college basketball) game simulation: {awayTeam} (away) at {homeTeam} (home).
+
+SIMULATION ID : {simulationId}
+GENERATED AT  : {timestamp}
+SEASON        : {seasonYear - 1}-{seasonYear} men's college basketball season (as of {today})
+
+OUTPUT FORMAT — NON-NEGOTIABLE:
+- Return ONLY raw HTML. Zero Markdown.
+- Use <h2> for sections, <h3> for sub-headings, <p> for prose, <ul>/<li> for lists, <table> for tables.
+- Wrap every player name in <strong> tags each and every time it appears.
+- Do NOT put anything outside the HTML (no preamble, no code fences).
+
+{rosterSection}
+{injuryInfo}
+
+ROSTER ENFORCEMENT — NON-NEGOTIABLE:
+- You may reference ONLY players listed in the AUTHORITATIVE ROSTERS above.
+- If a name is not on the list, DO NOT use it — not in prose, not in tables, not anywhere.
+- These are COLLEGE players. Do NOT reference any NBA/professional players.
+
+{scoringSection}SIMULATION REQUIREMENTS:
+- This is MEN'S COLLEGE BASKETBALL, not the NBA. Scores MUST be realistic NCAA totals
+  (typically 60-85 points per team; up-tempo teams may reach the low 90s, defensive
+  grinders may stay in the 50s). Do NOT produce NBA-style totals (100-130).
+- ANCHOR each team's final score to its {seasonYear - 1}-{seasonYear} season scoring averages shown above:
+  a team's final total should land near its own points-per-game and its opponent's
+  points-allowed-per-game. A stronger win-loss record should generally win more often.
+  Only deviate for a clearly explained reason (foul trouble, hot shooting, blowout, overtime).
+- College basketball has TWO 20-minute halves (not quarters) plus overtime if tied.
+- THE GAME MUST HAVE A WINNER. No ties — use overtime if the score is level after regulation.
+- Use college basketball stat lines only — points, rebounds, assists, steals, blocks,
+  field-goal %, three-point %, free throws. Reflect the college shot clock and pace.
+
+Include these sections in order:
+1. <h2>Final Score</h2> — include an HTML half-by-half line score table (1st Half | 2nd Half | (OT) | Final)
+2. <h2>Game Summary</h2> — 2-3 sentences naming key players
+3. <h2>Key Performers</h2> — HTML table: Player | Team | Pos | Statline (PTS/REB/AST/etc.)
+4. <h2>Team Statistics</h2> — HTML table: FG%, 3P%, FT%, Rebounds, Assists, Turnovers
+5. <h2>Win Probability</h2> — each team's win probability and the most likely winner
+6. <h2>Betting Analysis</h2> — spread, over/under, moneyline impact
+
+FINAL CHECK: (1) Every stat is a COLLEGE BASKETBALL stat. (2) Final score is a realistic NCAA score consistent with the season scoring averages above. (3) The two final team scores MUST be different — the game must end with a clear winner; if level after regulation, play overtime until one team wins. NEVER output a tie. (4) SCORE RECONCILIATION (MANDATORY): For EACH team, the half-by-half (plus any OT) values MUST add up EXACTLY to that team's Final Score. Recompute and fix any mismatch before responding. (5) Review every player name — remove any not in the AUTHORITATIVE ROSTERS above.";
+
+                var messages = new List<ChatMessage>
+                {
+                    new SystemChatMessage(
+                        $"You are an expert men's college basketball (NCAA) game simulation engine for the {seasonYear - 1}-{seasonYear} season. " +
+                        "ABSOLUTE RULES — violating any of these produces an invalid simulation: " +
+                        "(1) Output raw HTML only — zero Markdown. " +
+                        "(2) This is COLLEGE BASKETBALL — use only college players from the authoritative rosters; never reference NBA/professional players. " +
+                        "(3) Final scores must be realistic NCAA totals (roughly 60-85 per team) anchored to each team's current-season scoring averages — do NOT produce NBA-style totals; the game must have a winner. " +
+                        "(4) Use two 20-minute halves, not quarters. " +
+                        "(5) Wrap every player name in <strong> tags wherever it appears. " +
+                        $"(6) Each simulation must be entirely unique. This is #{simulationId}."),
+                    new UserChatMessage(prompt)
+                };
+
+                var response = await _chatClient!.CompleteChatAsync(
+                    messages, new ChatCompletionOptions { Temperature = 0.9f }, cancellationToken);
+                var simulationText = StripCodeFences(response.Value.Content[0].Text);
+
+                simulationText = EnforceLiveRoster(
+                    simulationText, simulationId, awayRoster, homeRoster, awayTeam, homeTeam);
+
+                _logger.LogInformation("CBB simulation #{SimulationId} complete for {AwayTeam} @ {HomeTeam}",
+                    simulationId, awayTeam, homeTeam);
+
+                return simulationText;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CBB simulation FAILED for {AwayTeam} @ {HomeTeam} \u2014 falling back to mock",
+                    awayTeam, homeTeam);
+                if (!_useMockData)
+                    return "<section class=\"alert alert-warning\"><h2>Simulation Unavailable</h2><p>Simulation is currently unavailable. Please try again later.</p></section>";
+                return GetCbbMockSimulation(homeTeam, awayTeam);
+            }
+        }
+
+        // Builds the current-season scoring section injected into the CBB prompt so the AI can
+        // anchor the final score to real production. Returns guidance-only text when ESPN stats
+        // are unavailable, so the simulation still runs (just without hard numbers).
+        private static string BuildCbbScoringSection(
+            string awayTeam, NflTeamScoringStats? awayStats,
+            string homeTeam, NflTeamScoringStats? homeStats,
+            int seasonYear)
+        {
+            var label = $"{seasonYear - 1}-{seasonYear}";
+            var haveAway = awayStats?.HasData == true;
+            var haveHome = homeStats?.HasData == true;
+
+            if (!haveAway && !haveHome)
+            {
+                return $"SCORING CONTEXT: Live {label} team scoring averages and records were unavailable. " +
+                       $"Base the final score on typical men's college basketball production for {awayTeam} and {homeTeam} " +
+                       $"(most teams average roughly 65-80 points per game). Do NOT inflate the score to NBA levels.\n\n";
+            }
+
+            string Line(string team, NflTeamScoringStats? s) =>
+                s?.HasData == true
+                    ? $"  • {team}: {s.PointsPerGame:F1} pts/game scored, {s.PointsAllowedPerGame:F1} pts/game allowed" +
+                      (string.IsNullOrWhiteSpace(s.RecordSummary) ? "" : $" (record {s.RecordSummary}, {s.GamesPlayed} GP)")
+                    : $"  • {team}: season scoring average unavailable — use typical NCAA production (~65-80 pts/game)";
+
+            return $"{label} SEASON SCORING AVERAGES & RECORDS (anchor the final score to these):\n" +
+                   $"{Line(awayTeam, awayStats)}\n" +
+                   $"{Line(homeTeam, homeStats)}\n\n";
         }
 
         // ── NHL (professional hockey)

@@ -311,6 +311,83 @@ namespace BiteTheBookie.Services.Implementations
         public Task<List<string>> GetCfbRosterAsync(string teamCode, CancellationToken cancellationToken = default)
             => GetRosterNamesAsync("football/college-football", teamCode, cancellationToken);
 
+        /// <summary>Fetches the current men's college basketball roster for a team by ESPN team id/code (e.g. "150", "duke").</summary>
+        public Task<List<string>> GetCbbRosterAsync(string teamCode, CancellationToken cancellationToken = default)
+            => GetRosterNamesAsync("basketball/mens-college-basketball", teamCode, cancellationToken);
+
+        /// <summary>Resolves a men's college basketball team name (e.g. "Duke Blue Devils", "Kansas") to its ESPN team id.</summary>
+        public Task<string> ResolveCbbTeamCodeAsync(string teamName, CancellationToken cancellationToken = default)
+            => ResolveTeamCodeAsync("basketball/mens-college-basketball", teamName, cancellationToken);
+
+        /// <summary>
+        /// Fetches the current men's college basketball injury report for a team from the ESPN Site
+        /// API. Returns an empty list on any failure so callers can degrade gracefully.
+        /// </summary>
+        public async Task<List<PlayerInjuryReport>> GetCbbTeamInjuriesAsync(string teamCode, CancellationToken cancellationToken = default)
+        {
+            var injuries = new List<PlayerInjuryReport>();
+            if (string.IsNullOrWhiteSpace(teamCode))
+                return injuries;
+
+            try
+            {
+                var response = await _httpClient.GetAsync(
+                    $"apis/site/v2/sports/basketball/mens-college-basketball/teams/{teamCode.ToLower()}/injuries",
+                    cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("ESPN CBB injuries API returned {StatusCode} for team {Team}", response.StatusCode, teamCode);
+                    return injuries;
+                }
+
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                var jsonDoc = JsonDocument.Parse(content);
+
+                if (jsonDoc.RootElement.TryGetProperty("injuries", out var injuriesArray))
+                {
+                    foreach (var injury in injuriesArray.EnumerateArray())
+                    {
+                        try
+                        {
+                            var playerName = injury.GetProperty("athlete").GetProperty("displayName").GetString() ?? "";
+                            var status = injury.GetProperty("status").GetString() ?? "";
+                            var description = injury.TryGetProperty("details", out var details)
+                                ? (details.TryGetProperty("type", out var type) ? type.GetString() ?? "Unknown injury" : "Unknown injury")
+                                : "Unknown injury";
+
+                            var dateString = injury.TryGetProperty("date", out var date) ? date.GetString() : null;
+                            var reportedTime = DateTime.UtcNow;
+                            if (!string.IsNullOrEmpty(dateString) && DateTime.TryParse(dateString, out var parsedDate))
+                                reportedTime = parsedDate.ToUniversalTime();
+
+                            injuries.Add(new PlayerInjuryReport
+                            {
+                                PlayerName = playerName,
+                                TeamCode = teamCode.ToUpper(),
+                                InjuryStatus = MapEspnStatus(status),
+                                InjuryDescription = description,
+                                ReportedTime = reportedTime,
+                                EstimatedReturn = null
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Error parsing CBB injury from ESPN API");
+                        }
+                    }
+                }
+
+                _logger.LogInformation("Retrieved {Count} CBB injuries from ESPN for {Team}", injuries.Count, teamCode);
+                return injuries;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching CBB injuries from ESPN for {Team}", teamCode);
+                return new List<PlayerInjuryReport>();
+            }
+        }
+
         // Cache of ESPN team-code alias maps, keyed by ESPN sport/league path (e.g.
         // "football/college-football"). Each inner map is keyed by a normalized team name.
         // Populated once per process lifetime; team sets are effectively static within a season.
@@ -725,6 +802,104 @@ namespace BiteTheBookie.Services.Implementations
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to fetch ESPN NBA standings for season {Season}", season);
+                    return null;
+                }
+            }
+
+            // Per-season cache of men's college basketball scoring stats keyed by team id AND
+            // lowercase abbreviation. Mirrors the NBA/NFL caches; standings are static within a day.
+            private static readonly Dictionary<int, Dictionary<string, NflTeamScoringStats>> _cbbScoringCache = new();
+            private static readonly SemaphoreSlim _cbbScoringLock = new(1, 1);
+
+            /// <summary>
+            /// Returns current-season scoring averages (points for/against per game) and the
+            /// win-loss record for a single men's college basketball team, derived from the ESPN
+            /// standings endpoint. <paramref name="teamIdOrCode"/> may be the ESPN numeric id or
+            /// abbreviation. Returns null if standings are unavailable or the team cannot be matched
+            /// so callers can degrade gracefully to guidance-only prompts.
+            /// </summary>
+            public async Task<NflTeamScoringStats?> GetCbbTeamScoringStatsAsync(string teamIdOrCode, int season, CancellationToken cancellationToken = default)
+            {
+                if (string.IsNullOrWhiteSpace(teamIdOrCode))
+                    return null;
+
+                var table = await GetCbbScoringTableAsync(season, cancellationToken);
+                if (table == null || table.Count == 0)
+                    return null;
+
+                return table.TryGetValue(teamIdOrCode.Trim().ToLowerInvariant(), out var stats) ? stats : null;
+            }
+
+            private async Task<Dictionary<string, NflTeamScoringStats>?> GetCbbScoringTableAsync(int season, CancellationToken cancellationToken)
+            {
+                lock (_cbbScoringCache)
+                {
+                    if (_cbbScoringCache.TryGetValue(season, out var cached))
+                        return cached;
+                }
+
+                await _cbbScoringLock.WaitAsync(cancellationToken);
+                try
+                {
+                    lock (_cbbScoringCache)
+                    {
+                        if (_cbbScoringCache.TryGetValue(season, out var cached))
+                            return cached;
+                    }
+
+                    var table = await FetchCbbScoringTableAsync(season, cancellationToken);
+                    if (table != null)
+                    {
+                        lock (_cbbScoringCache)
+                        {
+                            _cbbScoringCache[season] = table;
+                        }
+                    }
+                    return table;
+                }
+                finally
+                {
+                    _cbbScoringLock.Release();
+                }
+            }
+
+            private async Task<Dictionary<string, NflTeamScoringStats>?> FetchCbbScoringTableAsync(int season, CancellationToken cancellationToken)
+            {
+                try
+                {
+                    var url = $"apis/v2/sports/basketball/mens-college-basketball/standings?level=3&season={season}";
+                    var response = await _httpClient.GetAsync(url, cancellationToken);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning("ESPN CBB standings returned {Status} for season {Season}", response.StatusCode, season);
+                        return null;
+                    }
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                    var table = new Dictionary<string, NflTeamScoringStats>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var entries in EnumerateStandingsEntryArrays(doc.RootElement))
+                    {
+                        foreach (var entry in entries.EnumerateArray())
+                        {
+                            var stats = ParseStandingsEntry(entry);
+                            if (stats == null) continue;
+
+                            if (!string.IsNullOrWhiteSpace(stats.TeamId))
+                                table[stats.TeamId.ToLowerInvariant()] = stats;
+                            if (!string.IsNullOrWhiteSpace(stats.Abbreviation))
+                                table[stats.Abbreviation.ToLowerInvariant()] = stats;
+                        }
+                    }
+
+                    _logger.LogInformation("ESPN CBB standings parsed {Count} team entries for season {Season}", table.Count, season);
+                    return table.Count > 0 ? table : null;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch ESPN CBB standings for season {Season}", season);
                     return null;
                 }
             }
