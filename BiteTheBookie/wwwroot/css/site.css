@@ -723,6 +723,17 @@ footer {
     border-bottom: 1px solid #d9dce1;
 }
 
+/* The top strip should span the full viewport width (minus a small margin)
+   instead of being boxed by Bootstrap's centered container. */
+    .scorestrip-top > .container {
+        max-width: none;
+        width: auto;
+        margin-left: 10px;
+        margin-right: 10px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
 /* Sport selector dropdown to the left of the scoreboards */
 .ticker-league-select {
     flex: 0 0 auto;
