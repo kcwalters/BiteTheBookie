@@ -3,16 +3,6 @@
   var leagues = ['nfl', 'nba', 'nhl', 'ncaa', 'ncaaf', 'mlb'];
 
   function showTicker(league) {
-    // Hide every ticker in the row first so only one can ever be visible at a time.
-    var row = document.querySelector('.tickers-row');
-    if (row) {
-      Array.prototype.forEach.call(row.children, function (child) {
-        child.classList.remove('ticker-active');
-        child.style.display = 'none';
-        child.setAttribute('aria-hidden', 'true');
-      });
-    }
-
     leagues.forEach(function (l) {
       var el = document.getElementById(l + '-ticker');
       if (el) {
@@ -21,20 +11,30 @@
         el.style.display = active ? 'block' : 'none';
         el.setAttribute('aria-hidden', active ? 'false' : 'true');
       }
-
-      var cb = document.getElementById('cb-' + l);
-      if (cb) cb.checked = (l === league);
     });
 
-    var details = document.getElementById('ticker-controls-details');
-    if (details) details.open = true;
+    var select = document.getElementById('tickerLeagueSelect');
+    if (select && select.value !== league) select.value = league;
+    updateLeagueLogo(league);
 
     try { localStorage.setItem(LEAGUE_KEY, league); } catch (e) {}
   }
 
+  // Swap the logo shown above the dropdown to match the active league.
+  function updateLeagueLogo(league) {
+    var logo = document.getElementById('tickerLeagueLogo');
+    var select = document.getElementById('tickerLeagueSelect');
+    if (!logo || !select) return;
+    var opt = select.querySelector('option[value="' + league + '"]');
+    if (opt && opt.getAttribute('data-logo')) {
+      logo.src = opt.getAttribute('data-logo');
+      logo.alt = (opt.getAttribute('data-label') || opt.textContent) + ' logo';
+    }
+  }
+
   function tickerHasGames(league) {
     var el = document.getElementById(league + '-ticker');
-    return !!(el && el.querySelector('.league-ticker-item'));
+    return !!(el && el.querySelector('.cbb-game'));
   }
 
   // Picks the league to show on load: the previously selected one (if it still has
@@ -53,11 +53,18 @@
   }
 
   function initLeagueMenuTickerSwitcher() {
-    // The league quick-links now live inside the main navbar (SportsLine-style).
-    // Fall back to the legacy .league-menu container if present.
-    var container = document.querySelector('.league-nav') ||
-                    document.querySelector('.league-menu .container');
-    if (!container) return;
+    var select = document.getElementById('tickerLeagueSelect');
+    if (!select) return;
+
+    // Disable (but keep visible) any league option that has no games so users
+    // can see the full list yet can't land on an empty, out-of-season board.
+    Array.prototype.forEach.call(select.options, function (opt) {
+      var hasGames = tickerHasGames(opt.value);
+      opt.disabled = !hasGames;
+      var baseLabel = opt.getAttribute('data-label') || opt.textContent.replace(/\s*\(out of season\)\s*$/i, '');
+      opt.setAttribute('data-label', baseLabel);
+      opt.textContent = hasGames ? baseLabel : baseLabel + ' (out of season)';
+    });
 
     // Restore last selection, but only if that league currently has games; otherwise
     // default to the first in-season league so users never land on an empty ticker.
@@ -65,23 +72,8 @@
     try { saved = localStorage.getItem(LEAGUE_KEY); } catch (e) {}
     showTicker(pickInitialLeague(saved));
 
-    container.addEventListener('click', function (e) {
-      var link = e.target.closest('a[data-league]');
-      if (!link) return;
-      var league = link.getAttribute('data-league');
-      // Legacy placeholder links (href="#") only switch the ticker; real league
-      // links are allowed to navigate to their per-sport page.
-      var href = link.getAttribute('href');
-      if (!href || href === '#') e.preventDefault();
-      if (league) showTicker(league);
-    });
-
-    // Switch the ticker when a league menu item is hovered over.
-    container.addEventListener('mouseover', function (e) {
-      var link = e.target.closest('a[data-league]');
-      if (!link) return;
-      var league = link.getAttribute('data-league');
-      if (league) showTicker(league);
+    select.addEventListener('change', function () {
+      showTicker(select.value);
     });
   }
 

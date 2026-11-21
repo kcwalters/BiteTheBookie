@@ -691,23 +691,72 @@ footer {
     }
 
 /* Layout: tickers row */
-.tickers-row {  
+.tickers-row {
+    display: flex;
     flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 1rem;
+    align-items: stretch;
+    gap: 0.75rem;
 }
 
-    .tickers-row > div {
-        flex: 0 0 auto;
+/* Sport selector dropdown to the left of the scoreboards */
+.ticker-league-select {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 10px;
+    background: linear-gradient(180deg, #1d4ed8 0%, #0a2a7a 100%);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+    .ticker-league-select__logo {
+        height: 34px;
+        width: 34px;
+        object-fit: contain;
+        background: #fff;
+        border-radius: 6px;
+        padding: 2px;
     }
 
-/* Only one league ticker may be visible at a time. Hide every ticker by
+    .ticker-league-select__label {
+        margin: 0;
+        font-size: 0.6rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #cfe0ff;
+    }
+
+    .ticker-league-select__dropdown {
+        min-width: 120px;
+        font-weight: 700;
+        color: #0a2a7a;
+        border: 2px solid #f3c623;
+        background-color: #fff;
+        cursor: pointer;
+    }
+
+        .ticker-league-select__dropdown:focus {
+            border-color: #f3c623;
+            box-shadow: 0 0 0 0.2rem rgba(243, 198, 35, 0.4);
+        }
+
+/* Scoreboards container fills the rest of the row */
+.tickers-row__boards {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Only one league scoreboard may be visible at a time. Hide every board by
    default and reveal only the one flagged active by the league switcher. */
-.tickers-row > div {
+.tickers-row__boards > div {
     display: none !important;
 }
 
-    .tickers-row > div.ticker-active {
+    .tickers-row__boards > div.ticker-active {
         display: block !important;
     }
 

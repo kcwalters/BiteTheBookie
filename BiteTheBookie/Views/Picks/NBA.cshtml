@@ -12,20 +12,33 @@
 
 <div class="container">
     <div class="tickers-row">
-        <div id="nfl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NFLTicker")
+        <div class="ticker-league-select">
+            <img id="tickerLeagueLogo" class="ticker-league-select__logo" src="~/img/NBALogoSmall.png" alt="" />
+            <label for="tickerLeagueSelect" class="ticker-league-select__label">Sport</label>
+            <select id="tickerLeagueSelect" class="form-select form-select-sm ticker-league-select__dropdown" aria-label="Select sport">
+                <option value="nfl" data-logo="/img/NFL/NFL_Ticker_Logo.jpg">NFL</option>
+                <option value="nba" data-logo="/img/NBALogoSmall.png">NBA</option>
+                <option value="nhl" data-logo="/img/NHLogoSmall.png">NHL</option>
+                <option value="ncaa" data-logo="/img/NCAAMens_med.png">NCAAM</option>
+                <option value="mlb" data-logo="/img/mlb_logo.png">MLB</option>
+            </select>
         </div>
-        <div id="nba-ticker">
-            @await Component.InvokeAsync("NBATicker")
-        </div>
-        <div id="nhl-ticker" style="display: none;">
-            @await Component.InvokeAsync("NHLTicker")
-        </div>
-        <div id="ncaa-ticker" style="display: none;">
-            @await Component.InvokeAsync("NCAATicker")
-        </div>
-        <div id="mlb-ticker" style="display: none;">
-            @await Component.InvokeAsync("MLBTicker")
+        <div class="tickers-row__boards">
+            <div id="nfl-ticker" style="display: none;">
+                @await Component.InvokeAsync("NFLTicker")
+            </div>
+            <div id="nba-ticker">
+                @await Component.InvokeAsync("NBATicker")
+            </div>
+            <div id="nhl-ticker" style="display: none;">
+                @await Component.InvokeAsync("NHLTicker")
+            </div>
+            <div id="ncaa-ticker" style="display: none;">
+                @await Component.InvokeAsync("NCAATicker")
+            </div>
+            <div id="mlb-ticker" style="display: none;">
+                @await Component.InvokeAsync("MLBTicker")
+            </div>
         </div>
     </div>
 </div>

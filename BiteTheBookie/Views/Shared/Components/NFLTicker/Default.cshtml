@@ -1,7 +1,5 @@
 @model IReadOnlyList<BiteTheBookie.Models.NFLTickerView>
-<div class="league-ticker">
-    <div class="league-ticker-inner">
-        @await Html.PartialAsync("~/Views/Scores/_NFLTickerInner.cshtml", Model)
-    </div>
+<div class="cbb-scoreboard-wrap">
+    @await Html.PartialAsync("~/Views/Scores/_NFLTickerInner.cshtml", Model)
 </div>
 <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
