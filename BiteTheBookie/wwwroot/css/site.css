@@ -239,6 +239,195 @@ footer {
     animation-play-state: paused;
 }
 
+/* =========================================================
+   CBB fixed scoreboard (ESPN-style top scores strip)
+   Replaces the scrolling CBB/NCAAM ticker with a static,
+   horizontally scrollable row of compact game cards.
+   ========================================================= */
+.cbb-scoreboard-wrap {
+    width: 100%;
+    background-color: #fff;
+    border-bottom: 1px solid #e2e2e9;
+}
+
+.cbb-scoreboard {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    background-color: #fff;
+    color: #2a2a32;
+}
+
+.cbb-scoreboard-logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    border-right: 1px solid #e2e2e9;
+    background-color: #fafafa;
+}
+
+    .cbb-scoreboard-logo img {
+        height: 28px;
+        width: 28px;
+        object-fit: contain;
+    }
+
+    .cbb-scoreboard-logo span {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: #4a4a57;
+    }
+
+/* Horizontal, non-animated strip of game cards */
+.cbb-scoreboard-track {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background-color: #fff;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
+}
+
+    .cbb-scoreboard-track::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .cbb-scoreboard-track::-webkit-scrollbar-thumb {
+        background-color: #c7c7cf;
+        border-radius: 3px;
+    }
+
+/* Single game card */
+.cbb-game {
+    flex: 0 0 auto;
+    min-width: 150px;
+    padding: 6px 14px;
+    border-right: 1px solid #e2e2e9;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.cbb-game-status {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #6b6b76;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cbb-game.live .cbb-game-status {
+    color: #d50a0a;
+}
+
+/* Live game indicator: red pill with a pulsing dot */
+.cbb-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #d50a0a;
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: 10px;
+    line-height: 1.4;
+}
+
+.cbb-live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #fff;
+    animation: cbb-live-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes cbb-live-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.35;
+        transform: scale(0.65);
+    }
+}
+
+/* Subtle highlight on the whole live card */
+.cbb-game.live {
+    background-color: #fff5f5;
+    box-shadow: inset 3px 0 0 #d50a0a;
+}
+
+.cbb-game-team {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #2a2a32;
+}
+
+    .cbb-game-team img.team-logo {
+        height: 20px !important;
+        width: 20px !important;
+        max-height: 20px !important;
+        max-width: 20px !important;
+        object-fit: contain;
+    }
+
+    .cbb-game-team .team-name {
+        flex: 1 1 auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 500;
+    }
+
+    .cbb-game-team .team-score {
+        font-weight: 700;
+        margin-left: auto;
+        min-width: 1.5em;
+        text-align: right;
+    }
+
+    .cbb-game-team.winning .team-name,
+    .cbb-game-team.winning .team-score {
+        color: #000;
+        font-weight: 800;
+    }
+
+.cbb-scoreboard-empty {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background-color: #fff;
+    color: #6b6b76;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 480px) {
+    .cbb-game {
+        min-width: 130px;
+        padding: 6px 10px;
+    }
+}
+
 
 /* Flags */
 .poss-arrow {

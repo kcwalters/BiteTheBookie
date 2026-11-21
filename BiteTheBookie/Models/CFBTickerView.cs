@@ -10,5 +10,6 @@ public readonly record struct CFBTickerView(
     string StatusText,
     bool IsLive,
     bool IsFinal,
-    string? EventId
+    string? EventId,
+    string Conference = ""
 );

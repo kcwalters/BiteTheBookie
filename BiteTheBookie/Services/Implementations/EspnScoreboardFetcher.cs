@@ -63,6 +63,20 @@ namespace BiteTheBookie.Services.Implementations
             return (await FetchEventsAsync(http, baseUrl, cancellationToken)).Select(e => e.Element).ToList();
         }
 
+        /// <summary>
+        /// Returns the ESPN scoreboard events for exactly the supplied date (no fall-forward).
+        /// Use when the caller wants a specific calendar day (e.g. "today" in a fixed timezone)
+        /// rather than the soonest upcoming day with games.
+        /// </summary>
+        public static async Task<List<JsonElement>> GetEventsForExactDateAsync(
+            HttpClient http, string scoreboardUrl, DateTime date, CancellationToken cancellationToken, string? extraQuery = null)
+        {
+            var suffix = string.IsNullOrWhiteSpace(extraQuery) ? string.Empty : $"&{extraQuery}";
+            var url = $"{scoreboardUrl}?dates={date:yyyyMMdd}{suffix}";
+            var events = await FetchEventsAsync(http, url, cancellationToken);
+            return events.OrderBy(e => e.Date).Select(e => e.Element).ToList();
+        }
+
         private static async Task<List<(JsonElement Element, DateTime Date)>> FetchEventsAsync(
             HttpClient http, string url, CancellationToken cancellationToken)
         {

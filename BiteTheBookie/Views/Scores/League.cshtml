@@ -53,12 +53,11 @@
     }
 
     @{
-        // Build one unified scoreboard from every source list, de-duplicated by GameId.
+        // Build the scoreboard from today's games only, de-duplicated by GameId. Every league
+        // defaults to the current day's slate.
         var combinedGames = new List<NBAGameMatchup>();
         combinedGames.AddRange(Model.Games);
         combinedGames.AddRange(Model.TodayGames);
-        combinedGames.AddRange(Model.NextGameDayGames);
-        combinedGames.AddRange(Model.LastDayGames);
 
         var uniqueGames = combinedGames
             .GroupBy(g => !string.IsNullOrWhiteSpace(g.GameId)
@@ -67,12 +66,21 @@
             .Select(grp => grp.First())
             .ToList();
 
-        // Next games at the top (live, then upcoming), past games below. Every group is ordered
-        // in descending order (most recent/latest first) so current and upcoming games lead.
+        // Live games first, then upcoming, then complete. Each group ordered latest first.
         var orderedGames = uniqueGames.Where(g => g.IsLive).OrderByDescending(g => g.GameTime)
             .Concat(uniqueGames.Where(g => g.IsScheduled).OrderByDescending(g => g.GameTime))
             .Concat(uniqueGames.Where(g => g.IsFinal).OrderByDescending(g => g.GameTime))
             .ToList();
+
+        // Conference/division filter is only meaningful for college sports.
+        var isCollege = Model.LeagueCode == "CBB" || Model.LeagueCode == "CFB";
+        var conferenceOptions = isCollege
+            ? orderedGames
+                .SelectMany(g => (g.Conference ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList()
+            : new List<string>();
     }
 
     <div class="nfl-games">
@@ -89,11 +97,21 @@
                     <input type="text" id="sbSearch" class="form-control form-control-sm" placeholder="Filter by team..." autocomplete="off" />
                 </div>
                 <select id="sbStatus" class="form-select form-select-sm">
-                    <option value="all">All games</option>
-                    <option value="upcoming">Upcoming</option>
+                    <option value="all">Today's games</option>
                     <option value="live">Live</option>
-                    <option value="final">Final / Past</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="final">Complete</option>
                 </select>
+                @if (isCollege && conferenceOptions.Any())
+                {
+                    <select id="sbConference" class="form-select form-select-sm">
+                        <option value="all">All conferences</option>
+                        @foreach (var conf in conferenceOptions)
+                        {
+                            <option value="@conf.ToLowerInvariant()">@conf</option>
+                        }
+                    </select>
+                }
                 <select id="sbSort" class="form-select form-select-sm">
                     <option value="default">Next games first</option>
                     <option value="time-asc">Date: earliest first</option>
@@ -108,6 +126,7 @@
                 {
                     var statusKey = game.IsLive ? "live" : (game.IsFinal ? "final" : "upcoming");
                     <div class="nfl-game-card" data-status="@statusKey" data-time="@game.GameTime.Ticks"
+                         data-conf="@((game.Conference ?? "").ToLowerInvariant())"
                          data-teams="@($"{game.AwayTeamName} {game.HomeTeamName}".ToLowerInvariant())"
                          data-away="@game.AwayTeamName.ToLowerInvariant()" data-home="@game.HomeTeamName.ToLowerInvariant()">
                         <div class="nfl-game-card__status @(game.IsLive ? "is-live" : "")">
@@ -241,6 +260,7 @@
 
             var search = document.getElementById('sbSearch');
             var statusFilter = document.getElementById('sbStatus');
+            var confFilter = document.getElementById('sbConference');
             var sortSelect = document.getElementById('sbSort');
             var noResults = document.getElementById('scoreboardNoResults');
             var cards = Array.prototype.slice.call(grid.querySelectorAll('.nfl-game-card'));
@@ -257,12 +277,16 @@
             if (params.has('sort') && sortSelect.querySelector('option[value="' + params.get('sort') + '"]')) {
                 sortSelect.value = params.get('sort');
             }
+            if (confFilter && params.has('conf') && confFilter.querySelector('option[value="' + params.get('conf') + '"]')) {
+                confFilter.value = params.get('conf');
+            }
 
             function updateUrl() {
                 var p = new URLSearchParams(window.location.search);
                 var term = (search.value || '').trim();
                 if (term) { p.set('q', term); } else { p.delete('q'); }
                 if (statusFilter.value && statusFilter.value !== 'all') { p.set('status', statusFilter.value); } else { p.delete('status'); }
+                if (confFilter && confFilter.value && confFilter.value !== 'all') { p.set('conf', confFilter.value); } else { p.delete('conf'); }
                 if (sortSelect.value && sortSelect.value !== 'default') { p.set('sort', sortSelect.value); } else { p.delete('sort'); }
 
                 var query = p.toString();
@@ -273,12 +297,15 @@
             function applyFilters() {
                 var term = (search.value || '').trim().toLowerCase();
                 var status = statusFilter.value;
+                var conf = confFilter ? confFilter.value : 'all';
                 var visible = 0;
 
                 cards.forEach(function (card) {
                     var matchesTerm = !term || (card.dataset.teams || '').indexOf(term) !== -1;
                     var matchesStatus = status === 'all' || card.dataset.status === status;
-                    var show = matchesTerm && matchesStatus;
+                    var matchesConf = conf === 'all' ||
+                        (card.dataset.conf || '').split(' ').indexOf(conf) !== -1;
+                    var show = matchesTerm && matchesStatus && matchesConf;
                     card.style.display = show ? '' : 'none';
                     if (show) { visible++; }
                 });
@@ -310,6 +337,7 @@
 
             search.addEventListener('input', function () { applyFilters(); updateUrl(); });
             statusFilter.addEventListener('change', function () { applyFilters(); updateUrl(); });
+            if (confFilter) { confFilter.addEventListener('change', function () { applyFilters(); updateUrl(); }); }
             sortSelect.addEventListener('change', function () { applySort(); updateUrl(); });
 
             // Apply restored state on load.

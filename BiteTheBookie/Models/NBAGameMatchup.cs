@@ -52,6 +52,12 @@ namespace BiteTheBookie.Models
         public bool IsLive => Status.Equals("Live", System.StringComparison.OrdinalIgnoreCase);
         public bool IsFinal => Status.Equals("Final", System.StringComparison.OrdinalIgnoreCase);
         public bool IsScheduled => !IsLive && !IsFinal;
+
+        /// <summary>
+        /// Conference/division label(s) for the matchup (college sports only), e.g. "SEC" or
+        /// "SEC ACC" for a cross-conference game. Empty for pro leagues.
+        /// </summary>
+        public string Conference { get; set; } = string.Empty;
     }
 }
 

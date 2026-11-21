@@ -54,9 +54,9 @@ namespace BiteTheBookie.Controllers
 
             try
             {
-                model.LastDayGames = await LoadGamesAsync(code, cancellationToken, DateTime.Today.AddDays(-1));
+                // Every league's scoreboard defaults to today's games (ordered live-first in the
+                // view). Status filtering (Live / Upcoming / Complete) is applied client-side.
                 model.TodayGames = await LoadGamesAsync(code, cancellationToken, DateTime.Today);
-                model.NextGameDayGames = await LoadGamesAsync(code, cancellationToken, DateTime.Today.AddDays(1));
             }
             catch
             {
@@ -72,19 +72,19 @@ namespace BiteTheBookie.Controllers
             {
                 case "NFL":
                     return MapTicker(await _nFlScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
-                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
+                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId, string.Empty));
                 case "NBA":
                     return MapTicker(await _nBAScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
-                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
+                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId, string.Empty));
                 case "NHL":
                     return MapTicker(await _nHLScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
-                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
+                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId, string.Empty));
                 case "CFB":
                     return MapTicker(await _cFBScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
-                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
+                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId, g.Conference));
                 case "CBB":
                     return MapTicker(await _nCAAScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
-                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
+                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId, g.Conference));
                 case "MLB":
                     var mlbGames = await _mLBGamesService.GetGamesForDateAsync(gameDate, cancellationToken);
                     return mlbGames.Select(g => new NBAGameMatchup
@@ -101,13 +101,13 @@ namespace BiteTheBookie.Controllers
                     }).ToList();
                 default:
                     return MapTicker(await _nFlScoresService.GetGamesForDateAsync(gameDate, cancellationToken),
-                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId));
+                        g => (g.AwayTeam, g.HomeTeam, g.AwayScore, g.HomeScore, g.AwayLogo, g.HomeLogo, g.StatusText, g.IsLive, g.IsFinal, g.EventId, string.Empty));
             }
         }
 
         private static List<NBAGameMatchup> MapTicker<T>(
             IEnumerable<T> games,
-            Func<T, (string AwayTeam, string HomeTeam, int? AwayScore, int? HomeScore, string AwayLogo, string HomeLogo, string StatusText, bool IsLive, bool IsFinal, string? EventId)> selector)
+            Func<T, (string AwayTeam, string HomeTeam, int? AwayScore, int? HomeScore, string AwayLogo, string HomeLogo, string StatusText, bool IsLive, bool IsFinal, string? EventId, string Conference)> selector)
         {
             return games.Select(g =>
             {
@@ -122,7 +122,8 @@ namespace BiteTheBookie.Controllers
                     HomeTeamLogo = v.HomeLogo,
                     HomeScore = v.HomeScore,
                     StatusDetail = v.StatusText,
-                    Status = v.IsLive ? "Live" : v.IsFinal ? "Final" : "Scheduled"
+                    Status = v.IsLive ? "Live" : v.IsFinal ? "Final" : "Scheduled",
+                    Conference = v.Conference
                 };
             }).ToList();
         }

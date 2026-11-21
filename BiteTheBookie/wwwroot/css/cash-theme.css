@@ -578,3 +578,46 @@ html.theme-cash .nfl-game-card__status.is-live {
     color: var(--cp-danger) !important;
 }
 
+/* ── CBB header scoreboard (ticker) ─────────────────────────
+   The scoreboard cards hardcode a white background with dark
+   text for the light theme. In the cash/dark theme that dark
+   text sits on the dark page, becoming unreadable. Re-skin the
+   whole strip to the elevated dark surface with light text. */
+html.theme-cash .cbb-scoreboard-wrap,
+html.theme-cash .cbb-scoreboard,
+html.theme-cash .cbb-scoreboard-track,
+html.theme-cash .cbb-game {
+    background-color: var(--cp-bg-elevated) !important;
+    border-color: var(--cp-border) !important;
+}
+html.theme-cash .cbb-scoreboard {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .cbb-scoreboard-logo {
+    background-color: var(--cp-bg-row) !important;
+    border-color: var(--cp-border) !important;
+}
+html.theme-cash .cbb-scoreboard-logo span,
+html.theme-cash .cbb-game-status {
+    color: var(--cp-text-muted) !important;
+}
+html.theme-cash .cbb-game-team,
+html.theme-cash .cbb-game-team .team-name,
+html.theme-cash .cbb-game-team .team-score {
+    color: var(--cp-text) !important;
+}
+html.theme-cash .cbb-game-team.winning .team-name,
+html.theme-cash .cbb-game-team.winning .team-score {
+    color: #ffffff !important;
+}
+html.theme-cash .cbb-game.live {
+    background-color: #2a1416 !important; /* dark red-tinted surface */
+    box-shadow: inset 3px 0 0 var(--cp-danger) !important;
+}
+html.theme-cash .cbb-game.live .cbb-game-status {
+    color: var(--cp-danger) !important;
+}
+html.theme-cash .cbb-scoreboard-empty {
+    color: var(--cp-text-muted) !important;
+}
+

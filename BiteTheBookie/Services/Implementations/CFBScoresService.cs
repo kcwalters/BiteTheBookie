@@ -116,6 +116,8 @@ namespace BiteTheBookie.Services.Implementations
             int? homeScore = null;
             string awayLogo = "";
             string homeLogo = "";
+            string awayConf = "";
+            string homeConf = "";
 
             if (comp.TryGetProperty("competitors", out var competitorsElement) &&
                 competitorsElement.ValueKind == JsonValueKind.Array)
@@ -136,6 +138,7 @@ namespace BiteTheBookie.Services.Implementations
 
                     var teamName = !string.IsNullOrWhiteSpace(teamAbbr) ? teamAbbr : displayName;
                     var logoUrl = GetLogoUrl(teamNode);
+                    var conference = ConferenceAbbr(teamNode);
 
                     int? score = null;
                     if (teamElement.TryGetProperty("score", out var scoreElement) &&
@@ -150,12 +153,14 @@ namespace BiteTheBookie.Services.Implementations
                         awayTeam = teamName;
                         awayScore = score;
                         awayLogo = logoUrl;
+                        awayConf = conference;
                     }
                     else
                     {
                         homeTeam = teamName;
                         homeScore = score;
                         homeLogo = logoUrl;
+                        homeConf = conference;
                     }
                 }
             }
@@ -187,8 +192,77 @@ namespace BiteTheBookie.Services.Implementations
                 statusText,
                 isLive,
                 isFinal,
-                eventId
+                eventId,
+                CombineConferences(awayConf, homeConf)
             );
+        }
+
+        // College football ESPN conference (group) id -> short label.
+        private static readonly Dictionary<string, string> FbsConferences = new()
+        {
+            ["1"] = "ACC",
+            ["4"] = "Big 12",
+            ["5"] = "Big Ten",
+            ["8"] = "SEC",
+            ["9"] = "Pac-12",
+            ["12"] = "Conference USA",
+            ["15"] = "MAC",
+            ["17"] = "Mountain West",
+            ["18"] = "FBS Indep",
+            ["20"] = "FBS Indep",
+            ["37"] = "Sun Belt",
+            ["151"] = "American",
+        };
+
+        /// <summary>Returns the team's conference short label, or empty when unknown.</summary>
+        private static string ConferenceAbbr(JsonElement teamNode)
+        {
+            var id = ReadConferenceId(teamNode);
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return "";
+            }
+
+            return FbsConferences.TryGetValue(id, out var abbr) ? abbr : $"Conf {id}";
+        }
+
+        /// <summary>Reads the ESPN conference id from the various shapes it can appear in.</summary>
+        private static string ReadConferenceId(JsonElement teamNode)
+        {
+            if (teamNode.TryGetProperty("conferenceId", out var confEl))
+            {
+                var id = confEl.ValueKind == JsonValueKind.String
+                    ? confEl.GetString()
+                    : confEl.ValueKind == JsonValueKind.Number ? confEl.GetRawText() : null;
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    return id!;
+                }
+            }
+
+            if (teamNode.TryGetProperty("conference", out var confObj) &&
+                confObj.ValueKind == JsonValueKind.Object &&
+                confObj.TryGetProperty("id", out var nestedId))
+            {
+                var id = nestedId.ValueKind == JsonValueKind.String
+                    ? nestedId.GetString()
+                    : nestedId.ValueKind == JsonValueKind.Number ? nestedId.GetRawText() : null;
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    return id!;
+                }
+            }
+
+            return "";
+        }
+
+        /// <summary>Space-joined distinct conference labels for a matchup (e.g. "SEC ACC").</summary>
+        private static string CombineConferences(string away, string home)
+        {
+            var set = new List<string>();
+            if (!string.IsNullOrWhiteSpace(home)) set.Add(home);
+            if (!string.IsNullOrWhiteSpace(away) && !set.Contains(away)) set.Add(away);
+            return string.Join(" ", set);
         }
 
         private static string GetLogoUrl(JsonElement teamNode)
