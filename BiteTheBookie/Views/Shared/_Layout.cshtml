@@ -140,6 +140,9 @@
     <div class="scorestrip-top">
         <div class="container">
             <div class="tickers-row">
+                <a asp-controller="Home" asp-action="Index" class="ticker-brand" aria-label="BiteTheBookie home">
+                    <img src="~/img/slider-1.png" id="siteLogo" class="brand-logo" alt="BiteTheBookie" />
+                </a>
                 <div class="ticker-league-select">
                     <label for="tickerLeagueSelect" class="ticker-league-select__label">Select League</label>
                     <select id="tickerLeagueSelect" class="form-select form-select-sm ticker-league-select__dropdown" aria-label="Select sport">
@@ -226,11 +229,7 @@
 
         <nav class="navbar navbar-expand-lg main-nav">
             <div class="container">
-                <a asp-controller="Home" asp-action="Index" class="navbar-brand d-inline-flex align-items-center gap-2">
-                    <img src="~/img/slider-1.png" id="siteLogo" class="brand-logo" style="height:40px;width:auto;max-width:100%;" alt="BiteTheBookie" />                   
-                </a>
-
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <button class="navbar-toggler"
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
