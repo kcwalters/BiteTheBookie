@@ -910,18 +910,20 @@ body {
 .main-nav {
   background: var(--primary-blue);
   border-bottom: 1px solid #e5e5e5;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .main-nav .navbar-brand {
   font-weight: 700;
   font-size: 26px;
   color: #0b0c0d !important;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .main-nav .nav-link {
   color: #fff !important;
   font-weight: 600;
-  padding: 14px 18px !important;
+  padding: 10px 14px !important;
 }
 .main-nav .nav-link:hover {
   color: #007bff !important;
@@ -935,8 +937,8 @@ body {
   align-items: center;
 }
 .primary-nav .nav-link {
-  padding: 14px 16px !important;
-  font-size: 15px;
+  padding: 10px 14px !important;
+  font-size: 14px;
 }
 /* Vertical divider between the section links and the league quick-links */
 .league-nav {
@@ -993,9 +995,9 @@ body {
 }
 
 .brand-logo {
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  height: 150px;
+  height: 40px;
   width: auto;
   display: block;
 }

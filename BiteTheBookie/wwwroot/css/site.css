@@ -696,6 +696,13 @@ footer {
     flex-wrap: nowrap;
     align-items: stretch;
     gap: 0.75rem;
+    padding: 6px 0;
+}
+
+/* ESPN-style scoreboard strip pinned to the very top of the page */
+.scorestrip-top {
+    background-color: #f5f6f8;
+    border-bottom: 1px solid #d9dce1;
 }
 
 /* Sport selector dropdown to the left of the scoreboards */
@@ -707,14 +714,14 @@ footer {
     justify-content: center;
     gap: 2px;
     padding: 6px 10px;
-    background: linear-gradient(180deg, #1d4ed8 0%, #0a2a7a 100%);
+    background: linear-gradient(180deg, #2b2f3a 0%, #171a21 100%);
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
     .ticker-league-select__logo {
-        height: 34px;
-        width: 34px;
+        height: 30px;
+        width: 30px;
         object-fit: contain;
         background: #fff;
         border-radius: 6px;
@@ -723,17 +730,17 @@ footer {
 
     .ticker-league-select__label {
         margin: 0;
-        font-size: 0.6rem;
+        font-size: 0.58rem;
         font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: #cfe0ff;
+        color: #c7ccd6;
     }
 
     .ticker-league-select__dropdown {
         min-width: 120px;
         font-weight: 700;
-        color: #0a2a7a;
+        color: #171a21;
         border: 2px solid #f3c623;
         background-color: #fff;
         cursor: pointer;

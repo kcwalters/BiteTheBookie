@@ -1,6 +1,24 @@
 (function () {
   var LEAGUE_KEY = 'btb-active-league';
+  var COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year in seconds
   var leagues = ['nfl', 'nba', 'nhl', 'ncaa', 'ncaaf', 'mlb'];
+
+  // Persist the active league in a cookie so it survives across browser sessions.
+  function setLeagueCookie(league) {
+    try {
+      document.cookie = LEAGUE_KEY + '=' + encodeURIComponent(league) +
+        ';path=/;max-age=' + COOKIE_MAX_AGE + ';SameSite=Lax';
+    } catch (e) {}
+  }
+
+  function getLeagueCookie() {
+    try {
+      var match = document.cookie.match(new RegExp('(?:^|;\\s*)' + LEAGUE_KEY + '=([^;]*)'));
+      return match ? decodeURIComponent(match[1]) : null;
+    } catch (e) {
+      return null;
+    }
+  }
 
   function showTicker(league) {
     leagues.forEach(function (l) {
@@ -18,6 +36,7 @@
     updateLeagueLogo(league);
 
     try { localStorage.setItem(LEAGUE_KEY, league); } catch (e) {}
+    setLeagueCookie(league);
   }
 
   // Swap the logo shown above the dropdown to match the active league.
@@ -68,8 +87,11 @@
 
     // Restore last selection, but only if that league currently has games; otherwise
     // default to the first in-season league so users never land on an empty ticker.
-    var saved = null;
-    try { saved = localStorage.getItem(LEAGUE_KEY); } catch (e) {}
+    // Prefer the cookie (shared across sessions), falling back to localStorage.
+    var saved = getLeagueCookie();
+    if (!saved) {
+      try { saved = localStorage.getItem(LEAGUE_KEY); } catch (e) {}
+    }
     showTicker(pickInitialLeague(saved));
 
     select.addEventListener('change', function () {

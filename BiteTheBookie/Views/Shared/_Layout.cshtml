@@ -136,6 +136,45 @@
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="site-body">
+    <!-- ESPN-style scoreboard strip pinned to the very top of the page -->
+    <div class="scorestrip-top">
+        <div class="container">
+            <div class="tickers-row">
+                <div class="ticker-league-select">
+                    <label for="tickerLeagueSelect" class="ticker-league-select__label">Select League</label>
+                    <select id="tickerLeagueSelect" class="form-select form-select-sm ticker-league-select__dropdown" aria-label="Select sport">
+                        <option value="nfl" data-logo="/img/NFL/NFL_Ticker_Logo.jpg">NFL</option>
+                        <option value="nba" data-logo="/img/NBALogoSmall.png">NBA</option>
+                        <option value="nhl" data-logo="/img/NHLogoSmall.png">NHL</option>
+                        <option value="ncaa" data-logo="/img/NCAAMens_med.png">NCAAM</option>
+                        <option value="ncaaf" data-logo="/img/icons/college-football (1).svg">CFB</option>
+                        <option value="mlb" data-logo="/img/mlb_logo.png">MLB</option>
+                    </select>
+                </div>
+                <div class="tickers-row__boards">
+                    <div id="nfl-ticker" style="display: none;">
+                        @await Component.InvokeAsync("NFLTicker")
+                    </div>
+                    <div id="nba-ticker" style="display: none;">
+                        @await Component.InvokeAsync("NBATicker")
+                    </div>
+                    <div id="nhl-ticker" style="display: none;">
+                        @await Component.InvokeAsync("NHLTicker")
+                    </div>
+                    <div id="ncaa-ticker" style="display: none;">
+                        @await Component.InvokeAsync("NCAATicker")
+                    </div>
+                    <div id="ncaaf-ticker" style="display: none;">
+                        @await Component.InvokeAsync("CFBTicker")
+                    </div>
+                    <div id="mlb-ticker" style="display: none;">
+                        @await Component.InvokeAsync("MLBTicker")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <header class="site-header">
         <div class="top-header">
             <div class="container d-flex align-items-center justify-content-between">
@@ -188,7 +227,7 @@
         <nav class="navbar navbar-expand-lg main-nav">
             <div class="container">
                 <a asp-controller="Home" asp-action="Index" class="navbar-brand d-inline-flex align-items-center gap-2">
-                    <img src="~/img/slider-1.png" id="siteLogo" class="brand-logo" style="width:300px;max-width:100%;height:auto;" alt="BiteTheBookie" />                   
+                    <img src="~/img/slider-1.png" id="siteLogo" class="brand-logo" style="height:40px;width:auto;max-width:100%;" alt="BiteTheBookie" />                   
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
@@ -330,44 +369,6 @@
             </div>
         </nav>
     </header>
-
-    <!-- Global ticker row — dropdown selects which league scoreboard to show -->
-    <div class="container">
-        <div class="tickers-row">
-            <div class="ticker-league-select">
-                <img id="tickerLeagueLogo" class="ticker-league-select__logo" src="~/img/NFL/NFL_Ticker_Logo.jpg" alt="" />
-                <label for="tickerLeagueSelect" class="ticker-league-select__label">Sport</label>
-                <select id="tickerLeagueSelect" class="form-select form-select-sm ticker-league-select__dropdown" aria-label="Select sport">
-                    <option value="nfl" data-logo="/img/NFL/NFL_Ticker_Logo.jpg">NFL</option>
-                    <option value="nba" data-logo="/img/NBALogoSmall.png">NBA</option>
-                    <option value="nhl" data-logo="/img/NHLogoSmall.png">NHL</option>
-                    <option value="ncaa" data-logo="/img/NCAAMens_med.png">NCAAM</option>
-                    <option value="ncaaf" data-logo="/img/icons/college-football (1).svg">CFB</option>
-                    <option value="mlb" data-logo="/img/mlb_logo.png">MLB</option>
-                </select>
-            </div>
-            <div class="tickers-row__boards">
-                <div id="nfl-ticker" style="display: none;">
-                    @await Component.InvokeAsync("NFLTicker")
-                </div>
-                <div id="nba-ticker" style="display: none;">
-                    @await Component.InvokeAsync("NBATicker")
-                </div>
-                <div id="nhl-ticker" style="display: none;">
-                    @await Component.InvokeAsync("NHLTicker")
-                </div>
-                <div id="ncaa-ticker" style="display: none;">
-                    @await Component.InvokeAsync("NCAATicker")
-                </div>
-                <div id="ncaaf-ticker" style="display: none;">
-                    @await Component.InvokeAsync("CFBTicker")
-                </div>
-                <div id="mlb-ticker" style="display: none;">
-                    @await Component.InvokeAsync("MLBTicker")
-                </div>
-            </div>
-        </div>
-    </div>
 
     <main class="site-main">
         @await Component.InvokeAsync("ContentRegion", new { page = "*", region = "hero" })
